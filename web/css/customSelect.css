@@ -1,0 +1,113 @@
+/*
+  File: customSelect.css
+  Purpose: Shared styling for the custom select component, including the
+  trigger, dropdown panel, selectable options, and lightweight open-state
+  transitions.
+*/
+
+/* Wrapper establishes the positioning context for the dropdown panel */
+.custom-select-wrapper {
+    position: relative;
+    width: 100%;
+    font-size: 1rem;
+}
+
+/* Trigger mimics a native input while supporting custom content such as icons */
+.custom-select-trigger {
+    display: flex;
+    align-items: center;
+    background-color: var(--hover-bg);
+    border: 1px solid var(--border-color);
+    color: var(--primary-text);
+    padding: 10px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    user-select: none;
+}
+
+/* Focus-within allows the wrapper to reflect keyboard focus from internal elements */
+.custom-select-wrapper:focus-within .custom-select-trigger {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+}
+
+/* Optional images support richer option previews inside the trigger */
+.custom-select-trigger img {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    object-fit: cover;
+    border-radius: 3px;
+}
+
+/* Chevron indicator rotates when the option list is open */
+.custom-select-trigger::after {
+    content: '▼';
+    font-size: 0.6rem;
+    margin-left: auto;
+    color: var(--secondary-text);
+    transition: transform 0.2s;
+}
+.custom-options.open + .custom-select-trigger::after {
+    transform: rotate(180deg);
+}
+
+/* Dropdown panel remains hidden until the component enters the open state */
+.custom-options {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    z-index: 100;
+    max-height: 200px;
+    overflow-y: auto;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: opacity 0.2s, visibility 0.2s, transform 0.2s;
+}
+
+/* Open state uses opacity and vertical motion instead of display toggling */
+.custom-options.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Individual option row styling */
+.custom-option {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.custom-option:hover {
+    background-color: var(--accent-blue);
+    color: white;
+}
+.custom-option.selected {
+    background-color: var(--accent-blue);
+    color: white;
+    font-weight: 500;
+}
+
+/* Optional option thumbnails align with the trigger preview pattern */
+.custom-option img {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    object-fit: cover;
+    border-radius: 3px;
+}
+
+/* Placeholder styling for empty or unavailable option states */
+.custom-option-placeholder {
+    padding: 10px 12px;
+    color: var(--secondary-text);
+    font-style: italic;
+}

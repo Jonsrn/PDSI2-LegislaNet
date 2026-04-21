@@ -1,0 +1,29 @@
+/*
+  File: carregamento.css
+  Purpose: Shared loading-state styling used across interface views to
+  present centered loading feedback and a reusable spinner animation.
+*/
+
+/* Loading container and spinner visuals */
+
+.loading-state {
+  text-align: center;
+  padding: 64px 24px;
+}
+
+.loading-state .loading-spinner {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-radius: 50%;
+  border-top-color: var(--accent-blue);
+  animation: spin 1s linear infinite;
+}
+
+/* Continuous rotation powers the circular loading indicator */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

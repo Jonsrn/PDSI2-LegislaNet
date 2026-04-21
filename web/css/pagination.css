@@ -1,0 +1,159 @@
+/*
+  File: pagination.css
+  Purpose: Shared pagination styling for list and grid views, including the
+  outer container, navigation buttons, numbered page controls, ellipsis
+  markers, and responsive size adjustments.
+*/
+
+/* Pagination container anchored below paginated content areas */
+.pagination-container {
+  margin-top: auto;
+  padding: 24px 32px;
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 0.3s;
+}
+
+/* Horizontal control group for directional and numeric pagination */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Circular previous and next navigation buttons */
+.pagination-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--primary-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.pagination-btn:hover:not(.disabled) {
+  background-color: var(--accent-blue);
+  color: white;
+  border-color: var(--accent-blue);
+}
+
+.pagination-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Numeric page button group */
+.pagination-pages {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* Individual page number buttons */
+.pagination-page-btn {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background-color: transparent;
+  border: 1px solid transparent;
+  color: var(--secondary-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.pagination-page-btn:hover:not(.active) {
+  background-color: var(--hover-bg);
+  color: var(--primary-text);
+  border-color: var(--border-color);
+}
+
+.pagination-page-btn.active {
+  background-color: var(--accent-blue);
+  color: white;
+  border-color: var(--accent-blue);
+  font-weight: 600;
+}
+
+/* Ellipsis placeholder used when page ranges are condensed */
+.pagination-ellipsis {
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--secondary-text);
+  font-weight: 500;
+  user-select: none;
+}
+
+/* Tablet and small-screen spacing adjustments */
+@media (max-width: 768px) {
+  .pagination-container {
+    padding: 16px 20px;
+  }
+
+  .pagination-controls {
+    gap: 0.5rem;
+  }
+
+  .pagination-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .pagination-page-btn {
+    min-width: 28px;
+    height: 28px;
+    padding: 0 5px;
+    font-size: 0.8rem;
+  }
+
+  .pagination-pages {
+    gap: 4px;
+  }
+
+  .pagination-ellipsis {
+    min-width: 28px;
+    height: 28px;
+  }
+}
+
+/* Extra-compact pagination sizing for very small screens */
+@media (max-width: 480px) {
+  .pagination-controls {
+    gap: 0.25rem;
+  }
+
+  .pagination-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .pagination-page-btn {
+    min-width: 24px;
+    height: 24px;
+    padding: 0 4px;
+    font-size: 0.75rem;
+  }
+
+  .pagination-ellipsis {
+    min-width: 24px;
+    height: 24px;
+  }
+}

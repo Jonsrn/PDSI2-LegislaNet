@@ -1,0 +1,74 @@
+/*
+  File: btn-voltar.css
+  Purpose: Shared styling for the header-integrated back button used across
+  portal views, including hover feedback and compact responsive behavior.
+*/
+
+/* Primary back button presentation inside header layouts */
+.btn-voltar-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background-color: transparent;
+  color: var(--accent-blue);
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  border: 1px solid var(--accent-blue);
+}
+
+/* Icon motion reinforces backward navigation on hover */
+.btn-voltar-header i {
+  font-size: 0.875rem;
+  transition: transform 0.2s ease;
+}
+
+.btn-voltar-header:hover {
+  background-color: var(--accent-blue);
+  color: white;
+  border-color: var(--accent-blue);
+  transform: translateY(-2px);
+}
+
+.btn-voltar-header:hover i {
+  transform: translateX(-2px);
+}
+
+.btn-voltar-header:active {
+  transform: translateY(0);
+}
+
+/* Navbar layout rules intentionally remain in portal.css to avoid specificity conflicts */
+
+/* Tablet and mobile adjustments for tighter header spacing */
+@media (max-width: 768px) {
+  .btn-voltar-header {
+    padding: 7px 10px;
+    font-size: 0.8rem;
+    gap: 4px;
+  }
+
+  .btn-voltar-header i {
+    font-size: 0.85rem;
+  }
+
+  /* Preserve the action while reducing width by hiding the label on mobile */
+  .btn-voltar-header span {
+    display: none;
+  }
+}
+
+/* Extra-compact sizing for very small screens */
+@media (max-width: 480px) {
+  .btn-voltar-header {
+    padding: 6px 8px;
+    min-width: auto;
+  }
+
+  .btn-voltar-header i {
+    font-size: 0.8rem;
+  }
+}
