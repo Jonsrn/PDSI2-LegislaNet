@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<!--
+  File: login.html
+  Purpose: Authentication entry page for platform users to sign in, submit
+  credentials to the login API, persist session data locally, and redirect
+  each user role to its appropriate application area.
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Legisla Net - Login</title>
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+    />
+
+    <link rel="stylesheet" href="/css/global.css" />
+    <link rel="stylesheet" href="/css/forms.css" />
+    <link rel="stylesheet" href="/css/toast.css" />
+
+    <style>
+      /* Estilos específicos da página de login */
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .login-container {
+        width: 100%;
+        max-width: 380px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
+        z-index: 1;
+      }
+
+      .login-card {
+        width: 100%;
+        background-color: rgba(22, 27, 34, 0.85);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 32px;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+      }
+
+      .login-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        text-align: center;
+        margin-bottom: 24px;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-text);
+        text-decoration: none;
+      }
+      .logo svg {
+        height: 32px;
+        width: auto;
+      }
+
+      .login-header h1 {
+        font-size: 1.5rem;
+        font-weight: 600;
+      }
+
+      .login-form {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .password-toggle {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: var(--secondary-text);
+        cursor: pointer;
+      }
+
+      /* CORREÇÃO: Ajusta a altura do botão para corresponder à dos inputs */
+      .login-form .btn {
+        padding-top: 10px;
+        padding-bottom: 10px;
+      }
+
+      /* Estilos para o link "Esqueceu a senha" */
+      .forgot-password {
+        text-align: right;
+        margin-top: 8px;
+      }
+      .forgot-password a {
+        color: var(--accent-blue);
+        text-decoration: none;
+        font-size: 0.875rem;
+      }
+      .forgot-password a:hover {
+        text-decoration: underline;
+      }
+
+      .fade-in {
+        opacity: 0;
+        transform: translateY(10px);
+        animation: fadeInAnimation 0.6s ease-out forwards;
+      }
+
+      @keyframes fadeInAnimation {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .logo {
+        animation-delay: 0.1s;
+      }
+      .login-card {
+        animation-delay: 0.2s;
+      }
+
+      /* Responsividade (padrão mobile) */
+      @media (max-width: 768px) {
+        body {
+          padding: 16px;
+          align-items: flex-start;
+        }
+
+        .login-container {
+          max-width: 420px;
+          padding-top: 16px;
+        }
+
+        .login-card {
+          padding: 24px;
+        }
+
+        .login-header h1 {
+          font-size: 1.25rem;
+        }
+
+        /* Evita zoom automático em iOS */
+        .form-input {
+          font-size: 16px !important;
+          padding: 9px 11px !important;
+          border-radius: 6px;
+        }
+
+        .login-form .btn {
+          min-height: 44px;
+        }
+      }
+
+      @media (max-width: 420px) {
+        .login-card {
+          padding: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Centered authentication container for brand identity and login form -->
+    <div class="login-container">
+      <!-- Application logo and home link -->
+      <a href="/" class="logo fade-in">
+        <svg viewBox="0 0 44 40" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient
+              id="logoGradient"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="100%"
+            >
+              <stop offset="0%" stop-color="var(--accent-blue)" />
+              <stop offset="100%" stop-color="var(--accent-green)" />
+            </linearGradient>
+          </defs>
+          <path
+            fill="url(#logoGradient)"
+            d="M 8 5 V 35 H 14 V 5 Z M 19 5 V 35 H 25 V 5 Z M 30 5 V 35 H 36 V 5 Z M 5 35 H 39 V 40 H 5 Z"
+          />
+        </svg>
+        <span>Legisla Net</span>
+      </a>
+      <!-- Login card containing the user authentication form -->
+      <div class="login-card fade-in">
+        <div class="login-header">
+          <h1>Acesse sua conta</h1>
+        </div>
+        <!-- Credential form for email and password submission -->
+        <form id="login-form" class="login-form">
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input
+              type="email"
+              id="email"
+              class="form-input"
+              placeholder="Digite seu email"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="password">Senha</label>
+            <div class="password-group">
+              <input
+                type="password"
+                id="password"
+                class="form-input"
+                placeholder="Digite sua senha"
+                required
+              />
+              <button
+                type="button"
+                class="password-toggle"
+                id="password-toggle"
+              >
+                <i class="fa-regular fa-eye" id="password-icon"></i>
+              </button>
+            </div>
+            <div class="forgot-password">
+              <a href="#">Esqueceu sua senha?</a>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%">
+            Entrar
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <script src="/js/forms.js"></script>
+    <script src="/js/toast.js"></script>
+    <script src="/js/global.js"></script>
+
+    <script>
+      // Reference the primary login form used for authentication submission.
+      const loginForm = document.getElementById("login-form");
+
+      // Password visibility behavior is handled centrally by forms.js.
+
+      // Submit credentials, persist the authenticated session, and redirect by user role.
+      loginForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+
+        try {
+          const response = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            showToast(result.error || "Ocorreu um erro.", "error");
+            return;
+          }
+
+          // Salva o token e dados do usuário
+          localStorage.setItem("authToken", result.token);
+          if (result.refreshToken) {
+            localStorage.setItem("refreshToken", result.refreshToken);
+          }
+          localStorage.setItem("userData", JSON.stringify(result.user));
+
+          let redirectUrl = null;
+          if (result.user && result.user.role === "super_admin") {
+            redirectUrl = "/admin/dashboard_admin.html";
+          } else if (result.user && result.user.role === "admin_camara") {
+            redirectUrl = "/app/dashboard.html";
+          } else if (result.user && result.user.role === "tv") {
+            // TVs don't need an extra login page; redirect to TV waiting template
+            redirectUrl = `/tv/espera.html`;
+          } else if (result.user && result.user.role === "vereador") {
+            // Vereadores serão redirecionados para o app tablet
+            showToast(
+              "Login bem-sucedido! Use o aplicativo tablet para continuar.",
+              "success"
+            );
+            return;
+          }
+
+          if (redirectUrl) {
+            // 1. Mostra o toast de sucesso
+            showToast("Login bem-sucedido! Redirecionando...", "success");
+
+            // 2. Aguarda 1 segundo antes de redirecionar
+            setTimeout(() => {
+              window.location.href = redirectUrl;
+            }, 1000); // 1000 milissegundos = 1 segundo
+          } else {
+            showToast(
+              "Tipo de usuário desconhecido ou resposta inválida da API.",
+              "error"
+            );
+          }
+        } catch (error) {
+          showToast("Não foi possível conectar ao servidor.", "error");
+        }
+      });
+    </script>
+  </body>
+</html>
