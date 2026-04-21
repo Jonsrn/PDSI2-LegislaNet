@@ -1,0 +1,1101 @@
+/*
+  File: global.css
+  Purpose: Core shared stylesheet for the application shell, defining global
+  design tokens, layout primitives, navigation chrome, common UI components,
+  responsive behavior, feedback overlays, and footer structure.
+*/
+
+/* Global design tokens */
+:root {
+  /* Backgrounds */
+  --background-dark: #0d1117;
+  --background-light: #161b22;
+  --sidebar-bg: #161b22;
+  --card-bg: #161b22;
+  --hover-bg: #21262d;
+  --secondary-bg: #2e343b;
+
+  /* Borders */
+  --border-color: #30363d;
+
+  /* Text Colors */
+  --primary-text: #e6edf3;
+  --secondary-text: #8b949e;
+
+  /* Accent Colors */
+  --accent-blue: #58a6ff;
+  --accent-green: #2ea043;
+  --accent-red: #da3633;
+  --accent-orange: #f08833;
+  --accent-purple: #8a3ab9;
+  --accent-gold: #d4af37;
+
+  /* Status Colors */
+  --excel-green: #1d6f42;
+  --pdf-red: #b30b00;
+
+  /* Warning Colors */
+  --warning-bg: rgba(240, 136, 51, 0.1);
+  --warning-text: #f08833;
+
+  /* Pulse Effects */
+  --pulse-color-green: rgba(46, 160, 67, 0.7);
+  --pulse-color-blue: rgba(88, 166, 255, 0.7);
+  --pulse-color-green-rgb: 46, 160, 67;
+  --pulse-color-blue-rgb: 88, 166, 255;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  background-color: var(--background-dark);
+  color: var(--primary-text);
+  position: relative;
+}
+
+/* Ambient background layer applied across the application shell */
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+
+  /* Background estático com gradiente suave usando as cores da paleta */
+  background:
+    linear-gradient(
+      135deg,
+      rgba(88, 166, 255, 0.08) 0%,
+      /* accent-blue */ rgba(46, 160, 67, 0.06) 25%,
+      /* accent-green */ rgba(138, 58, 185, 0.05) 50%,
+      /* accent-purple */ rgba(240, 136, 51, 0.07) 75%,
+      /* accent-orange */ rgba(88, 166, 255, 0.04) 100% /* accent-blue */
+    ),
+    radial-gradient(
+      ellipse at 20% 30%,
+      rgba(46, 160, 67, 0.05) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse at 80% 70%,
+      rgba(138, 58, 185, 0.04) 0%,
+      transparent 60%
+    );
+
+  opacity: 1;
+}
+
+/* Main application layout */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar shell and collapsed-to-expanded navigation behavior */
+.sidebar {
+  width: 60px;
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--border-color);
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  height: 100vh;
+  z-index: 90;
+  transition:
+    width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    padding 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    align-items 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+/* Hover expansion reveals the full navigation structure on desktop */
+.sidebar:hover {
+  width: 250px;
+  padding: 24px;
+  align-items: stretch;
+}
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 32px;
+  white-space: nowrap;
+  width: 100%;
+  position: relative;
+}
+
+.sidebar:hover .sidebar-header {
+  justify-content: flex-start;
+}
+
+.sidebar-header .logo-icon {
+  font-size: 1.5rem;
+  color: var(--accent-blue);
+}
+
+.sidebar-header h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar:hover .sidebar-header h1 {
+  opacity: 1;
+}
+
+.sidebar-header .logo-svg {
+  height: 28px;
+  width: auto;
+  flex-shrink: 0;
+  min-width: 28px;
+}
+.sidebar .nav-menu {
+  list-style: none;
+  flex-grow: 1;
+  padding: 0;
+  margin: 0;
+  width: 60px;
+}
+
+.sidebar:hover .nav-menu {
+  width: 100%;
+}
+
+.nav-group-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent-blue);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin: 20px 0 12px 0;
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: transparent;
+  border-radius: 6px;
+  border-left: none;
+  position: relative;
+  white-space: nowrap;
+  width: 60px;
+}
+
+.sidebar:hover .nav-group-title {
+  background: linear-gradient(
+    135deg,
+    rgba(88, 166, 255, 0.1),
+    rgba(46, 160, 67, 0.1)
+  );
+  border-left: 3px solid var(--accent-blue);
+  padding: 8px 12px;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.nav-group-title::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-green));
+  border-radius: 0 3px 3px 0;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar:not(:hover):not(.is-open) .nav-group-title::before {
+  opacity: 0;
+}
+
+.nav-group-title i {
+  font-size: 0.95rem;
+  color: var(--accent-green);
+  min-width: 18px;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-group-title span {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0.3s;
+}
+
+.sidebar:hover .nav-group-title span {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Collapsed-state rules remove hidden text from layout calculations */
+.sidebar:not(:hover):not(.is-open) .sidebar-header {
+  gap: 0;
+}
+
+.sidebar:not(:hover):not(.is-open) .sidebar-header h1 {
+  display: none;
+}
+
+.sidebar:not(:hover):not(.is-open) .admin-badge {
+  display: none;
+}
+
+.sidebar:not(:hover):not(.is-open) .nav-group-title,
+.sidebar:not(:hover):not(.is-open) .nav-item a {
+  gap: 0;
+  width: 60px;
+  justify-content: center;
+}
+
+.sidebar:not(:hover):not(.is-open) .nav-group-title span,
+.sidebar:not(:hover):not(.is-open) .nav-item a span {
+  display: none;
+}
+.nav-item a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0;
+  border-radius: 6px;
+  text-decoration: none;
+  color: var(--secondary-text);
+  font-weight: 500;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+  cursor: pointer;
+  gap: 10px;
+  position: relative;
+  white-space: nowrap;
+  width: 60px;
+}
+
+.sidebar:hover .nav-item a {
+  justify-content: flex-start;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.nav-item a i {
+  width: 18px;
+  min-width: 18px;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--accent-blue);
+  transition: color 0.2s ease;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mobile-only sidebar toggle control */
+.sidebar-toggle-btn {
+  display: none;
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  left: auto;
+  z-index: 250;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  border: 1px solid var(--accent-blue);
+  background-color: transparent;
+  color: var(--accent-blue);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.sidebar-toggle-btn:hover {
+  background-color: var(--accent-blue);
+  color: #ffffff;
+}
+
+.sidebar-toggle-btn:active {
+  transform: none;
+}
+
+.sidebar-toggle-btn i {
+  font-size: 1rem;
+}
+
+/* Close control displayed inside the mobile sidebar */
+.sidebar-close-btn {
+  display: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background-color: transparent;
+  color: var(--secondary-text);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+.sidebar-close-btn:hover {
+  background-color: transparent;
+  color: var(--primary-text);
+}
+
+.sidebar-close-btn i {
+  font-size: 1.15rem;
+}
+
+/* Sidebar-level admin badge is intentionally suppressed globally */
+.sidebar .admin-badge {
+  display: none !important;
+}
+
+.nav-item a span {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0.3s;
+}
+
+.sidebar:hover .nav-item a span {
+  opacity: 1;
+  visibility: visible;
+}
+
+.nav-item a:hover {
+  background-color: var(--hover-bg);
+  color: var(--primary-text);
+}
+
+.nav-item a:hover i {
+  color: var(--accent-green);
+}
+
+.nav-item.active a {
+  background-color: var(--accent-blue);
+  color: #ffffff;
+}
+
+.nav-item.active a i {
+  color: #ffffff;
+}
+
+/* Badge "Em breve" no sidebar */
+.coming-soon-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 159, 10, 0.1);
+  color: #ff9f0a;
+  border: 1px solid rgba(255, 159, 10, 0.3);
+  padding: 3px 6px;
+  border-radius: 10px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.coming-soon-badge i {
+  font-size: 0.55rem;
+}
+
+/* Reusable pulse animation for attention markers */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Main content shell and route-transition behavior */
+.main-content {
+  margin-left: 60px;
+  width: calc(100% - 60px);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.main-content.transitioning {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+/* Shared page header */
+.content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px 0;
+  flex-shrink: 0; /* Não encolhe */
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+/* Scrollable content wrapper that allows sticky header/footer layout behavior */
+.page-content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 32px 32px;
+  overflow-y: auto;
+}
+
+/* Core vertical content stack used by page-level sections */
+.content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-height: 0;
+}
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.header-title i {
+  font-size: 1.25rem;
+}
+.header-title h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+/* User profile dropdown shell */
+.user-profile {
+  position: relative;
+}
+
+/* Header role badge and identity summary */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.admin-icon-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--border-color);
+  background-color: var(--hover-bg);
+}
+
+.admin-icon-badge i {
+  color: var(--primary-text);
+  font-size: 0.75rem;
+}
+
+.user-details .name {
+  font-weight: 600;
+  display: block;
+  color: var(--primary-text);
+}
+
+.admin-icon-badge.camara-admin-badge {
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-green));
+  border-color: var(--accent-blue);
+}
+
+.camara-admin-name {
+  font-size: 1rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-green));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0.3px;
+}
+.profile-button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: var(--hover-bg);
+  border: 1px solid var(--border-color);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.profile-button:hover {
+  background-color: #2e343b;
+}
+.profile-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--accent-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.profile-info .name {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--primary-text);
+}
+.profile-info .email {
+  font-size: 0.75rem;
+  color: var(--primary-text);
+  opacity: 0.7;
+}
+.profile-button .fa-chevron-down {
+  transition: transform 0.2s;
+  color: var(--secondary-text);
+}
+.profile-button.active .fa-chevron-down {
+  transform: rotate(180deg);
+}
+.profile-dropdown {
+  display: none;
+  position: absolute;
+  top: 110%;
+  right: 0;
+  width: 200px;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+  overflow: hidden;
+}
+.profile-dropdown.active {
+  display: block;
+}
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 15px;
+  color: var(--secondary-text);
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+.dropdown-item:hover {
+  background-color: var(--hover-bg);
+  color: var(--primary-text);
+}
+.dropdown-item i {
+  width: 16px;
+}
+.dropdown-divider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 4px 0;
+}
+
+/* Shared action buttons and status badges */
+.btn {
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.1s ease,
+    filter 0.2s ease;
+}
+.btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+.btn:active {
+  transform: scale(0.98);
+  filter: brightness(0.95);
+}
+.btn-primary {
+  background-color: var(--accent-green);
+  color: white;
+}
+.btn-secondary {
+  background-color: var(--hover-bg);
+  color: var(--primary-text);
+  border: 1px solid var(--border-color);
+}
+
+.actions-cell {
+  text-align: right;
+}
+.actions-cell .btn-action {
+  color: white;
+  padding: 6px 14px;
+  margin-left: 8px;
+  text-decoration: none;
+}
+.btn-edit {
+  background-color: var(--accent-orange);
+}
+.btn-remove {
+  background-color: var(--accent-red);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  text-transform: uppercase;
+  width: fit-content;
+  flex: 0 0 auto;
+  /* Color is intentionally delegated to semantic badge variants */
+}
+
+.badge-aprovado {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: rgba(46, 160, 67, 0.2);
+  color: #71e67f;
+  border: 1px solid rgba(46, 160, 67, 0.4);
+}
+.badge-reprovado {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: rgba(218, 54, 51, 0.2);
+  color: #fa918c;
+  border: 1px solid rgba(218, 54, 51, 0.4);
+}
+
+/* Global responsive behavior for mobile layouts */
+@media (max-width: 768px) {
+  /* Header stacks to avoid collisions with fixed mobile controls */
+  .content-header {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 20px 16px 0;
+  }
+
+  /* Reserve space so the title does not overlap the floating toggle button */
+  .content-header .header-title {
+    width: 100%;
+    padding-right: 56px;
+  }
+
+  /* Keep the role badge below the title on narrow screens */
+  .content-header .user-info {
+    align-self: flex-start;
+    width: auto;
+    max-width: 100%;
+  }
+
+  /* Compact identity styling for reduced horizontal space */
+  .content-header .user-info {
+    padding: 8px 10px;
+    gap: 8px;
+    border-radius: 8px;
+  }
+
+  .content-header .admin-icon-badge {
+    width: 22px;
+    height: 22px;
+    border-width: 1px;
+  }
+
+  .content-header .admin-icon-badge i {
+    font-size: 0.65rem;
+  }
+
+  .content-header .user-details .name {
+    font-size: 0.9rem;
+  }
+
+  .app-layout {
+    flex-direction: column;
+  }
+  .sidebar {
+    z-index: 200;
+    width: min(250px, 85vw);
+    padding: 18px;
+    align-items: stretch;
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: auto;
+    bottom: 0;
+    height: 100vh;
+    border-right: none;
+    border-left: 1px solid var(--border-color);
+    border-bottom: none;
+    transform: translateX(110%);
+    will-change: transform;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
+  }
+
+  .sidebar:hover {
+    width: min(250px, 85vw);
+    padding: 18px;
+    align-items: stretch;
+  }
+
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  /* Neutralize hover-driven width changes on mobile to avoid jitter */
+  .sidebar:hover {
+    width: min(250px, 85vw);
+    padding: 18px;
+    align-items: stretch;
+  }
+
+  .sidebar:hover .nav-group-title {
+    padding: 8px 12px;
+  }
+
+  .sidebar:hover .nav-item a {
+    padding: 8px 10px;
+  }
+
+  .sidebar-toggle-btn {
+    display: inline-flex;
+  }
+
+  /* Ao abrir o sidebar no mobile, o botão some */
+  body.sidebar-open .sidebar-toggle-btn {
+    display: none;
+  }
+
+  /* Mobile sidebar shows full content without relying on hover expansion */
+  .sidebar .sidebar-header {
+    justify-content: flex-start;
+    gap: 12px;
+    padding-right: 28px;
+    margin-bottom: 20px;
+  }
+
+  /* Center the brand when the mobile drawer is open */
+  .sidebar.is-open .sidebar-header {
+    justify-content: center;
+  }
+
+  /* Disable inner transitions to keep drawer opening visually stable */
+  .sidebar .sidebar-header h1,
+  .sidebar .nav-group-title,
+  .sidebar .nav-group-title span,
+  .sidebar .nav-item a,
+  .sidebar .nav-item a span {
+    transition: none;
+  }
+
+  .sidebar.is-open .sidebar-close-btn {
+    display: inline-flex;
+  }
+
+  .sidebar .sidebar-header h1 {
+    font-size: 1.1rem;
+    display: block;
+    opacity: 1;
+  }
+
+  .sidebar .admin-badge {
+    display: block;
+    opacity: 1;
+  }
+
+  .sidebar .nav-menu {
+    width: 100%;
+  }
+
+  .sidebar .nav-group-title {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 8px 12px;
+    gap: 8px;
+    border-left: 3px solid var(--accent-blue);
+    background: linear-gradient(
+      135deg,
+      rgba(88, 166, 255, 0.1),
+      rgba(46, 160, 67, 0.1)
+    );
+  }
+
+  .sidebar .nav-group-title span {
+    display: inline;
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .sidebar .nav-item a {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 8px 10px;
+    gap: 10px;
+    font-size: 0.95rem;
+  }
+
+  .sidebar .nav-item a span {
+    display: inline;
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+/* Shared fade-in utility */
+.fade-in {
+  opacity: 0;
+  transform: translateY(15px);
+  transition:
+    opacity 0.5s ease-out,
+    transform 0.5s ease-out;
+}
+.fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Toast notification system */
+#toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  border-radius: 8px;
+  min-width: 300px;
+  max-width: 400px;
+  color: #fff;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateX(120%);
+  transition: transform 0.5s cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+.toast.show {
+  transform: translateX(0);
+}
+
+.toast-icon {
+  font-size: 1.2rem;
+  margin-right: 15px;
+}
+
+.toast.success {
+  background-color: var(--accent-green, #28a745);
+}
+.toast.error {
+  background-color: var(--accent-red, #dc3545);
+}
+.toast.info {
+  background-color: var(--accent-blue, #17a2b8);
+}
+
+/* Generic loading overlay for form and panel operations */
+.form-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(13, 17, 23, 0.7);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 1rem;
+  border-radius: 8px;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.3s,
+    visibility 0.3s;
+}
+
+.form-loading-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.form-loading-overlay .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--border-color, #444);
+  border-top-color: var(--accent-blue, #3498db);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.form-loading-overlay .loading-text {
+  color: var(--primary-text, #fff);
+  font-weight: 500;
+}
+
+/* Spinner keyframe reused by loading overlays */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Sticky-footer layout helpers */
+
+.content-section,
+.page-content-wrapper {
+  flex-grow: 1;
+}
+
+/* Chamber application footer structure */
+
+body.has-footer {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Allow the main shell to stretch so the footer stays at the page end */
+body.has-footer .app-layout {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Prevent nested content from reintroducing extra page height */
+body.has-footer .main-content {
+  min-height: 0;
+}
+
+body.has-footer #footer-placeholder {
+  margin-top: auto;
+}
+
+.app-footer {
+  background-color: var(--card-bg);
+  border-top: 1px solid var(--border-color);
+  padding: 16px 32px;
+  width: 100%;
+  z-index: 99;
+}
+
+.app-footer .footer-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+}
+
+.app-footer .footer-text {
+  font-size: 0.875rem;
+  color: var(--secondary-text);
+}
+
+.app-footer .footer-text strong {
+  color: var(--accent-blue);
+  font-weight: 600;
+}
+
+.app-footer .footer-version {
+  font-size: 0.75rem;
+  color: var(--secondary-text);
+  background-color: var(--background-dark);
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+/* Footer density adjustments for smaller screens */
+@media (max-width: 768px) {
+  .app-footer {
+    padding: 14px 20px;
+  }
+
+  .app-footer .footer-content {
+    gap: 12px;
+  }
+
+  .app-footer .footer-text {
+    font-size: 0.8rem;
+  }
+
+  .app-footer .footer-version {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+  }
+}

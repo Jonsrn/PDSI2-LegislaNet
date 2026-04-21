@@ -1,0 +1,350 @@
+/*
+  File: hero-fix.css
+  Purpose: Late-loading override stylesheet for the portal hero section,
+  ensuring critical content remains visible, correctly layered, and properly
+  sized across desktop and mobile breakpoints.
+*/
+
+/* Force the hero container to remain fully visible and unclipped */
+header.hero,
+.hero {
+  overflow: visible !important;
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+  min-height: 100vh !important;
+  height: auto !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  padding-top: 80px !important;
+  padding-bottom: 32px !important;
+}
+
+/* Keep the main hero content above decorative background layers */
+.hero .hero-content,
+.hero-content {
+  position: relative !important;
+  z-index: 100 !important;
+  width: 100% !important;
+  max-width: 1200px !important;
+  margin: 0 auto !important;
+  padding: 20px 20px 20px !important;
+}
+
+/* Stabilize the main heading layout while animation timing stays in JavaScript */
+.hero h1,
+header.hero h1 {
+  position: relative !important;
+  z-index: 101 !important;
+  display: block !important;
+  font-size: 4rem !important;
+  font-weight: 800 !important;
+  margin-top: 100px !important;
+  margin-bottom: 16px !important;
+  padding: 0 !important;
+  width: 100% !important;
+  text-align: center !important;
+}
+
+/* Preserve supporting paragraph visibility and readable measure */
+.hero p {
+  position: relative !important;
+  z-index: 101 !important;
+  display: block !important;
+  font-size: 1.4rem !important;
+  color: var(--secondary-text) !important;
+  max-width: 750px !important;
+  margin: 0 auto 32px auto !important;
+  line-height: 1.7 !important;
+}
+
+/* Keep the badge explicitly visible even when upstream styles hide it */
+.hero-badge {
+  position: relative !important;
+  z-index: 101 !important;
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Ensure the terminal card group remains part of the visible hero stack */
+.access-terminals {
+  position: relative !important;
+  z-index: 101 !important;
+  display: flex !important;
+}
+
+/* Preserve the hero stats bar layout and placement */
+.hero .hero-content .hero-stats,
+.hero-content .hero-stats,
+.hero-stats {
+  position: relative !important;
+  z-index: 101 !important;
+  display: flex !important;
+  margin-top: 10px !important;
+  margin-bottom: 16px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  width: auto !important;
+  max-width: 800px !important;
+}
+
+/* Keep the scroll indicator visible within normal document flow */
+.scroll-indicator {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  transform: none !important;
+  margin: 12px 0 0 0 !important;
+  z-index: 101 !important;
+  display: flex !important;
+  justify-content: center !important;
+  width: 100% !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.scroll-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Force decorative hero backgrounds behind all interactive content */
+.hero-aurora,
+.hero-grid,
+.hero-glow,
+.floating-particles,
+.hero::before,
+.hero::after,
+.hero-content::before,
+.hero-content::after {
+  z-index: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Restore terminal metadata icons when inherited styles suppress them */
+.terminal-meta i {
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  font-size: 0.75rem !important;
+  margin-right: 6px !important;
+}
+
+.terminal-gov .terminal-meta i {
+  color: var(--accent-orange) !important;
+}
+
+.terminal-citizen .terminal-meta i {
+  color: var(--accent-blue) !important;
+}
+
+/* Terminal sizing adjustments */
+/* Constrain card height and distribute content more predictably */
+.terminal {
+  max-width: 520px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  /* Fixed height preserves the intended hero card rhythm */
+  height: 450px !important;
+  min-height: 450px !important;
+  overflow: hidden !important;
+}
+
+.terminal-body {
+  /* Reduced vertical padding helps longer copy fit within the fixed card height */
+  padding: 16px 24px 8px !important;
+  flex-grow: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.terminal-footer {
+  padding: 8px 32px 24px !important;
+  gap: 8px !important;
+  margin-top: auto !important;
+}
+
+.terminal-icon {
+  width: 48px !important;
+  height: 48px !important;
+  margin-bottom: 12px !important;
+}
+
+.terminal-icon i {
+  font-size: 1.3rem !important;
+}
+
+.terminal-title {
+  font-size: 1.25rem !important;
+  margin-bottom: 8px !important;
+  text-align: center !important;
+  line-height: 1.2 !important;
+}
+
+.terminal-desc {
+  font-size: 0.9rem !important;
+  min-height: auto !important;
+  line-height: 1.4 !important;
+  margin-bottom: 4px !important;
+  text-align: center !important;
+  max-width: 90% !important;
+}
+
+.terminal-btn {
+  padding: 8px 20px !important; /* Padding enxuto */
+  width: 100% !important;
+  justify-content: center !important;
+  max-width: 320px !important;
+  margin: 0 auto !important;
+  /* Height is capped to keep the footer action area compact */
+  min-height: 50px !important;
+  max-height: 54px !important;
+  display: flex !important;
+  align-items: center !important;
+  line-height: 1.1 !important;
+}
+
+/* High-resolution adjustments for large desktop displays */
+@media (min-width: 2000px) {
+  .hero .hero-content,
+  .hero-content {
+    max-width: 1600px !important;
+  }
+
+  .hero h1,
+  header.hero h1 {
+    font-size: 5.5rem !important;
+    margin-top: 140px !important;
+  }
+
+  .hero p {
+    font-size: 1.8rem !important;
+    max-width: 1000px !important;
+  }
+
+  /* Cards maiores em QHD */
+  .terminal {
+    max-width: 700px !important;
+    min-height: 600px !important;
+  }
+
+  .terminal-title {
+    font-size: 1.8rem !important;
+  }
+
+  .terminal-desc {
+    font-size: 1.2rem !important;
+  }
+
+  .terminal-icon {
+    width: 80px !important;
+    height: 80px !important;
+  }
+
+  .terminal-icon i {
+    font-size: 2rem !important;
+  }
+
+  .terminal-btn {
+    font-size: 1.2rem !important;
+    padding: 20px 40px !important;
+    max-width: 400px !important;
+  }
+
+  .stat-value {
+    font-size: 3rem !important;
+  }
+
+  .stat-label {
+    font-size: 1.2rem !important;
+  }
+}
+
+/* Mobile-specific overrides for hero content and terminal layouts */
+@media (max-width: 768px) {
+  /* Hide dense navigation shortcuts on small screens */
+  .nav-menu,
+  .nav-menu-wrapper {
+    display: none !important;
+  }
+
+  /* Keep the right-side header area aligned to its remaining content */
+  .nav-right {
+    justify-content: flex-end !important;
+  }
+
+  /* Increased selector specificity ensures these heading overrides win */
+  body .hero h1,
+  html body .hero h1,
+  .hero-content h1 {
+    font-size: 2.2rem !important;
+    margin-top: 10px !important;
+  }
+
+  body .hero p,
+  .hero-content p {
+    font-size: 1rem !important;
+    margin-bottom: 8px !important;
+  }
+
+  /* Reduce top spacing in the mobile hero */
+  body .hero,
+  body header.hero {
+    padding-top: 60px !important;
+  }
+
+  /* Stack terminal cards vertically on mobile */
+  .access-terminals {
+    flex-direction: column !important;
+    gap: 20px !important;
+  }
+
+  .terminal {
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+  }
+
+  /* Reduce the stats bar footprint on mobile */
+  .hero-stats {
+    padding: 16px 20px !important;
+    gap: 16px !important;
+  }
+
+  .stat-value {
+    font-size: 1.3rem !important;
+  }
+
+  .stat-label {
+    font-size: 0.7rem !important;
+  }
+
+  /* Hide the connector graphic once cards are stacked */
+  .nexus-connector {
+    display: none !important;
+  }
+}
+
+/* Extra-small screen refinements */
+@media (max-width: 480px) {
+  .hero h1 {
+    font-size: 2rem !important;
+  }
+
+  .hero p {
+    font-size: 1rem !important;
+  }
+
+  .terminal-body {
+    padding: 16px 20px 12px !important;
+  }
+
+  .terminal-footer {
+    padding: 12px 20px 20px !important;
+  }
+}
