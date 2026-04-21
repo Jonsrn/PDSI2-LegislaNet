@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<!--
+  File: nova_sessao.html
+  Purpose: Administrative form for chamber users to create a new legislative
+  session, define its type, number, and scheduled date, validate required
+  inputs, and submit the record with its default initial status.
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nova Sessão - Legisla Net</title>
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+    />
+
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/forms.css" />
+    <link rel="stylesheet" href="../css/toast.css" />
+    <link rel="stylesheet" href="../css/carregamento.css" />
+    <link rel="stylesheet" href="../css/customSelect.css" />
+
+    <script src="../js/toast.js"></script>
+    <script src="../js/mockMode.js?v=3"></script>
+    <script src="../js/global.js"></script>
+    <script src="../js/carregamento.js"></script>
+    <script src="../js/customSelect.js"></script>
+  </head>
+  <body>
+    <div class="app-layout">
+      <!-- Sidebar injected by the shared layout system -->
+      <div id="sidebar-placeholder"></div>
+      <main class="main-content" id="mainContent">
+        <!-- Header injected by the shared layout system -->
+        <div id="header-placeholder"></div>
+
+        <!-- Main form section for creating a new session record -->
+        <section class="form-section fade-in">
+          <!-- Session creation form with scheduling fields and primary actions -->
+          <form id="sessao-form" novalidate>
+            <h2>Cadastrar Nova Sessão</h2>
+
+            <!-- Session type selector powered by the shared custom select component -->
+            <div class="form-group" style="margin-top: 24px">
+              <label for="tipo-sessao">Tipo de Sessão</label>
+              <div class="custom-select-wrapper" id="tipo-sessao-wrapper">
+                <input type="hidden" id="tipo-sessao" name="tipo" />
+                <div class="custom-select-trigger">
+                  <span>Selecione um tipo...</span>
+                </div>
+                <div class="custom-options">
+                  <div class="custom-option" data-value="">
+                    <span>Selecione um tipo...</span>
+                  </div>
+                  <div class="custom-option" data-value="Ordinária">
+                    <span>Ordinária</span>
+                  </div>
+                  <div class="custom-option" data-value="Extraordinária">
+                    <span>Extraordinária</span>
+                  </div>
+                  <div class="custom-option" data-value="Solene">
+                    <span>Solene</span>
+                  </div>
+                </div>
+              </div>
+              <div
+                id="tipo-sessao-error"
+                class="form-field-error"
+                style="display: none"
+              ></div>
+            </div>
+
+            <!-- Numeric session identifier used to compose the final session name -->
+            <div class="form-group">
+              <label for="numero-sessao">Número da Sessão</label>
+              <input
+                type="number"
+                id="numero-sessao"
+                class="form-input"
+                placeholder="Ex: 12"
+                min="1"
+              />
+              <div
+                id="numero-sessao-error"
+                class="form-field-error"
+                style="display: none"
+              ></div>
+              <small class="form-text"
+                >O nome completo será gerado automaticamente. Ex: "12ª Sessão
+                Ordinária de 2025".</small
+              >
+            </div>
+
+            <!-- Date and time scheduling for the new session -->
+            <div class="form-group">
+              <label for="data-sessao">Data da Sessão</label>
+              <input
+                type="datetime-local"
+                id="data-sessao"
+                class="form-input"
+              />
+              <div
+                id="data-sessao-error"
+                class="form-field-error"
+                style="display: none"
+              ></div>
+            </div>
+
+            <!-- Read-only initial status shown for user confirmation -->
+            <div class="form-group">
+              <label for="status-sessao">Status</label>
+              <select id="status-sessao" class="form-select" disabled>
+                <option value="Agendada" selected>Agendada</option>
+              </select>
+              <small class="form-text"
+                >O status inicial é sempre <strong>Agendada</strong>.</small
+              >
+            </div>
+
+            <!-- Form actions for cancellation and submission -->
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" id="cancel-btn">
+                Cancelar
+              </button>
+              <button type="submit" class="btn btn-primary" id="submit-btn">
+                Salvar Sessão
+              </button>
+            </div>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      // Initialize the protected session-creation page when the DOM is ready.
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Enforce authentication and chamber-admin authorization before enabling the form.
+        try {
+          await protectPage({
+            allowedRoles: ["admin_camara"],
+            requireAuth: true,
+            autoRedirect: true,
+          });
+        } catch (error) {
+          console.error("[AUTH] Falha na autenticação:", error);
+          return;
+        }
+
+        initLayout({
+          title: "Nova Sessão",
+          icon: "fa-calendar-plus",
+          navActive: "nav-sessoes",
+        });
+
+        const formSection = document.querySelector(".form-section");
+        const form = document.getElementById("sessao-form");
+
+        let submitAttempted = false;
+
+        // Configure the shared custom selector used for session type selection.
+        const tipoSelect = new CustomSelect({
+          wrapperId: "tipo-sessao-wrapper",
+          placeholder: "Selecione um tipo...",
+          onSelect: () => {
+            if (submitAttempted) validateForm();
+            clearFieldError("tipo-sessao");
+          },
+        });
+
+        // Display a validation message and visual error state for a field.
+        const setFieldError = (fieldId, message) => {
+          const errorEl = document.getElementById(`${fieldId}-error`);
+          if (errorEl) {
+            errorEl.textContent = message;
+            errorEl.style.display = "block";
+          }
+
+          if (fieldId === "tipo-sessao") {
+            const wrapper = document.getElementById("tipo-sessao-wrapper");
+            const trigger = wrapper?.querySelector(".custom-select-trigger");
+            trigger?.classList.add("form-select-error");
+          } else {
+            document.getElementById(fieldId)?.classList.add("form-input-error");
+          }
+        };
+
+        // Clear the validation state associated with a field.
+        const clearFieldError = (fieldId) => {
+          const errorEl = document.getElementById(`${fieldId}-error`);
+          if (errorEl) {
+            errorEl.textContent = "";
+            errorEl.style.display = "none";
+          }
+
+          if (fieldId === "tipo-sessao") {
+            const wrapper = document.getElementById("tipo-sessao-wrapper");
+            const trigger = wrapper?.querySelector(".custom-select-trigger");
+            trigger?.classList.remove("form-select-error");
+          } else {
+            document
+              .getElementById(fieldId)
+              ?.classList.remove("form-input-error");
+          }
+        };
+
+        // Validate all required form inputs before attempting submission.
+        const validateForm = () => {
+          let isValid = true;
+
+          const tipo = document.getElementById("tipo-sessao").value;
+          const numeroRaw = document.getElementById("numero-sessao").value;
+          const dataSessaoValue = document.getElementById("data-sessao").value;
+
+          if (!tipo) {
+            setFieldError("tipo-sessao", "Selecione o tipo da sessão.");
+            isValid = false;
+          } else {
+            clearFieldError("tipo-sessao");
+          }
+
+          if (!numeroRaw) {
+            setFieldError("numero-sessao", "Informe o número da sessão.");
+            isValid = false;
+          } else if (Number(numeroRaw) < 1) {
+            setFieldError(
+              "numero-sessao",
+              "O número da sessão deve ser maior ou igual a 1."
+            );
+            isValid = false;
+          } else {
+            clearFieldError("numero-sessao");
+          }
+
+          if (!dataSessaoValue) {
+            setFieldError("data-sessao", "Informe a data e hora da sessão.");
+            isValid = false;
+          } else {
+            clearFieldError("data-sessao");
+          }
+
+          return isValid;
+        };
+
+        // Restrict session scheduling to the current date or later.
+        const dataSessaoInput = document.getElementById("data-sessao");
+        dataSessaoInput.min = new Date().toISOString().split("T")[0];
+
+        document
+          .getElementById("numero-sessao")
+          .addEventListener("focus", () => clearFieldError("numero-sessao"));
+        document
+          .getElementById("data-sessao")
+          .addEventListener("focus", () => clearFieldError("data-sessao"));
+        document
+          .getElementById("tipo-sessao-wrapper")
+          ?.addEventListener("click", () => clearFieldError("tipo-sessao"));
+
+        // Submit the new session to the API after successful validation.
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          submitAttempted = true;
+          if (!validateForm()) return;
+
+          const authToken = localStorage.getItem("authToken");
+
+          try {
+            const formData = {
+              numero: document.getElementById("numero-sessao").value,
+              tipo: document.getElementById("tipo-sessao").value,
+              data_sessao: dataSessaoInput.value,
+              status: "Agendada",
+            };
+
+            const response = await fetch("/api/sessoes", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${authToken}`,
+              },
+              body: JSON.stringify(formData),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+              const errorMsg =
+                result.details ||
+                result.error ||
+                "Ocorreu um erro desconhecido.";
+              // Se 'details' for um array (do express-validator), pega a primeira mensagem
+              const finalMsg = Array.isArray(errorMsg)
+                ? errorMsg[0].message
+                : errorMsg;
+              throw new Error(finalMsg);
+            }
+
+            showToast(
+              `Sessão "${result.data.nome}" criada com sucesso!`,
+              "success"
+            );
+            form.reset();
+            dataSessaoInput.min = new Date().toISOString().split("T")[0];
+
+            tipoSelect.reset();
+            submitAttempted = false;
+            clearFieldError("tipo-sessao");
+            clearFieldError("numero-sessao");
+            clearFieldError("data-sessao");
+          } catch (error) {
+            console.error("Erro ao criar sessão:", error);
+            showToast(error.message, "error");
+          } finally {
+          }
+        });
+
+        // Confirm cancellation before leaving the page with unsaved changes.
+        document.getElementById("cancel-btn").addEventListener("click", () => {
+          if (confirm("Deseja cancelar? Os dados não salvos serão perdidos.")) {
+            window.location.href = "/app/dashboard.html";
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
