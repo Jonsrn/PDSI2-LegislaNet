@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<!--
+  File: dashboard_admin.html
+  Purpose: Administrative dashboard for super administrators to monitor,
+  search, and manage registered legislative chambers through summary
+  statistics, paginated listings, and protected management actions.
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Administrativo - Legisla Net</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/admin.css" />
+    <link rel="stylesheet" href="../css/carregamento.css" />
+    <link rel="stylesheet" href="../css/pagination.css" />
+
+    <style>
+      /* === VARIÁVEIS === */
+      :root {
+        --accent-orange: #f08833;
+        --accent-gold: #d4af37;
+        --pagination-height: 72px;
+      }
+
+      /* === COMPONENTES DE LAYOUT === */
+
+      /* === SEÇÃO DE BUSCA === */
+      .search-section {
+        margin-bottom: 24px;
+      }
+
+      .search-container {
+        position: relative;
+        width: 100%;
+      }
+
+      .search-input {
+        width: 100%;
+        padding: 12px 16px 12px 44px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background-color: var(--card-bg);
+        color: var(--primary-text);
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+      }
+
+      .search-input:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+        background-color: var(--bg-color);
+      }
+
+      .search-input:hover {
+        border-color: var(--accent-blue);
+      }
+
+      .search-input::placeholder {
+        color: var(--secondary-text);
+      }
+
+      .search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--secondary-text);
+        font-size: 1rem;
+        pointer-events: none;
+      }
+
+      /* === ESTATÍSTICAS === */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+        margin-bottom: 32px;
+      }
+
+      .stat-card {
+        background-color: var(--card-bg);
+        padding: 20px 24px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        position: relative;
+        overflow: hidden;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .stat-card:hover {
+        border-color: var(--accent-blue);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .stat-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+      }
+
+      .stat-card.total::before {
+        background-color: var(--accent-blue);
+      }
+
+      .stat-card.active::before {
+        background-color: var(--accent-green);
+      }
+
+      .stat-card.inactive::before {
+        background-color: var(--accent-red);
+      }
+
+      .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+      }
+
+      .stat-card.total .stat-icon {
+        background-color: rgba(88, 166, 255, 0.1);
+        color: var(--accent-blue);
+      }
+
+      .stat-card.active .stat-icon {
+        background-color: rgba(46, 160, 67, 0.1);
+        color: var(--accent-green);
+      }
+
+      .stat-card.inactive .stat-icon {
+        background-color: rgba(248, 81, 73, 0.1);
+        color: var(--accent-red);
+      }
+
+      .stat-content {
+        flex-grow: 1;
+      }
+
+      .stat-number {
+        font-size: 2rem;
+        font-weight: 800;
+        margin-bottom: 4px;
+      }
+
+      .stat-label {
+        color: var(--secondary-text);
+        font-size: 0.9rem;
+      }
+
+      /* === SEÇÃO DE CÂMARAS === */
+      .cameras-section {
+        margin-bottom: 32px;
+        flex: 1; /* PERMITE QUE ESTA SEÇÃO CRESÇA */
+        display: flex;
+        flex-direction: column;
+      }
+
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+
+      .section-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+
+      .cameras-grid-wrapper {
+        flex: 1; /* OCUPA O ESPAÇO DISPONÍVEL */
+        min-height: 200px; /* Altura mínima para evitar colapso */
+      }
+
+      #cameras-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        /* espaço extra para a paginação sticky não sobrepor os cards */
+      }
+
+      /* === CARDS DAS CÂMARAS === */
+      .camera-card {
+        background-color: var(--card-bg);
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .camera-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--accent-blue);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      }
+
+      .camera-card:hover .camera-image-inner {
+        transform: scale(1.12);
+      }
+
+      .camera-card:hover .camera-title {
+        color: var(--accent-blue);
+      }
+
+      .camera-image {
+        width: 100%;
+        height: 140px;
+        background: linear-gradient(
+          135deg,
+          var(--accent-blue),
+          var(--accent-green)
+        );
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4rem;
+        color: white;
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+
+      .camera-image-inner {
+        width: 100%;
+        height: 100%;
+        transition: transform 0.3s ease;
+      }
+
+      .status-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        z-index: 2;
+      }
+
+      .status-active {
+        background-color: var(--accent-green);
+        color: white;
+      }
+
+      .status-inactive {
+        background-color: var(--accent-red);
+        color: white;
+      }
+
+      .camera-content {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+      }
+
+      .camera-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        transition: color 0.2s ease;
+      }
+
+      .camera-location {
+        color: var(--secondary-text);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.875rem;
+      }
+
+      .camera-stats {
+        display: flex;
+        justify-content: space-around;
+        margin-bottom: 16px;
+        padding: 12px;
+        background-color: var(--bg-color);
+        border-radius: 8px;
+      }
+
+      .stat-item {
+        text-align: center;
+      }
+
+      .stat-item .number {
+        font-weight: 700;
+        color: var(--accent-blue);
+        display: block;
+      }
+
+      .stat-item .label {
+        font-size: 0.8rem;
+        color: var(--secondary-text);
+      }
+
+      .camera-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: auto;
+      }
+
+      /* === BOTÕES === */
+      .btn-small {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+        flex: 1;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+        text-decoration: none;
+        text-align: center;
+      }
+
+      .btn-outline {
+        background-color: transparent;
+        color: var(--accent-blue);
+        border: 1px solid var(--accent-blue);
+      }
+
+      .btn-outline:hover {
+        background-color: var(--accent-blue);
+        color: white;
+        transform: translateY(-1px);
+      }
+
+      .btn-primary {
+        background-color: var(--accent-green);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background-color: #26974b;
+        transform: translateY(-1px);
+      }
+
+      /* === ANIMAÇÕES === */
+      .fade-in {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+      }
+
+      .fade-in.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* === ESTADO VAZIO === */
+      .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: var(--secondary-text);
+        border: 2px dashed var(--border-color);
+        border-radius: 8px;
+        grid-column: 1 / -1;
+      }
+
+      /* === MEDIA QUERIES === */
+
+      /* Tablets e dispositivos médios */
+      @media (max-width: 1024px) {
+        .stats-grid {
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+          gap: 16px;
+        }
+
+        #cameras-grid {
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 20px;
+        }
+
+        .stat-card {
+          padding: 16px 20px;
+        }
+
+        .stat-icon {
+          width: 44px;
+          height: 44px;
+          font-size: 1.3rem;
+        }
+
+        .stat-number {
+          font-size: 1.75rem;
+        }
+
+        .camera-image {
+          height: 140px;
+          font-size: 3.5rem;
+        }
+      }
+
+      /* Mobile */
+      @media (max-width: 768px) {
+        .stats-grid {
+          grid-template-columns: 1fr;
+          gap: 12px;
+          margin-bottom: 24px;
+        }
+
+        #cameras-grid {
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
+
+        .section-header {
+          flex-direction: column;
+          gap: 12px;
+          align-items: flex-start;
+          margin-bottom: 20px;
+        }
+
+        .section-title {
+          font-size: 1.25rem;
+        }
+
+        .stat-card {
+          padding: 14px 16px;
+          gap: 12px;
+        }
+
+        .stat-icon {
+          width: 40px;
+          height: 40px;
+          font-size: 1.2rem;
+        }
+
+        .stat-number {
+          font-size: 1.6rem;
+          margin-bottom: 2px;
+        }
+
+        .stat-label {
+          font-size: 0.85rem;
+        }
+
+        .search-section {
+          margin-bottom: 20px;
+        }
+
+        .search-input {
+          padding: 10px 14px 10px 40px;
+          font-size: 0.875rem;
+        }
+
+        .search-icon {
+          left: 12px;
+          font-size: 0.9rem;
+        }
+
+        .camera-card {
+          border-radius: 6px;
+        }
+
+        .camera-image {
+          height: 120px;
+          font-size: 3rem;
+        }
+
+        .camera-content {
+          padding: 16px;
+        }
+
+        .camera-title {
+          font-size: 1.1rem;
+          margin-bottom: 6px;
+        }
+
+        .camera-location {
+          font-size: 0.825rem;
+          margin-bottom: 12px;
+        }
+
+        .camera-stats {
+          padding: 10px;
+          margin-bottom: 12px;
+        }
+
+        .stat-item .number {
+          font-size: 1rem;
+        }
+
+        .stat-item .label {
+          font-size: 0.75rem;
+        }
+
+        .camera-actions {
+          gap: 6px;
+        }
+
+        .btn-small {
+          padding: 7px 10px;
+          font-size: 0.75rem;
+        }
+
+        .status-badge {
+          top: 10px;
+          right: 10px;
+          padding: 3px 7px;
+          font-size: 0.65rem;
+        }
+
+        .pagination-container {
+          padding: 12px;
+        }
+
+        .empty-state {
+          padding: 32px 20px;
+          font-size: 0.9rem;
+        }
+
+        .empty-state i {
+          font-size: 1.75rem !important;
+        }
+      }
+
+      /* Mobile pequeno */
+      @media (max-width: 480px) {
+        .stats-grid {
+          gap: 10px;
+          margin-bottom: 20px;
+        }
+
+        .stat-card {
+          padding: 12px 14px;
+          gap: 10px;
+        }
+
+        .stat-icon {
+          width: 36px;
+          height: 36px;
+          font-size: 1.1rem;
+        }
+
+        .stat-number {
+          font-size: 1.4rem;
+        }
+
+        .stat-label {
+          font-size: 0.8rem;
+        }
+
+        .section-title {
+          font-size: 1.15rem;
+        }
+
+        .search-input {
+          padding: 9px 12px 9px 36px;
+          font-size: 0.85rem;
+        }
+
+        .search-icon {
+          left: 10px;
+          font-size: 0.85rem;
+        }
+
+        .camera-image {
+          height: 100px;
+          font-size: 2.5rem;
+        }
+
+        .camera-content {
+          padding: 14px;
+        }
+
+        .camera-title {
+          font-size: 1rem;
+        }
+
+        .camera-location {
+          font-size: 0.8rem;
+        }
+
+        .camera-stats {
+          padding: 8px;
+          margin-bottom: 10px;
+        }
+
+        .btn-small {
+          padding: 6px 8px;
+          font-size: 0.7rem;
+        }
+
+        .status-badge {
+          top: 8px;
+          right: 8px;
+          padding: 2px 6px;
+          font-size: 0.6rem;
+        }
+
+        .pagination-container {
+          padding: 10px;
+        }
+
+        .empty-state {
+          padding: 24px 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-layout">
+      <!-- Sidebar injected by the shared layout system -->
+      <div id="sidebar-placeholder"></div>
+      <main class="main-content" id="mainContent">
+        <!-- Header injected by the shared layout system -->
+        <div id="header-placeholder"></div>
+
+        <div class="page-content-wrapper">
+          <div class="content-area">
+            <!-- Search area for filtering chambers by name or municipality -->
+            <section class="search-section">
+              <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input
+                  type="text"
+                  class="search-input"
+                  placeholder="Buscar câmara por nome ou município..."
+                  id="searchInput"
+                />
+              </div>
+            </section>
+
+            <!-- Summary metrics for registered chamber activity -->
+            <section class="stats-grid">
+              <div class="stat-card total">
+                <div class="stat-icon"><i class="fas fa-building"></i></div>
+                <div class="stat-content">
+                  <div class="stat-number" id="stat-total">0</div>
+                  <div class="stat-label">Total de Câmaras</div>
+                </div>
+              </div>
+              <div class="stat-card active">
+                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-content">
+                  <div class="stat-number" id="stat-active">0</div>
+                  <div class="stat-label">Câmaras Ativas</div>
+                </div>
+              </div>
+              <div class="stat-card inactive">
+                <div class="stat-icon"><i class="fas fa-pause-circle"></i></div>
+                <div class="stat-content">
+                  <div class="stat-number" id="stat-inactive">0</div>
+                  <div class="stat-label">Câmaras Inativas</div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Main listing of registered chambers -->
+            <section class="cameras-section">
+              <div class="section-header">
+                <h2 class="section-title">Câmaras Cadastradas</h2>
+              </div>
+              <!-- Chamber cards rendered dynamically from API results -->
+              <div class="cameras-grid-wrapper">
+                <div class="cameras-grid" id="cameras-grid"></div>
+              </div>
+            </section>
+          </div>
+          <!-- Pagination controls for the chamber listing -->
+          <div class="pagination-container">
+            <div class="pagination-controls" id="pagination-controls"></div>
+          </div>
+        </div>
+        <!-- Footer injected by the shared layout system -->
+        <div id="footer-placeholder"></div>
+      </main>
+    </div>
+
+    <script src="../js/toast.js"></script>
+    <script src="../js/carregamento.js"></script>
+    <script src="../js/pagination.js"></script>
+    <script src="../js/mockMode.js?v=3"></script>
+    <script src="../js/global.js"></script>
+    <script>
+      // Initialize the protected administrative dashboard when the DOM is ready.
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Enforce authentication and role validation before loading any data.
+
+        try {
+          await protectPage({
+            allowedRoles: ["super_admin"],
+            requireAuth: true,
+            autoRedirect: true,
+          });
+        } catch (e) {
+          console.error(e.message);
+          return; // Interrompe a execução se o usuário não estiver autenticado
+        }
+
+        const authToken = localStorage.getItem("authToken");
+        let currentPage = 1;
+        let currentSearch = "";
+        const limit = 7;
+        let debounceTimer;
+
+        const grid = document.getElementById("cameras-grid");
+        const searchInput = document.getElementById("searchInput");
+
+        // Render chamber cards and display an empty state when no results exist.
+        const renderCamaras = (camaras) => {
+          grid.style.display = "grid";
+          grid.innerHTML = "";
+          if (camaras.length === 0) {
+            grid.innerHTML =
+              '<div class="empty-state"><i class="fas fa-search" style="font-size: 2rem; margin-bottom: 1rem;"></i><p>Nenhuma câmara encontrada.</p></div>';
+            return;
+          }
+
+          camaras.forEach((camara, index) => {
+            const card = document.createElement("div");
+            card.className = "camera-card fade-in";
+
+            const statusClass = camara.is_active
+              ? "status-active"
+              : "status-inactive";
+            const statusText = camara.is_active ? "Ativa" : "Inativa";
+
+            const vereadoresCount =
+              camara.vereadores && camara.vereadores.length > 0
+                ? camara.vereadores[0].count
+                : 0;
+            const sessoesCount =
+              camara.sessoes && camara.sessoes.length > 0
+                ? camara.sessoes[0].count
+                : 0;
+
+            const imageHtml = camara.brasao_url
+              ? `<div class="camera-image-inner" style="background-image: url('${camara.brasao_url}'); background-size: cover; background-repeat: no-repeat; background-position: center;"></div>`
+              : "🏛️";
+
+            card.innerHTML = `
+                <div class="camera-image">
+                    ${imageHtml}
+                    <div class="status-badge ${statusClass}">${statusText}</div>
+                </div>
+                <div class="camera-content">
+                    <h3 class="camera-title">${camara.nome_camara}</h3>
+                    <p class="camera-location">
+                        <i class="fas fa-map-marker-alt"></i>
+                        ${camara.municipio} - ${camara.estado}
+                    </p>
+                    <div class="camera-stats">
+                        <div class="stat-item">
+                            <span class="number">${vereadoresCount}</span>
+                            <span class="label">Vereadores</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="number">${sessoesCount}</span>
+                            <span class="label">Sessões</span>
+                        </div>
+                    </div>
+                    <div class="camera-actions">
+                        <a href="gerenciar_camara.html?id=${camara.id}" class="btn-small btn-outline">Gerenciar</a>
+                    </div>
+                </div>
+            `;
+            grid.appendChild(card);
+
+            setTimeout(() => {
+              card.classList.add("visible");
+            }, index * 100);
+          });
+        };
+
+        // Refresh the summary counters using the aggregated API response.
+        const updateStats = (stats) => {
+          if (!stats) return;
+          document.getElementById("stat-total").textContent = stats.total;
+          document.getElementById("stat-active").textContent = stats.active;
+          document.getElementById("stat-inactive").textContent = stats.inactive;
+        };
+
+        // Load paginated chamber data and synchronize the grid and pagination UI.
+        const fetchAndRenderData = async (page, search) => {
+          try {
+            const url = `/api/admin/camaras?page=${page}&limit=${limit}&search=${encodeURIComponent(
+              search
+            )}`;
+            const response = await fetch(url, {
+              headers: { Authorization: `Bearer ${authToken}` },
+            });
+
+            if (!response.ok)
+              throw new Error(`Erro na API: ${response.statusText}`);
+
+            const { data, pagination, stats } = await response.json();
+
+            renderCamaras(data);
+            updateStats(stats);
+
+            createPaginationControls({
+              containerId: "pagination-controls",
+              currentPage: pagination.currentPage,
+              totalItems: pagination.totalItems,
+              itemsPerPage: limit,
+              onPageChange: (newPage) => {
+                currentPage = newPage;
+                // Mostra o loading no grid antes de buscar nova página
+                renderLoadingState(grid, "Carregando...");
+                fetchAndRenderData(currentPage, currentSearch);
+              },
+            });
+          } catch (error) {
+            console.error("Falha ao buscar dados:", error);
+            // Exibe um estado de erro dentro do grid
+            renderErrorState(grid, "Não foi possível carregar os dados.");
+          }
+        };
+
+        // Register debounced search behavior for responsive filtering.
+        const setupEventListeners = () => {
+          searchInput.addEventListener("keyup", (e) => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+              currentSearch = e.target.value;
+              currentPage = 1;
+              renderLoadingState(grid, "Buscando...");
+              fetchAndRenderData(currentPage, currentSearch);
+            }, 500);
+          });
+        };
+
+        // Configure shared layout elements and trigger the initial data load.
+        async function initializePage() {
+          try {
+            initLayout({
+              title: "Dashboard Administrativo",
+              icon: "fa-tachometer-alt",
+              navActive: "nav-dashboard",
+            });
+
+            // 2. EXIBE O ESTADO DE CARREGAMENTO INICIAL
+            renderLoadingState(grid, "Carregando câmaras...");
+
+            await fetchAndRenderData(currentPage, currentSearch);
+            setupEventListeners();
+
+            document
+              .querySelectorAll(
+                ".search-section, .stats-grid, .cameras-section, .pagination-container"
+              )
+              .forEach((el) => {
+                setTimeout(() => el.classList.add("visible"), 100);
+              });
+          } catch (error) {
+            console.error("Erro na inicialização do dashboard:", error);
+          }
+        }
+
+        initializePage();
+      });
+    </script>
+  </body>
+</html>
+

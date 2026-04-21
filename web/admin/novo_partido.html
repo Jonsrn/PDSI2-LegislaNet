@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<!--
+  File: novo_partido.html
+  Purpose: Administrative page for super administrators to register new
+  political parties, including party identity data, optional logo upload,
+  validation, and immediate global availability across the platform.
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Novo Partido - Legisla Net</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/forms.css" />
+    <link rel="stylesheet" href="../css/admin.css" />
+    <style>
+      .form-file-input {
+        width: 0.1px;
+        height: 0.1px;
+        opacity: 0;
+        overflow: hidden;
+        position: absolute;
+        z-index: -1;
+      }
+      .form-section h2 {
+        margin-bottom: 8px;
+      }
+      .form-section .form-description {
+        margin-bottom: 32px;
+      }
+      .dynamic-card {
+        background-color: var(--background-dark);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 24px;
+        margin-bottom: 16px;
+        transition: all 0.3s ease;
+      }
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .card-header h4 {
+        font-size: 1rem;
+        color: var(--primary-text);
+      }
+      .btn-remove-item {
+        background: none;
+        border: none;
+        color: var(--secondary-text);
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
+      .btn-remove-item:hover {
+        color: var(--accent-red);
+      }
+
+      /* Estilos para o card recolhido */
+      .partido-card-content {
+        transition: all 0.3s ease;
+      }
+      .partido-card-summary {
+        display: none;
+        padding: 16px 0;
+      }
+      .dynamic-card.is-collapsed .partido-card-content {
+        display: none;
+      }
+      .dynamic-card.is-collapsed .partido-card-summary {
+        display: block;
+      }
+      .dynamic-card.is-collapsed .card-header {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+      }
+      .summary-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .summary-details {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .summary-details img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+      .summary-text p {
+        margin: 0;
+        font-size: 0.9rem;
+      }
+      .summary-text p strong {
+        font-weight: 600;
+      }
+
+      /* Estilos para o preview da logo */
+      .logo-preview-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .logo-preview {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        object-fit: cover;
+        background-color: var(--card-bg);
+        border: 1px dashed var(--border-color);
+        display: none; /* Começa escondido */
+      }
+      .logo-preview.visible {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-layout">
+      <!-- Sidebar injected by the shared layout system -->
+      <div id="sidebar-placeholder"></div>
+      <main class="main-content" id="mainContent">
+        <!-- Header injected by the shared layout system -->
+        <div id="header-placeholder"></div>
+
+        <!-- Main form section for creating and saving party records -->
+        <section class="form-section fade-in">
+          <h2>Cadastrar Novos Partidos</h2>
+          <p class="form-description">
+            Adicione partidos que ainda não existem no sistema. Os partidos
+            salvos aqui ficam disponíveis globalmente para todas as câmaras.
+          </p>
+
+          <!-- Dynamic form container for one party card at a time -->
+          <form id="novo-partido-form" novalidate>
+            <div id="partidos-container" class="dynamic-container"></div>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="add-partido-btn"
+            >
+              <i class="fa-solid fa-plus"></i> Adicionar Formulário de Partido
+            </button>
+          </form>
+        </section>
+
+        <!-- Footer injected by the shared layout system -->
+        <div id="footer-placeholder"></div>
+      </main>
+    </div>
+
+    <script src="../js/mockMode.js?v=3"></script>
+    <script src="../js/global.js"></script>
+    <script src="../js/formValidator.js"></script>
+
+    <script>
+      // Initialize the protected party registration page when the DOM is ready.
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Enforce authentication and role authorization before exposing admin actions.
+        try {
+          await protectPage({
+            allowedRoles: ["super_admin"],
+            requireAuth: true,
+            autoRedirect: true,
+          });
+        } catch (error) {
+          console.error("[AUTH] Falha na autenticação:", error);
+          return;
+        }
+
+        const authToken = localStorage.getItem("authToken");
+
+        let partidoCounter = 0;
+        const form = document.getElementById("novo-partido-form");
+        const partidosContainer = document.getElementById("partidos-container");
+        const addPartidoBtn = document.getElementById("add-partido-btn");
+
+        // Create a new dynamic party form card and attach field-specific validation rules.
+        const addPartidoCard = () => {
+          if (
+            partidosContainer.querySelector(".dynamic-card:not(.is-collapsed)")
+          ) {
+            alert(
+              "Por favor, salve o partido atual antes de adicionar um novo."
+            );
+            return;
+          }
+
+          partidoCounter++;
+          const card = document.createElement("div");
+          card.className = "dynamic-card";
+          card.dataset.id = `partido-${partidoCounter}`;
+
+          // Configurar validações para este partido
+          const partidoId = `partido-${partidoCounter}`;
+          window.formValidator
+            .setRules(`nome-${partidoId}`, {
+              required: true,
+              minLength: 2,
+              maxLength: 100,
+              partidoNome: true,
+            })
+            .setRules(`sigla-${partidoId}`, {
+              required: true,
+              minLength: 2,
+              maxLength: 10,
+              partidoSigla: true,
+            });
+          card.innerHTML = `
+                <div class="card-header"><h4>Novo Partido</h4><button type="button" class="btn-remove-item"><i class="fa fa-trash"></i></button></div>
+                <div class="partido-card-content">
+                    <div class="form-grid">
+                        <div class="form-group span-2">
+                            <label data-required="true">Nome do Partido</label>
+                            <input type="text" class="form-input partido-nome" name="nome-${partidoId}" data-validate required>
+                        </div>
+                        <div class="form-group">
+                            <label data-required="true">Sigla <span class="form-tooltip" data-tooltip="2-10 caracteres maiúsculos"></span></label>
+                            <input type="text" class="form-input partido-sigla" name="sigla-${partidoId}" data-validate required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Logo do Partido</label>
+                        <div class="file-input-wrapper">
+                            <label for="partido-logo-${partidoCounter}" class="file-input-button">Procurar...</label>
+                            <input type="file" id="partido-logo-${partidoCounter}" class="form-file-input" accept="image/*">
+                        </div>
+                    </div>
+                    <div class="logo-preview-wrapper">
+                        <img src="#" alt="Preview da Logo" class="logo-preview">
+                    </div>
+                    <button type="button" class="btn btn-primary btn-save-partido" style="width: 100%; margin-top: 16px;">Salvar Partido</button>
+                </div>
+                <div class="partido-card-summary"></div>`;
+          partidosContainer.appendChild(card);
+          addPartidoBtn.disabled = true;
+        };
+
+        // Validate, submit, and collapse a party card after successful persistence.
+        const handleSavePartido = async (card) => {
+          const button = card.querySelector(".btn-save-partido");
+          const nomeInput = card.querySelector(".partido-nome");
+          const siglaInput = card.querySelector(".partido-sigla");
+          const fileInput = card.querySelector(".form-file-input");
+
+          // Validar campos usando o formValidator
+          const partidoId = card.dataset.id;
+          const nomeValid = window.formValidator.validateField(
+            `nome-${partidoId}`,
+            nomeInput.value
+          );
+          const siglaValid = window.formValidator.validateField(
+            `sigla-${partidoId}`,
+            siglaInput.value
+          );
+
+          if (!nomeValid || !siglaValid) {
+            return;
+          }
+
+          const nome = window.formValidator.sanitize(nomeInput.value.trim());
+          const sigla = window.formValidator.sanitize(
+            siglaInput.value.trim().toUpperCase()
+          );
+
+          button.disabled = true;
+          button.innerHTML =
+            '<i class="fa fa-spinner fa-spin"></i> Salvando...';
+
+          try {
+            // BLINDAGEM: Checar se partido já existe
+            const checkResponse = await fetch(
+              `/api/admin/partidos/check?nome=${encodeURIComponent(
+                nome
+              )}&sigla=${encodeURIComponent(sigla)}`,
+              {
+                headers: { Authorization: `Bearer ${authToken}` },
+              }
+            );
+            const checkResult = await checkResponse.json();
+            if (checkResult.exists) {
+              throw new Error("Já existe um partido com este Nome ou Sigla.");
+            }
+
+            // CORREÇÃO: Use FormData para enviar o arquivo junto com os dados
+            const formData = new FormData();
+            formData.append("nome", nome);
+            formData.append("sigla", sigla);
+
+            // Adiciona o arquivo se existir
+            const file = fileInput.files[0];
+            if (file) {
+              formData.append("logo", file);
+            }
+
+            const response = await fetch("/api/admin/partidos", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+                // CORREÇÃO: NÃO definir Content-Type para FormData
+              },
+              body: formData, // CORREÇÃO: Use FormData em vez de JSON
+            });
+
+            if (!response.ok) {
+              const result = await response.json();
+              throw new Error(
+                result.details || result.error || "Erro ao salvar partido."
+              );
+            }
+
+            const result = await response.json();
+
+            // Usa a logo_url retornada pela API (se houver)
+            const logoUrl =
+              result.logo_url ||
+              `https://ui-avatars.com/api/?name=${sigla}&background=161B22&color=fff`;
+
+            card.classList.add("is-collapsed");
+            card.querySelector(".partido-card-summary").innerHTML = `
+                    <div class="summary-info">
+                        <div class="summary-details">
+                            <img src="${logoUrl}" alt="Logo do Partido">
+                            <div class="summary-text">
+                                <p><strong>${nome} (${sigla})</strong></p>
+                                <p style="color: var(--accent-green);">Salvo com sucesso!</p>
+                            </div>
+                        </div>
+                    </div>`;
+
+            addPartidoBtn.disabled = false; // Habilita para adicionar outro
+          } catch (error) {
+            alert(`Erro: ${error.message}`);
+            button.disabled = false;
+            button.innerHTML = "Salvar Partido";
+          }
+        };
+
+        // Wire click handlers for dynamic card actions through event delegation.
+        addPartidoBtn.addEventListener("click", addPartidoCard);
+
+        form.addEventListener("click", (e) => {
+          const saveBtn = e.target.closest(".btn-save-partido");
+          if (saveBtn) {
+            handleSavePartido(e.target.closest(".dynamic-card"));
+            return;
+          }
+          const removeBtn = e.target.closest(".btn-remove-item");
+          if (removeBtn) {
+            removeBtn.closest(".dynamic-card").remove();
+            addPartidoBtn.disabled = false;
+            return;
+          }
+        });
+
+        // Update file input labels and logo previews when a new image is selected.
+        form.addEventListener("change", (e) => {
+          if (e.target.classList.contains("form-file-input")) {
+            const buttonLabel =
+              e.target.parentElement.querySelector(".file-input-button");
+            const previewImg = e.target
+              .closest(".partido-card-content")
+              .querySelector(".logo-preview");
+            const file = e.target.files[0];
+
+            if (file) {
+              if (buttonLabel) buttonLabel.textContent = file.name;
+              const reader = new FileReader();
+              reader.onload = (event) => {
+                previewImg.src = event.target.result;
+                previewImg.classList.add("visible");
+              };
+              reader.readAsDataURL(file);
+            } else {
+              if (buttonLabel) buttonLabel.textContent = "Procurar...";
+              previewImg.src = "#";
+              previewImg.classList.remove("visible");
+            }
+          }
+        });
+
+        // Configure the shared administrative layout for this page.
+        async function initializePage() {
+          try {
+            initLayout({
+              title: "Adicionar Novo Partido",
+              icon: "fa-flag",
+              navActive: "nav-novo-partido",
+            });
+          } catch (err) {
+            console.error("Erro na inicialização:", err);
+            alert("Não foi possível carregar a página. Verifique o console.");
+          }
+        }
+
+        initializePage();
+      });
+    </script>
+  </body>
+</html>
+

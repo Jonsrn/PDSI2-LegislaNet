@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<!--
+  File: partidos.html
+  Purpose: Administrative management page for super administrators to browse,
+  paginate, edit, and remove registered political parties, including modal
+  workflows for updating party details and confirming deletions.
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gerenciar Partidos - Legisla Net</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/forms.css" />
+    <link rel="stylesheet" href="../css/admin.css" />
+    <link rel="stylesheet" href="../css/modals.css" />
+    <link rel="stylesheet" href="../css/pagination.css" />
+    <link rel="stylesheet" href="../css/carregamento.css" />
+    <style>
+      .content-area {
+        margin-bottom: 32px;
+      }
+
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 32px;
+      }
+      .page-header h2 {
+        margin: 0;
+      }
+
+      /* Responsividade do header da página (mobile) */
+      @media (max-width: 768px) {
+        .page-header {
+          gap: 12px;
+          align-items: flex-start;
+        }
+
+        .page-header h2 {
+          font-size: 1.25rem;
+          line-height: 1.2;
+        }
+
+        /* Botão vira ícone apenas (padrão mobile) */
+        .page-header .btn.btn-primary {
+          width: 40px;
+          height: 40px;
+          padding: 0;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          white-space: nowrap;
+          border-radius: 10px;
+        }
+
+        .page-header .btn.btn-primary i {
+          margin: 0;
+        }
+
+        .page-header .btn.btn-primary .btn-text {
+          display: none;
+        }
+      }
+      #partidos-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 24px;
+      }
+      .party-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.2s ease-in-out;
+      }
+      .party-card:hover {
+        border-color: var(--accent-blue);
+        transform: translateY(-4px);
+      }
+      .party-card-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding-bottom: 12px;
+        margin-bottom: 12px;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .party-card-logo {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
+        background-color: #fff;
+        border-radius: 6px;
+        padding: 4px;
+        flex-shrink: 0;
+      }
+      .party-card-details {
+        display: flex;
+        flex-direction: column;
+      }
+      .party-card-name {
+        font-size: 1rem;
+        margin: 0;
+        font-weight: 600;
+      }
+      .party-card-sigla {
+        color: var(--secondary-text);
+        font-size: 0.85rem;
+        margin: 0;
+      }
+      .party-card-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding-top: 12px;
+        margin-top: auto;
+      }
+      .party-card-actions .btn {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+      }
+
+      /* Ajuste do preview da logo */
+      .logo-preview-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 16px;
+        background-color: var(--input-bg);
+        padding: 8px;
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+      }
+      #edit-logo-preview {
+        width: 50px;
+        height: 50px;
+        object-fit: contain;
+        background-color: #fff;
+        padding: 4px;
+        border-radius: 6px;
+      }
+
+      /* Botão remover */
+      .btn.btn-danger {
+        background-color: #da3633 !important;
+        color: white !important;
+      }
+
+      /* Corrigir compatibilidade do modal (usando .visible em vez de .active) */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s, visibility 0.3s;
+      }
+      .modal-overlay.visible {
+        opacity: 1;
+        visibility: visible;
+      }
+      .modal-overlay.visible .modal-content {
+        transform: scale(1);
+      }
+      .modal-content {
+        transform: scale(0.95);
+        transition: transform 0.3s;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-layout">
+      <!-- Sidebar injected by the shared layout system -->
+      <div id="sidebar-placeholder"></div>
+      <main class="main-content" id="mainContent">
+        <!-- Header injected by the shared layout system -->
+        <div id="header-placeholder"></div>
+
+        <!-- Main content area for the party management listing -->
+        <section class="content-section fade-in">
+          <div class="page-content-wrapper">
+            <div class="content-area">
+              <!-- Page header with title and shortcut to create a new party -->
+              <div class="page-header">
+                <h2>Partidos Políticos Cadastrados</h2>
+                <a
+                  href="/admin/novo_partido.html"
+                  class="btn btn-primary"
+                  style="text-decoration: none"
+                  ><i class="fa-solid fa-plus"></i>
+                  <span class="btn-text">Adicionar Partido</span></a
+                >
+              </div>
+              <!-- Dynamic grid populated with paginated party cards -->
+              <div id="partidos-grid"></div>
+            </div>
+            <!-- Pagination controls for navigating through the party dataset -->
+            <div class="pagination-container">
+              <div class="pagination-controls" id="pagination-controls"></div>
+            </div>
+          </div>
+        </section>
+        <!-- Footer injected by the shared layout system -->
+        <div id="footer-placeholder"></div>
+      </main>
+    </div>
+
+    <!-- Modal for editing an existing party record -->
+    <div class="modal-overlay" id="edit-modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Editar Partido</h3>
+          <button class="modal-close" data-close-modal="edit-modal-overlay">
+            &times;
+          </button>
+        </div>
+        <form id="edit-party-form" class="form-container">
+          <input type="hidden" id="edit-party-id" name="id" />
+          <div class="form-group">
+            <label for="edit-party-name">Nome do Partido</label>
+            <input
+              type="text"
+              id="edit-party-name"
+              name="nome"
+              class="form-input"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="edit-party-sigla">Sigla</label>
+            <input
+              type="text"
+              id="edit-party-sigla"
+              name="sigla"
+              class="form-input"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="edit-party-logo">Trocar Logo (opcional)</label>
+            <div class="logo-preview-wrapper">
+              <img id="edit-logo-preview" src="" alt="Logo atual" />
+              <input
+                type="file"
+                id="edit-party-logo"
+                name="logo"
+                class="form-input"
+                accept="image/*"
+              />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-close-modal="edit-modal-overlay"
+            >
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary">
+              Salvar Alterações
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal for confirming party deletion -->
+    <div class="modal-overlay" id="delete-modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Confirmar Exclusão</h3>
+          <button class="modal-close" data-close-modal="delete-modal-overlay">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>
+            Você tem certeza que deseja remover o partido
+            <strong id="delete-party-name"></strong>? Esta ação não pode ser
+            desfeita.
+          </p>
+        </div>
+        <div class="form-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-close-modal="delete-modal-overlay"
+          >
+            Cancelar
+          </button>
+          <button type="button" class="btn btn-danger" id="confirm-delete-btn">
+            Sim, Remover
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="../js/pagination.js"></script>
+    <script src="../js/carregamento.js"></script>
+    <script src="../js/mockMode.js?v=3"></script>
+    <script src="../js/global.js"></script>
+    <script>
+      // Initialize the protected party management page after the DOM is ready.
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Enforce authentication and role authorization before loading party data.
+        try {
+          await protectPage({
+            allowedRoles: ["super_admin"],
+            requireAuth: true,
+            autoRedirect: true,
+          });
+        } catch (error) {
+          console.error("[AUTH] Falha na autenticação:", error);
+          return;
+        }
+
+        const authToken = localStorage.getItem("authToken");
+        if (!authToken) {
+          alert("Acesso negado. Por favor, faça o login como Super Admin.");
+          window.location.href = "/app/login.html";
+          return;
+        }
+
+        const isMobile = window.matchMedia("(max-width: 768px)");
+        const getPartidosPerPage = () => (isMobile.matches ? 8 : 20);
+        let PARTIDOS_PER_PAGE = getPartidosPerPage();
+        let currentPage = 1;
+
+        const grid = document.getElementById("partidos-grid");
+        const paginationControls = document.getElementById(
+          "pagination-controls"
+        );
+
+        const editModal = {
+          overlay: document.getElementById("edit-modal-overlay"),
+          form: document.getElementById("edit-party-form"),
+          id: document.getElementById("edit-party-id"),
+          name: document.getElementById("edit-party-name"),
+          sigla: document.getElementById("edit-party-sigla"),
+          logoInput: document.getElementById("edit-party-logo"),
+          logoPreview: document.getElementById("edit-logo-preview"),
+        };
+
+        const deleteModal = {
+          overlay: document.getElementById("delete-modal-overlay"),
+          partyName: document.getElementById("delete-party-name"),
+          confirmBtn: document.getElementById("confirm-delete-btn"),
+        };
+
+        // Load a paginated set of parties and refresh the list and pagination UI.
+        const fetchPartidos = async (page = 1) => {
+          renderLoadingState(grid, "Carregando partidos...");
+
+          try {
+            const response = await fetch(
+              `/api/partidos?page=${page}&limit=${PARTIDOS_PER_PAGE}`,
+              {
+                headers: { Authorization: `Bearer ${authToken}` },
+              }
+            );
+            if (!response.ok) throw new Error("Falha ao buscar os partidos.");
+
+            const { data, count } = await response.json(); // ← CORREÇÃO 1
+            renderPartidos(data);
+
+            createPaginationControls({
+              containerId: "pagination-controls",
+              currentPage: page,
+              totalItems: count, // ← CORREÇÃO 2
+              itemsPerPage: PARTIDOS_PER_PAGE,
+              onPageChange: (newPage) => {
+                currentPage = newPage;
+                fetchPartidos(currentPage);
+              },
+            });
+          } catch (error) {
+            console.error("Erro ao carregar partidos:", error);
+            renderErrorState(grid, error.message);
+          }
+        };
+
+        // Recalculate page size when the responsive breakpoint changes.
+        isMobile.addEventListener("change", () => {
+          const next = getPartidosPerPage();
+          if (next === PARTIDOS_PER_PAGE) return;
+          PARTIDOS_PER_PAGE = next;
+          currentPage = 1;
+          fetchPartidos(currentPage);
+        });
+
+        // Render the current page of parties as action cards or an empty state.
+        const renderPartidos = (partidos) => {
+          if (!partidos || partidos.length === 0) {
+            renderEmptyState(grid, "Nenhum partido cadastrado.", "fa-flag");
+            return;
+          }
+
+          // Limpa o grid e remove o estado de carregamento
+          grid.innerHTML = "";
+          grid.classList.remove("loading-state");
+          grid.style.display = "grid";
+          partidos.forEach((partido) => {
+            const card = document.createElement("div");
+            card.className = "party-card";
+            const defaultLogo = `https://ui-avatars.com/api/?name=${partido.sigla}&background=2A303C&color=fff&rounded=true&size=40`;
+            card.innerHTML = `
+                    <div class="party-card-info">
+                        <img src="${
+                          partido.logo_url || defaultLogo
+                        }" alt="Logo de ${
+              partido.nome
+            }" class="party-card-logo">
+                        <div class="party-card-details">
+                            <h4 class="party-card-name">${partido.nome}</h4>
+                            <p class="party-card-sigla">${partido.sigla}</p>
+                        </div>
+                    </div>
+                    <div class="party-card-actions">
+                        <button class="btn btn-secondary edit-btn" data-id="${
+                          partido.id
+                        }" data-nome="${partido.nome}" data-sigla="${
+              partido.sigla
+            }" data-logo="${partido.logo_url || ""}">Editar</button>
+                        <button class="btn btn-danger delete-btn" data-id="${
+                          partido.id
+                        }" data-nome="${partido.sigla}">Remover</button>
+                    </div>`;
+            grid.appendChild(card);
+          });
+        };
+
+        // Toggle modal visibility using the shared overlay pattern.
+        const openModal = (overlay) => overlay.classList.add("visible");
+        const closeModal = (overlay) => overlay.classList.remove("visible");
+
+        // Populate and display the edit modal with the selected party data.
+        const openEditModal = (id, nome, sigla, logoUrl) => {
+          editModal.id.value = id;
+          editModal.name.value = nome;
+          editModal.sigla.value = sigla;
+          editModal.logoPreview.src =
+            logoUrl ||
+            `https://ui-avatars.com/api/?name=${sigla}&background=EAECEF&color=2A303C&rounded=true&size=50`;
+          editModal.logoInput.value = ""; // Limpa o campo de arquivo
+          openModal(editModal.overlay);
+        };
+
+        // Populate and display the deletion confirmation modal.
+        const openDeleteModal = (id, nome) => {
+          deleteModal.partyName.textContent = nome;
+          deleteModal.confirmBtn.dataset.id = id; // Armazena o ID no botão
+          openModal(deleteModal.overlay);
+        };
+
+        // Submit party updates, including optional logo replacement.
+        const handleUpdateSubmit = async (event) => {
+          event.preventDefault();
+          const id = editModal.id.value;
+          const submitButton = editModal.form.querySelector(
+            'button[type="submit"]'
+          );
+          submitButton.disabled = true;
+          submitButton.innerHTML =
+            '<i class="fa fa-spinner fa-spin"></i> Salvando...';
+
+          const formData = new FormData(editModal.form);
+
+          try {
+            const response = await fetch(`/api/admin/partidos/${id}`, {
+              method: "PUT",
+              headers: { Authorization: `Bearer ${authToken}` }, // Não defina Content-Type
+              body: formData,
+            });
+
+            if (!response.ok) {
+              const err = await response.json();
+              throw new Error(err.details || "Falha ao atualizar o partido.");
+            }
+
+            alert("Partido atualizado com sucesso!");
+            closeModal(editModal.overlay);
+            fetchPartidos(currentPage);
+          } catch (error) {
+            alert(`Erro: ${error.message}`);
+          } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = "Salvar Alterações";
+          }
+        };
+
+        // Confirm and process party removal from the administrative listing.
+        const handleDeleteConfirm = async (event) => {
+          const id = event.target.dataset.id;
+          const submitButton = event.target;
+          submitButton.disabled = true;
+          submitButton.innerHTML =
+            '<i class="fa fa-spinner fa-spin"></i> Removendo...';
+
+          try {
+            const response = await fetch(`/api/admin/partidos/${id}`, {
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${authToken}` },
+            });
+
+            if (!response.ok) {
+              const err = await response.json();
+              throw new Error(err.details || "Falha ao remover o partido.");
+            }
+
+            alert("Partido removido com sucesso!");
+            closeModal(deleteModal.overlay);
+            fetchPartidos(currentPage);
+          } catch (error) {
+            alert(`Erro: ${error.message}`);
+          } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = "Sim, Remover";
+          }
+        };
+
+        // Delegate card actions for edit and delete buttons within the grid.
+        grid.addEventListener("click", (event) => {
+          const button = event.target.closest("button");
+          if (!button) return;
+
+          if (button.classList.contains("edit-btn")) {
+            const { id, nome, sigla, logo } = button.dataset;
+            openEditModal(id, nome, sigla, logo);
+          }
+          if (button.classList.contains("delete-btn")) {
+            const { id, nome } = button.dataset;
+            openDeleteModal(id, nome);
+          }
+        });
+
+        editModal.form.addEventListener("submit", handleUpdateSubmit);
+        deleteModal.confirmBtn.addEventListener("click", handleDeleteConfirm);
+
+        // Refresh the logo preview when a replacement file is selected.
+        editModal.logoInput.addEventListener("change", () => {
+          const file = editModal.logoInput.files[0];
+          if (file) {
+            editModal.logoPreview.src = URL.createObjectURL(file);
+          }
+        });
+
+        document.querySelectorAll("[data-close-modal]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const modalId = btn.dataset.closeModal;
+            closeModal(document.getElementById(modalId));
+          });
+        });
+
+        document.querySelectorAll(".modal-overlay").forEach((overlay) => {
+          overlay.addEventListener("click", (event) => {
+            if (event.target === overlay) {
+              closeModal(overlay);
+            }
+          });
+        });
+
+        // Configure shared layout elements before the initial data request.
+        await initLayout({
+          title: "Gerenciar Partidos",
+          icon: "fa-flag",
+          navActive: "nav-partidos",
+        });
+
+        // Inicia o estado de carregamento
+        renderLoadingState(grid, "Carregando partidos...");
+        fetchPartidos(currentPage);
+      });
+    </script>
+  </body>
+</html>
+
