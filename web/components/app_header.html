@@ -1,0 +1,23 @@
+<!--
+  File: app_header.html
+  Purpose: Shared header component for the chamber administrator interface,
+  displaying the current page context and the authenticated chamber
+  administrator identity area.
+-->
+<header class="content-header">
+  <!-- Dynamic page title area populated by the loading page -->
+  <div class="header-title">
+    <!-- Icon and title values are injected by the page layout initializer -->
+    <i id="header-icon" class="fa-solid"></i>
+    <h2 id="header-title"></h2>
+  </div>
+  <!-- Chamber administrator identity summary -->
+  <div class="user-info" aria-label="Nível de acesso">
+    <div class="admin-icon-badge camara-admin-badge" aria-hidden="true">
+      <i class="fas fa-landmark"></i>
+    </div>
+    <div class="user-details">
+      <span class="name camara-admin-name">Admin da Câmara</span>
+    </div>
+  </div>
+</header>

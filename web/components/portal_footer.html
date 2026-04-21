@@ -1,0 +1,105 @@
+<!--
+  File: portal_footer.html
+  Purpose: Shared public-facing footer component for the portal experience,
+  presenting brand messaging, platform links, company information, contact
+  details, and legal navigation.
+-->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <!-- Brand and social presence section -->
+      <div class="footer-brand">
+        <a href="#" class="footer-logo">
+          <svg viewBox="0 0 44 40" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient
+                id="logoGradientFooter"
+                x1="0%"
+                y1="0%"
+                x2="100%"
+                y2="100%"
+              >
+                <stop offset="0%" stop-color="#58a6ff" />
+                <stop offset="100%" stop-color="#3fb950" />
+              </linearGradient>
+            </defs>
+            <path
+              fill="url(#logoGradientFooter)"
+              d="M 8 5 V 35 H 14 V 5 Z M 19 5 V 35 H 25 V 5 Z M 30 5 V 35 H 36 V 5 Z M 5 35 H 39 V 40 H 5 Z"
+            />
+          </svg>
+          <span>Legisla Net</span>
+        </a>
+        <p class="footer-description">
+          Transformando a gestão legislativa municipal com tecnologia,
+          transparência e eficiência. A câmara do futuro, hoje.
+        </p>
+        <div class="footer-social">
+          <a href="#" aria-label="Facebook"
+            ><i class="fab fa-facebook-f"></i
+          ></a>
+          <a href="#" aria-label="Instagram"
+            ><i class="fab fa-instagram"></i
+          ></a>
+          <a href="#" aria-label="LinkedIn"
+            ><i class="fab fa-linkedin-in"></i
+          ></a>
+          <a href="#" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+        </div>
+      </div>
+
+      <!-- Platform navigation links -->
+      <div class="footer-column">
+        <h4>Plataforma</h4>
+        <ul class="footer-links">
+          <li><a href="#features">Recursos</a></li>
+          <li><a href="#">Painel de Votação</a></li>
+          <li><a href="#">Gestão de Pautas</a></li>
+          <li><a href="#">Relatórios</a></li>
+          <li><a href="#">Segurança</a></li>
+        </ul>
+      </div>
+
+      <!-- Company information links -->
+      <div class="footer-column">
+        <h4>Empresa</h4>
+        <ul class="footer-links">
+          <li><a href="#">Sobre Nós</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Carreiras</a></li>
+          <li><a href="#">Imprensa</a></li>
+          <li><a href="#">Parceiros</a></li>
+        </ul>
+      </div>
+
+      <!-- Contact information section -->
+      <div class="footer-column">
+        <h4>Contato</h4>
+        <div class="footer-contact-item">
+          <i class="fas fa-envelope"></i>
+          <span>legislanet@gmail.com</span>
+        </div>
+        <div class="footer-contact-item">
+          <i class="fas fa-phone"></i>
+          <span>(89) 98815-2737</span>
+        </div>
+        <div class="footer-contact-item">
+          <i class="fas fa-map-marker-alt"></i>
+          <span>Picos, PI - Brasil</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer legal area with copyright and policy links -->
+    <div class="footer-bottom">
+      <p class="footer-copyright">
+        © 2024 Legisla Net. Todos os direitos reservados.
+      </p>
+      <div class="footer-legal">
+        <a href="/portal/termos.html">Termos de Uso</a>
+        <a href="/portal/privacidade.html">Política de Privacidade</a>
+        <a href="/portal/privacidade.html">LGPD</a>
+      </div>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,91 @@
+<!--
+  File: app_sidebar.html
+  Purpose: Shared sidebar navigation component for the chamber administrator
+  interface, providing branded navigation links, grouped operational
+  sections, reporting access, and the logout entry point.
+-->
+<aside class="sidebar">
+  <!-- Branding area for the chamber administration shell -->
+  <div class="sidebar-header">
+    <svg
+      class="logo-svg"
+      viewBox="0 0 44 40"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="var(--accent-blue)" />
+          <stop offset="100%" stop-color="var(--accent-green)" />
+        </linearGradient>
+      </defs>
+      <path
+        fill="url(#logoGradient)"
+        d="M 8 5 V 35 H 14 V 5 Z M 19 5 V 35 H 25 V 5 Z M 30 5 V 35 H 36 V 5 Z M 5 35 H 39 V 40 H 5 Z"
+      />
+    </svg>
+    <h1>Legisla Net</h1>
+  </div>
+  <!-- Primary navigation groups and actions for the chamber admin interface -->
+  <ul class="nav-menu">
+    <li class="nav-group-title">
+      <i class="fas fa-bolt"></i>
+      <span>Acesso Rápido</span>
+    </li>
+    <li class="nav-item" id="nav-dashboard">
+      <a href="#" data-page="dashboard">
+        <i class="fas fa-chart-pie"></i>
+        <span>Dashboard</span>
+      </a>
+    </li>
+    <li class="nav-item" id="nav-cadastro">
+      <a href="#" data-page="cadastro">
+        <i class="fas fa-plus-circle"></i>
+        <span>Pautas</span>
+      </a>
+    </li>
+    <li class="nav-group-title">
+      <i class="fas fa-cogs"></i>
+      <span>Gerenciamento</span>
+    </li>
+    <li class="nav-item" id="nav-painel-controle">
+      <a href="#" data-page="painel_controle">
+        <i class="fas fa-desktop"></i>
+        <span>Painel de controle</span>
+      </a>
+    </li>
+    <li class="nav-item" id="nav-vereadores">
+      <a href="#" data-page="vereadores">
+        <i class="fas fa-users"></i>
+        <span>Vereadores</span>
+      </a>
+    </li>
+    <li class="nav-item" id="nav-ordem-do-dia">
+      <a href="#" data-page="ordem_do_dia">
+        <i class="fas fa-list-ol"></i>
+        <span>Ordem do dia</span>
+      </a>
+    </li>
+    <li class="nav-item" id="nav-sessoes">
+      <a href="#" data-page="sessoes">
+        <i class="fas fa-calendar-alt"></i>
+        <span>Sessões</span>
+      </a>
+    </li>
+    <li class="nav-group-title">
+      <i class="fas fa-chart-bar"></i>
+      <span>Relatórios</span>
+    </li>
+    <li class="nav-item" id="nav-relatorio">
+      <a href="#" data-page="relatorio">
+        <i class="fas fa-chart-line"></i>
+        <span>Relatório de votações</span>
+      </a>
+    </li>
+    <li class="nav-item" id="nav-logout">
+      <a href="#" data-action="logout">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Sair</span>
+      </a>
+    </li>
+  </ul>
+</aside>
