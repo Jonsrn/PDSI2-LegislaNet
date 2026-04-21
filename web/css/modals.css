@@ -1,0 +1,106 @@
+/*
+  File: modals.css
+  Purpose: Shared modal styling for overlays, dialog containers, headers,
+  bodies, footers, and responsive behavior across application and admin
+  interfaces.
+*/
+
+/* Overlay layer that centers dialogs and controls visibility transitions */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+/* Active state reveals the modal without removing it from the DOM */
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Shared modal surface for both legacy and current container class names */
+.modal-content, .modal-container {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 32px;
+    width: 100%;
+    max-width: 500px;
+    transform: scale(0.95);
+    transition: transform 0.3s;
+}
+
+/* Slight scale animation reinforces modal entrance */
+.modal-overlay.active .modal-content, .modal-overlay.active .modal-container {
+    transform: scale(1);
+}
+
+/* Standard modal header layout */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding: 0; /* Ajuste para unificar */
+}
+
+/* Shared title styling across header markup variants */
+.modal-header h2, .modal-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+/* Close button remains visually lightweight until interaction */
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--secondary-text);
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.modal-close:hover {
+    background-color: var(--hover-bg);
+    color: var(--primary-text);
+}
+
+/* Body and footer spacing are normalized across modal implementations */
+.modal-body {
+    padding: 0; /* Ajuste para unificar */
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 32px;
+    padding-top: 16px; /* Adicionado para consistência */
+    border-top: 1px solid var(--border-color); /* Adicionado para consistência */
+}
+
+/* Responsive sizing for smaller screens */
+@media (max-width: 768px) {
+    .modal-content, .modal-container {
+        width: 95%;
+        margin: 10px;
+        padding: 24px;
+    }
+}
+
+/* Confirmation dialogs use a more readable body text treatment */
+.modal-body.confirm-text {
+    color: var(--secondary-text);
+    font-size: 1rem;
+    line-height: 1.5;
+}

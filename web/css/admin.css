@@ -1,0 +1,255 @@
+/*
+  File: admin.css
+  Purpose: Shared visual styles for the administrative interfaces, including
+  header identity elements, admin-specific badges, footer presentation, and
+  responsive refinements for both super admin and chamber admin layouts.
+*/
+
+/* Sidebar identity badge shown when the navigation expands */
+.admin-badge {
+  background: linear-gradient(45deg, var(--accent-gold), var(--accent-orange));
+  color: #0d1117;
+  font-size: 0.7rem;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 24px;
+  text-align: center;
+  display: block;
+  opacity: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Reveal the label only on sidebar hover to preserve the collapsed layout */
+.sidebar:hover .admin-badge {
+  opacity: 1;
+}
+
+/* Header user identity and access-level summary */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #d4af37;
+}
+
+.admin-icon-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-gold), #f4d03f);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #f4d03f;
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+}
+
+/* Shared icon treatment for role badges inside the header */
+.admin-icon-badge i {
+  color: #0d1117;
+  font-size: 0.75rem;
+}
+
+/* Chamber admin variant overrides the super-admin gold treatment */
+.admin-icon-badge.camara-admin-badge {
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-green));
+  border-color: var(--accent-blue);
+  box-shadow: none;
+}
+
+.admin-icon-badge.camara-admin-badge i {
+  color: var(--primary-text);
+}
+
+.user-details .name {
+  font-weight: 600;
+  display: block;
+  color: var(--primary-text);
+}
+
+/* Gradient text visually differentiates the active administration context */
+.super-admin-name {
+  font-size: 1rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent-gold), var(--accent-orange));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0.3px;
+}
+
+.camara-admin-name {
+  font-size: 1rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-green));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0.3px;
+}
+
+.user-details .role {
+  font-size: 0.8rem;
+  color: #d4af37;
+}
+
+/* Shared admin footer */
+.admin-footer {
+  background-color: var(--card-bg);
+  border-top: 1px solid var(--border-color);
+  padding: 16px 32px;
+  width: 100%;
+  z-index: 99;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+}
+
+.footer-text {
+  font-size: 0.875rem;
+  color: var(--secondary-text);
+}
+
+.footer-text strong {
+  color: var(--accent-gold);
+  font-weight: 600;
+}
+
+.footer-version {
+  font-size: 0.75rem;
+  color: var(--secondary-text);
+  background-color: var(--background-dark);
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+/* Tablet and small-screen adjustments for header and footer density */
+@media (max-width: 768px) {
+  .content-header {
+    padding: 16px 20px 0;
+    gap: 12px;
+  }
+
+  .header-title h2 {
+    font-size: 1.15rem;
+  }
+
+  .header-title i {
+    font-size: 1rem;
+  }
+
+  .user-info {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  .admin-icon-badge {
+    width: 18px;
+    height: 18px;
+    border-width: 1.5px;
+    box-shadow: 0 1px 6px rgba(212, 175, 55, 0.25);
+  }
+
+  .admin-icon-badge i {
+    font-size: 0.55rem;
+  }
+
+  .super-admin-name {
+    font-size: 0.8rem;
+    letter-spacing: 0.15px;
+  }
+
+  .admin-footer {
+    padding: 14px 20px;
+  }
+
+  .footer-content {
+    gap: 12px;
+  }
+
+  .footer-text {
+    font-size: 0.8rem;
+  }
+
+  .footer-version {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+  }
+}
+
+/* Extra-compact layout for narrow mobile screens */
+@media (max-width: 480px) {
+  .content-header {
+    padding: 12px 16px 0;
+    gap: 10px;
+  }
+
+  .header-title h2 {
+    font-size: 1rem;
+  }
+
+  .header-title i {
+    font-size: 0.9rem;
+  }
+
+  .user-info {
+    padding: 5px 6px;
+    gap: 5px;
+  }
+
+  .admin-icon-badge {
+    width: 16px;
+    height: 16px;
+    border-width: 1px;
+    box-shadow: 0 1px 4px rgba(212, 175, 55, 0.2);
+  }
+
+  .admin-icon-badge i {
+    font-size: 0.5rem;
+  }
+
+  .super-admin-name {
+    font-size: 0.75rem;
+    letter-spacing: 0.1px;
+  }
+
+  .admin-footer {
+    padding: 12px 16px;
+  }
+
+  .footer-content {
+    flex-direction: column;
+    gap: 8px;
+    /* Stack footer metadata vertically when horizontal space is limited */
+    text-align: center;
+  }
+
+  .footer-text {
+    font-size: 0.75rem;
+  }
+
+  .footer-version {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+  }
+}
