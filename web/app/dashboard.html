@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<!--
+  File: dashboard.html
+  Purpose: Main dashboard for chamber administrators to monitor daily agenda
+  activity, review key status metrics, access common operational pages, and
+  inspect recent legislative updates from a single screen.
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - Legisla Net</title>
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+    />
+
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/carregamento.css" />
+
+    <style>
+      /* ESTILOS ESPECÍFICOS DO DASHBOARD (Resumo / Atalhos / Atividades) */
+
+      .page-content-wrapper {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      .content-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .content-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .dashboard-wrapper {
+        flex: 1;
+        min-height: 200px;
+        margin-bottom: 32px;
+        padding: 0 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .dashboard-section {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Toque de cor: barra lateral por seção (layout continua igual) */
+      .dashboard-section::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background-color: var(--border-color);
+      }
+
+      .dashboard-section--resumo::before {
+        background-color: var(--accent-blue);
+      }
+
+      .dashboard-section--atalhos::before {
+        background-color: var(--accent-green);
+      }
+
+      .dashboard-section--atividades::before {
+        background-color: var(--accent-purple);
+      }
+
+      .dashboard-section-title {
+        margin: 0 0 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--primary-text);
+      }
+
+      .dashboard-section-title i {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--hover-bg);
+        border: 1px solid var(--border-color);
+        flex-shrink: 0;
+      }
+
+      .dashboard-section--resumo .dashboard-section-title i {
+        background-color: rgba(var(--pulse-color-blue-rgb), 0.12);
+        color: var(--accent-blue);
+        border-color: rgba(var(--pulse-color-blue-rgb), 0.22);
+      }
+
+      .dashboard-section--atalhos .dashboard-section-title i {
+        background-color: rgba(var(--pulse-color-green-rgb), 0.12);
+        color: var(--accent-green);
+        border-color: rgba(var(--pulse-color-green-rgb), 0.22);
+      }
+
+      .dashboard-section--atividades .dashboard-section-title i {
+        background-color: var(--hover-bg);
+        color: var(--accent-purple);
+        border-color: var(--border-color);
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .stat-card {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background-color: var(--hover-bg);
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-height: 76px;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .stat-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background-color: var(--border-color);
+      }
+
+      .stat-card.stat-blue::before {
+        background-color: var(--accent-blue);
+      }
+      .stat-card.stat-green::before {
+        background-color: var(--accent-green);
+      }
+      .stat-card.stat-orange::before {
+        background-color: var(--accent-orange);
+      }
+      .stat-card.stat-purple::before {
+        background-color: var(--accent-purple);
+      }
+
+      .stat-label {
+        font-size: 0.75rem;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: var(--secondary-text);
+        font-weight: 600;
+      }
+
+      .stat-value {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: var(--primary-text);
+        line-height: 1.1;
+      }
+
+      .shortcuts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+      }
+
+      .dashboard-shortcut {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        text-decoration: none;
+        text-align: center;
+        min-height: 44px;
+      }
+
+      .activities-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .activity-item {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 12px 14px;
+        background-color: var(--hover-bg);
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      /* Badge de status: mesmo padrão do cadastro_de_pautas */
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 24px;
+        padding: 0 12px;
+        border-radius: 99px;
+        font-weight: 500;
+        font-size: 0.8rem;
+        text-align: center;
+        white-space: nowrap;
+        letter-spacing: 0.3px;
+      }
+      .status-badge.pendente {
+        background-color: rgba(240, 227, 51, 0.2);
+        color: rgb(233, 241, 110);
+        border: 1px solid rgba(240, 227, 51, 0.4);
+      }
+      .status-badge.em-votacao {
+        background-color: rgba(88, 166, 255, 0.2);
+        color: aqua;
+        border: 1px solid rgba(88, 166, 255, 0.4);
+      }
+      .status-badge.finalizada {
+        background-color: rgba(46, 160, 67, 0.2);
+        color: #71e67f;
+        border: 1px solid rgba(46, 160, 67, 0.4);
+      }
+
+      .activity-main {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+      }
+
+      .activity-title {
+        font-weight: 700;
+        color: var(--primary-text);
+        font-size: 0.95rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+      }
+
+      .activity-meta {
+        font-size: 0.8rem;
+        color: var(--secondary-text);
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .activity-date {
+        font-size: 0.8rem;
+        color: var(--secondary-text);
+        white-space: nowrap;
+        flex-shrink: 0;
+        padding-top: 2px;
+      }
+
+      /* Responsividade */
+      @media (max-width: 768px) {
+        .page-content-wrapper {
+          padding-left: 16px;
+          padding-right: 16px;
+        }
+
+        .dashboard-wrapper {
+          padding: 0;
+        }
+
+        .stats-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+    </style>
+
+    <script src="../js/mockMode.js?v=3"></script>
+    <script src="../js/global.js"></script>
+    <script src="../js/carregamento.js"></script>
+  </head>
+  <body>
+    <div class="app-layout">
+      <!-- Sidebar injected by the shared layout system -->
+      <div id="sidebar-placeholder"></div>
+
+      <main class="main-content" id="mainContent">
+        <!-- Header injected by the shared layout system -->
+        <div id="header-placeholder"></div>
+
+        <div class="page-content-wrapper">
+          <div class="content-area">
+            <!-- Main dashboard container for metrics, shortcuts, and recent activity -->
+            <section class="content-section fade-in">
+              <div class="dashboard-wrapper">
+                <!-- Daily summary metrics populated from agenda data -->
+                <section
+                  class="dashboard-section dashboard-section--resumo"
+                  aria-labelledby="resumo-title"
+                >
+                  <h2 class="dashboard-section-title" id="resumo-title">
+                    <i class="fa-solid fa-chart-simple"></i>
+                    Resumo do dia
+                  </h2>
+
+                  <div class="stats-grid">
+                    <div class="stat-card stat-blue">
+                      <div class="stat-label">Atualizadas hoje</div>
+                      <div class="stat-value" id="stat-created-today">-</div>
+                    </div>
+                    <div class="stat-card stat-green">
+                      <div class="stat-label">Em votação</div>
+                      <div class="stat-value" id="stat-em-votacao">-</div>
+                    </div>
+                    <div class="stat-card stat-orange">
+                      <div class="stat-label">Pendentes</div>
+                      <div class="stat-value" id="stat-pendentes">-</div>
+                    </div>
+                    <div class="stat-card stat-purple">
+                      <div class="stat-label">Total (geral)</div>
+                      <div class="stat-value" id="stat-total">-</div>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- Quick navigation shortcuts to core chamber workflows -->
+                <section
+                  class="dashboard-section dashboard-section--atalhos"
+                  aria-labelledby="atalhos-title"
+                >
+                  <h2 class="dashboard-section-title" id="atalhos-title">
+                    <i class="fa-solid fa-bolt"></i>
+                    Atalhos
+                  </h2>
+
+                  <div class="shortcuts-grid">
+                    <a
+                      class="btn btn-secondary dashboard-shortcut"
+                      href="cadastro_de_pautas.html"
+                    >
+                      <i class="fa-solid fa-file-lines"></i>
+                      Pautas
+                    </a>
+                    <a
+                      class="btn btn-secondary dashboard-shortcut"
+                      href="sessoes.html"
+                    >
+                      <i class="fa-solid fa-calendar-days"></i>
+                      Sessões
+                    </a>
+                    <a
+                      class="btn btn-secondary dashboard-shortcut"
+                      href="ordem_do_dia.html"
+                    >
+                      <i class="fa-solid fa-list-check"></i>
+                      Ordem do dia
+                    </a>
+                    <a
+                      class="btn btn-secondary dashboard-shortcut"
+                      href="vereadores.html"
+                    >
+                      <i class="fa-solid fa-users"></i>
+                      Vereadores
+                    </a>
+                  </div>
+                </section>
+
+                <!-- Recent agenda activity feed rendered from the latest records -->
+                <section
+                  class="dashboard-section dashboard-section--atividades"
+                  aria-labelledby="atividades-title"
+                >
+                  <h2 class="dashboard-section-title" id="atividades-title">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    Últimas atividades
+                  </h2>
+
+                  <div id="atividades-container"></div>
+                </section>
+              </div>
+            </section>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      // Initialize the protected dashboard after the DOM is ready.
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Enforce authentication and chamber-admin authorization before loading data.
+        try {
+          await protectPage({
+            allowedRoles: ["admin_camara"],
+            requireAuth: true,
+            autoRedirect: true,
+          });
+        } catch (e) {
+          console.error(e.message);
+          return; // Interrompe a execução se não estiver autenticado ou autorizado.
+        }
+
+        initLayout({
+          title: "Dashboard",
+          icon: "fa-table-columns",
+          navActive: "nav-dashboard",
+        });
+
+        await loadDashboard();
+      });
+
+      // Safely update dashboard text nodes by element identifier.
+      function setText(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      }
+
+      // Normalize status labels for consistent comparison logic.
+      function normalizeStatus(status) {
+        if (!status || typeof status !== "string") return "";
+        return status.toLowerCase().trim();
+      }
+
+      // Parse date-like values and return null when invalid.
+      function parseDateSafe(value) {
+        if (!value) return null;
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+
+      // Build a local date key used for same-day comparisons.
+      function localDateKey(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, "0");
+        const d = String(date.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+      }
+
+      // Format dates for Brazilian Portuguese display.
+      function formatDatePtBR(value) {
+        const date = parseDateSafe(value);
+        if (!date) return "N/A";
+        return date.toLocaleDateString("pt-BR");
+      }
+
+      // Resolve the most relevant activity timestamp for an agenda item.
+      function getPautaActivityDate(pauta) {
+        return (
+          pauta.updated_at ||
+          pauta.updatedAt ||
+          pauta.created_at ||
+          pauta.createdAt ||
+          null
+        );
+      }
+
+      // Map agenda status labels to their badge CSS classes.
+      function getStatusClass(status) {
+        const s = normalizeStatus(status);
+        if (s === "em votação" || s === "em votacao" || s === "em_votacao") {
+          return "em-votacao";
+        }
+        if (s === "finalizada") return "finalizada";
+        return "pendente";
+      }
+
+      // Escape dynamic content before injecting it into HTML output.
+      function escapeHtml(text = "") {
+        return String(text)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      // Fetch dashboard data, compute headline metrics, and refresh the activity feed.
+      async function loadDashboard() {
+        const atividadesContainer = document.getElementById(
+          "atividades-container"
+        );
+        const authToken = localStorage.getItem("authToken");
+
+        renderLoadingState(atividadesContainer, "Carregando atividades...");
+        setText("stat-created-today", "-");
+        setText("stat-em-votacao", "-");
+        setText("stat-pendentes", "-");
+        setText("stat-total", "-");
+
+        try {
+          const response = await fetch(
+            `/api/pautas?page=1&limit=50&sortBy=created_at&sortOrder=desc`,
+            {
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          if (response.status === 401) {
+            localStorage.clear();
+            window.location.href = "/app/login.html";
+            return;
+          }
+
+          if (!response.ok) {
+            throw new Error(`Falha na comunicação com o servidor.`);
+          }
+
+          const responseData = await response.json();
+          const { data: pautas, pagination } = responseData;
+
+          if (!pautas || !Array.isArray(pautas)) {
+            throw new Error("Dados de pautas inválidos recebidos do servidor");
+          }
+          const today = localDateKey(new Date());
+          const updatedToday = pautas.filter((p) => {
+            const date = parseDateSafe(getPautaActivityDate(p));
+            return date ? localDateKey(date) === today : false;
+          }).length;
+
+          const emVotacao = pautas.filter((p) => {
+            const s = normalizeStatus(p.status);
+            return (
+              s === "em votação" || s === "em votacao" || s === "em_votacao"
+            );
+          }).length;
+
+          const pendentes = pautas.filter(
+            (p) => normalizeStatus(p.status) === "pendente"
+          ).length;
+
+          const total =
+            typeof pagination?.total === "number"
+              ? String(pagination.total)
+              : "-";
+
+          setText("stat-created-today", String(updatedToday));
+          setText("stat-em-votacao", String(emVotacao));
+          setText("stat-pendentes", String(pendentes));
+          setText("stat-total", total);
+
+          renderAtividades(atividadesContainer, pautas);
+        } catch (error) {
+          renderErrorState(atividadesContainer, error.message);
+        }
+      }
+
+      // Render the recent activity list or an empty state when no records are available.
+      function renderAtividades(container, pautas) {
+        if (!container) return;
+
+        if (!pautas || pautas.length === 0) {
+          renderEmptyState(
+            container,
+            "Nenhuma atividade recente encontrada.",
+            "fa-solid fa-inbox"
+          );
+          return;
+        }
+
+        const items = [...pautas]
+          .sort((a, b) => {
+            const da = parseDateSafe(getPautaActivityDate(a));
+            const db = parseDateSafe(getPautaActivityDate(b));
+            const ta = da ? da.getTime() : 0;
+            const tb = db ? db.getTime() : 0;
+            return tb - ta;
+          })
+          .slice(0, 8);
+        container.innerHTML = `
+          <ul class="activities-list">
+            ${items
+              .map((p) => {
+                const status = p.status || "Pendente";
+                const statusClass = getStatusClass(status);
+                const nome = p.nome || "Sem nome";
+                const data = formatDatePtBR(getPautaActivityDate(p));
+                const sessao = p.sessoes?.nome
+                  ? `Sessão: ${p.sessoes.nome}`
+                  : "";
+                return `
+                  <li class="activity-item">
+                    <div class="activity-main">
+                      <div class="activity-title">${escapeHtml(nome)}</div>
+                      <div class="activity-meta">
+                        <span class="status-badge ${statusClass}">${escapeHtml(
+                  status
+                )}</span>
+                        ${sessao ? `<span>${escapeHtml(sessao)}</span>` : ""}
+                      </div>
+                    </div>
+                    <div class="activity-date">${escapeHtml(data)}</div>
+                  </li>
+                `;
+              })
+              .join("")}
+          </ul>
+        `;
+      }
+    </script>
+  </body>
+</html>
