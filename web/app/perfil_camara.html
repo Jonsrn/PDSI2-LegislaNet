@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<!--
+  File: perfil_camara.html
+  Purpose: Institutional profile page for chamber administrators to present
+  the chamber identity, contact details, social channels, leadership
+  information, and recent public-facing updates in a structured layout.
+-->
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil da Câmara - Legisla Net</title>
+
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+
+    <link rel="stylesheet" href="../css/global.css">
+
+    <style>
+        /* ESTILOS ESPECÍFICOS DA PÁGINA DE PERFIL */
+        
+        .profile-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr; /* Coluna fixa à esquerda, flexível à direita */
+            gap: 24px;
+            align-items: start;
+        }
+
+        /* Card de Resumo (Esquerda) */
+        .profile-summary-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            position: sticky; /* Mantém o card visível ao rolar a página */
+            top: 24px;
+        }
+        .profile-picture {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--border-color);
+            margin: 0 auto 16px auto;
+            background-color: #fff; /* Fundo branco para brasões com transparência */
+        }
+        .profile-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-text);
+            margin-bottom: 4px;
+        }
+        .profile-role {
+            color: var(--accent-blue);
+            font-weight: 500;
+            margin-bottom: 24px;
+        }
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .social-links a {
+            color: var(--secondary-text);
+            font-size: 1.25rem;
+            transition: color 0.2s, transform 0.2s;
+        }
+        .social-links a:hover {
+            color: var(--primary-text);
+            transform: translateY(-2px);
+        }
+        .contact-info {
+            list-style: none;
+            text-align: left;
+            font-size: 0.875rem;
+            color: var(--secondary-text);
+        }
+        .contact-info li {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .contact-info li i {
+            width: 16px;
+            text-align: center;
+            color: var(--accent-blue);
+        }
+        .contact-info li span {
+            color: var(--primary-text);
+        }
+
+        /* Detalhes do Perfil (Direita) */
+        .profile-details {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .info-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 24px;
+        }
+        .info-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .info-card p, .info-card li {
+            color: var(--secondary-text);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+        .info-card ul {
+            list-style-position: inside;
+            padding-left: 0;
+            list-style-type: none;
+        }
+        .news-list {
+            list-style: none;
+        }
+        .news-item {
+            display: flex;
+            gap: 16px;
+            padding-bottom: 16px;
+            margin-bottom: 16px;
+        }
+        .news-item:not(:last-child) {
+            border-bottom: 1px solid var(--border-color);
+        }
+        .news-date {
+            font-weight: 600;
+            color: var(--accent-blue);
+            white-space: nowrap;
+        }
+        .news-title {
+            color: var(--primary-text);
+        }
+
+
+        /* Responsividade */
+        @media (max-width: 992px) {
+            .profile-layout {
+                grid-template-columns: 1fr; /* Colunas empilhadas */
+            }
+            .profile-summary-card {
+                position: static; /* Remove o efeito sticky */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-layout">
+        
+        <!-- Sidebar injected by the shared layout system -->
+        <div id="sidebar-placeholder"></div>
+
+        <main class="main-content" id="mainContent">
+            
+            <!-- Header injected by the shared layout system -->
+            <div id="header-placeholder"></div>
+
+            <!-- Two-column profile layout with summary information and detailed content -->
+            <div class="profile-layout fade-in">
+                <!-- Summary card with chamber identity, social links, and contact details -->
+                <aside class="profile-summary-card">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Bras%C3%A3o_de_Dom_Expedito_Lopes.png/180px-Bras%C3%A3o_de_Dom_Expedito_Lopes.png" alt="Brasão do Município" class="profile-picture">
+                    <h2 class="profile-name">Câmara Municipal de Dom Expedito Lopes</h2>
+                    <p class="profile-role">Poder Legislativo Municipal</p>
+
+                    <div class="social-links">
+                        <a href="#" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="#" title="YouTube"><i class="fab fa-youtube"></i></a>
+                        <a href="#" title="Site Oficial"><i class="fa-solid fa-globe"></i></a>
+                    </div>
+
+                    <ul class="contact-info">
+                        <li><i class="fa-solid fa-map-marker-alt"></i> Endereço: <span>Rua Sete de Setembro, S/N, Centro</span></li>
+                        <li><i class="fa-solid fa-clock"></i> Atendimento: <span>08:00 às 13:00</span></li>
+                        <li><i class="fa-solid fa-envelope"></i> Email: <span>contato@cmdexplopes</span></li>
+                        <li><i class="fa-solid fa-phone"></i> Telefone: <span>(89) 3435-1234</span></li>
+                    </ul>
+                </aside>
+
+                <!-- Detail area for institutional description, leadership, and recent updates -->
+                <div class="profile-details">
+                    <!-- Institutional overview section -->
+                    <div class="info-card">
+                        <h3>Sobre a Câmara</h3>
+                        <p>
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+                        </p>
+                    </div>
+
+                    <!-- Current leadership board information -->
+                    <div class="info-card">
+                        <h3>Mesa Diretora (2025-2026)</h3>
+                        <ul>
+                            <li><strong>Presidente:</strong> <span>Nome do Presidente</span></li>
+                            <li><strong>Vice-Presidente:</strong> <span>Nome do Vice-Presidente</span></li>
+                        </ul>
+                    </div>
+
+                    <!-- Recent chamber news and activity highlights -->
+                    <div class="info-card">
+                        <h3>Notícias e Atividades Recentes</h3>
+                        <ul class="news-list">
+                            <li class="news-item">
+                                <span class="news-date">17 AGO</span>
+                                <span class="news-title">Sessão ordinária discute o orçamento municipal para o próximo ano.</span>
+                            </li>
+                            <li class="news-item">
+                                <span class="news-date">15 AGO</span>
+                                <span class="news-title">Realizada audiência pública sobre o novo plano diretor da cidade.</span>
+                            </li>
+                            <li class="news-item">
+                                <span class="news-date">10 AGO</span>
+                                <span class="news-title">Câmara aprova projeto de incentivo à cultura local em segunda votação.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="../js/mockMode.js?v=3"></script>
+    <script src="../js/global.js"></script>
+    <script>
+    // Initialize the protected chamber profile page when the DOM is ready.
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Enforce authentication and chamber-admin authorization before rendering the layout.
+        try {
+            await protectPage({
+                allowedRoles: ["admin_camara"],
+                requireAuth: true,
+                autoRedirect: true
+            });
+        } catch (error) {
+            console.error("[AUTH] Falha na autenticação:", error);
+            return;
+        }
+
+        // Configure shared layout elements for the chamber profile view.
+        initLayout({
+            title: 'Perfil da Câmara',
+            icon: 'fa-landmark',
+            navActive: '' // Nenhum item ativo na sidebar para esta página
+        });
+    });
+</script>
+</body>
+</html>
+
