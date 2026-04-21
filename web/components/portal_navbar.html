@@ -1,0 +1,37 @@
+<!--
+  File: portal_navbar.html
+  Purpose: Shared public-facing navigation bar for the portal experience,
+  providing an optional back action, centered brand identity, and a dynamic
+  area for contextual controls or information.
+-->
+<nav class="navbar">
+  <div class="nav-container">
+    <!-- Left area reserved for an optional back-navigation control -->
+    <div class="nav-left">
+      <!-- Placeholder populated dynamically when a back action is required -->
+      <div id="nav-back-button"></div>
+    </div>
+
+    <!-- Centered brand link to the public entry page -->
+    <a href="/index.html" class="nav-logo" id="nav-logo-link">
+      <svg viewBox="0 0 44 40" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="var(--accent-blue)" />
+            <stop offset="100%" stop-color="var(--accent-green)" />
+          </linearGradient>
+        </defs>
+        <path
+          fill="url(#logoGradient)"
+          d="M 8 5 V 35 H 14 V 5 Z M 19 5 V 35 H 25 V 5 Z M 30 5 V 35 H 36 V 5 Z M 5 35 H 39 V 40 H 5 Z"
+        />
+      </svg>
+      <span>Legisla Net</span>
+    </a>
+
+    <!-- Right area reserved for dynamic buttons or contextual information -->
+    <div class="nav-right" id="nav-right-content">
+      <!-- Populated dynamically when additional controls are needed -->
+    </div>
+  </div>
+</nav>
