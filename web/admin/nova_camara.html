@@ -1,0 +1,2002 @@
+<!DOCTYPE html>
+<!--
+  File: nova_camara.html
+  Purpose: Multi-step administrative form for super administrators to create
+  a new legislative chamber, configure administrator credentials, register
+  council members, define media channels, and review the submission before
+  finalizing the record.
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nova Câmara - Legisla Net</title>
+    <link rel="icon" href="data:image/svg+xml,..." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/forms.css" />
+    <link rel="stylesheet" href="../css/modals.css" />
+    <link rel="stylesheet" href="../css/admin.css" />
+    <style>
+      .stepper-wrapper {
+        padding: 24px 0;
+        margin-bottom: 32px;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .stepper-list {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        list-style: none;
+        position: relative;
+      }
+      .stepper-list::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background-color: var(--border-color);
+        transform: translateY(-50%);
+        z-index: 1;
+      }
+      .stepper-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        position: relative;
+        z-index: 2;
+        width: 120px;
+      }
+      .step-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: var(--card-bg);
+        border: 2px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        margin-bottom: 8px;
+      }
+      .step-label {
+        font-size: 0.8rem;
+        color: var(--secondary-text);
+        transition: color 0.3s ease;
+      }
+      .stepper-item.active .step-number {
+        border-color: var(--accent-blue);
+        background-color: var(--accent-blue);
+        color: white;
+      }
+      .stepper-item.active .step-label {
+        color: var(--primary-text);
+        font-weight: 500;
+      }
+      .stepper-item.completed .step-number {
+        border-color: var(--accent-green);
+        background-color: var(--accent-green);
+        color: white;
+      }
+      .form-file-input {
+        width: 0.1px;
+        height: 0.1px;
+        opacity: 0;
+        overflow: hidden;
+        position: absolute;
+        z-index: -1;
+      }
+      .stepper-item.completed .step-label {
+        color: var(--secondary-text);
+      }
+      .form-step {
+        display: none;
+      }
+      .form-step.active {
+        display: block;
+        animation: fadeInAnimation 0.5s ease-out forwards;
+      }
+      .form-navigation {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border-color);
+      }
+      .dynamic-card {
+        background-color: var(--background-dark);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 24px;
+        margin-bottom: 16px;
+        transition: all 0.3s ease;
+      }
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .card-header h4 {
+        font-size: 1rem;
+        color: var(--primary-text);
+      }
+      .btn-remove-item {
+        background: none;
+        border: none;
+        color: var(--secondary-text);
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
+      .btn-remove-item:hover {
+        color: var(--accent-red);
+      }
+      .review-section h3 {
+        font-size: 1.25rem;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--accent-blue);
+      }
+      .review-section p {
+        font-size: 1rem;
+        color: var(--secondary-text);
+        margin-bottom: 12px;
+      }
+      .review-section p strong {
+        color: var(--primary-text);
+        font-weight: 500;
+      }
+      @keyframes fadeInAnimation {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .form-step h2 {
+        margin-bottom: 8px;
+      }
+      .form-step .form-description {
+        margin-bottom: 32px;
+      }
+      .vereador-card-content {
+        transition: all 0.3s ease;
+      }
+      .vereador-card-summary {
+        display: none;
+        padding: 16px;
+        background-color: var(--card-bg);
+        border-radius: 6px;
+      }
+      .dynamic-card.is-collapsed .vereador-card-content {
+        display: none;
+      }
+      .dynamic-card.is-collapsed .vereador-card-summary {
+        display: block;
+      }
+      .dynamic-card.is-collapsed .card-header {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+      }
+      .summary-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .summary-info p {
+        margin: 0;
+        font-size: 0.9rem;
+      }
+      .summary-info p strong {
+        font-weight: 600;
+      }
+      .summary-badges span {
+        background-color: var(--accent-blue);
+        color: white;
+        padding: 4px 8px;
+        font-size: 0.75rem;
+        border-radius: 4px;
+        margin-left: 8px;
+      }
+
+      /* Toggles padronizados - checkboxes com slider */
+      .toggle-group {
+        display: flex;
+        gap: 24px;
+        align-items: center;
+        padding-top: 10px;
+      }
+      .toggle-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* Correções CSS aplicadas */
+      .form-input,
+      .form-select,
+      .form-textarea {
+        background-color: var(--hover-bg) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 6px !important;
+        padding: 10px 12px !important;
+        height: 44px !important;
+        box-sizing: border-box !important;
+        color: var(--primary-text) !important;
+        font-size: 1rem !important;
+        width: 100% !important;
+        transition: border-color 0.2s ease, background-color 0.2s ease !important;
+      }
+      .form-textarea {
+        height: auto !important;
+        min-height: 100px !important;
+        resize: vertical !important;
+      }
+      .custom-select-trigger {
+        background-color: var(--hover-bg) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 6px !important;
+        padding: 10px 12px !important;
+        cursor: pointer !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        height: 44px !important;
+        box-sizing: border-box !important;
+        color: var(--primary-text) !important;
+        font-size: 1rem !important;
+        transition: border-color 0.2s ease, background-color 0.2s ease !important;
+        min-height: 44px !important;
+      }
+      .custom-select-trigger .custom-option-placeholder {
+        color: var(--secondary-text) !important;
+        font-size: 1rem !important;
+      }
+      .custom-select-trigger span {
+        flex-grow: 1 !important;
+        display: flex !important;
+        align-items: center !important;
+        height: 100% !important;
+      }
+      .custom-select-trigger img {
+        width: 24px !important;
+        height: 24px !important;
+        margin-right: 10px !important;
+        object-fit: cover !important;
+        border-radius: 50% !important;
+        border: 1px solid var(--border-color) !important;
+        flex-shrink: 0 !important;
+      }
+      .custom-select-trigger::after {
+        content: "\f078" !important;
+        font-family: "Font Awesome 6 Free" !important;
+        font-weight: 900 !important;
+        font-size: 0.75rem !important;
+        color: var(--secondary-text) !important;
+        margin-left: auto !important;
+        transition: transform 0.2s ease !important;
+        flex-shrink: 0 !important;
+      }
+      .form-input:hover,
+      .form-select:hover,
+      .custom-select-trigger:hover {
+        border-color: var(--accent-blue) !important;
+      }
+      .form-input:focus,
+      .form-select:focus {
+        outline: none !important;
+        border-color: var(--accent-blue) !important;
+        box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2) !important;
+      }
+      .form-input:-webkit-autofill,
+      .form-input:-webkit-autofill:hover,
+      .form-input:-webkit-autofill:focus,
+      .form-input:-webkit-autofill:active {
+        -webkit-box-shadow: 0 0 0 1000px var(--hover-bg) inset !important;
+        -webkit-text-fill-color: var(--primary-text) !important;
+        background-color: var(--hover-bg) !important;
+        border-radius: 6px !important;
+        transition: none !important;
+      }
+      input[type="url"] {
+        background-color: var(--hover-bg) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 6px !important;
+        padding: 10px 12px !important;
+        height: 44px !important;
+        box-sizing: border-box !important;
+        color: var(--primary-text) !important;
+        font-size: 1rem !important;
+      }
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        font-family: "Inter", sans-serif !important;
+        line-height: 1.5 !important;
+      }
+
+      /* Responsividade - compacta */
+      @media (max-width: 768px) {
+        .form-grid {
+          grid-template-columns: 1fr !important;
+          gap: 12px !important;
+        }
+
+        .form-input,
+        .form-select,
+        .custom-select-trigger,
+        input[type="url"] {
+          font-size: 16px !important;
+          padding: 9px 11px !important;
+          height: 40px !important;
+          min-height: 40px !important;
+        }
+      }
+
+      /* Custom Select Styles */
+      .custom-select-wrapper {
+        position: relative;
+      }
+      .custom-options {
+        display: none;
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: var(--card-bg) !important;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        z-index: 100;
+        max-height: 250px;
+        overflow-y: auto;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      }
+      .custom-options.open {
+        display: block;
+        animation: slideDown 0.2s ease-out;
+      }
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .custom-options.open ~ .custom-select-trigger::after {
+        transform: rotate(180deg);
+      }
+      .custom-option {
+        display: flex;
+        align-items: center;
+        padding: 10px 12px;
+        cursor: pointer;
+        color: var(--primary-text);
+        transition: background-color 0.15s ease;
+      }
+      .custom-option:hover {
+        background-color: var(--hover-bg);
+      }
+      .custom-option.selected {
+        background-color: var(--hover-bg);
+        color: var(--accent-blue);
+      }
+      .custom-option img,
+      .custom-select-trigger img {
+        width: 24px;
+        height: 24px;
+        margin-right: 10px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 1px solid var(--border-color);
+      }
+      .custom-option-placeholder {
+        color: var(--secondary-text);
+        padding: 10px 12px;
+      }
+
+      .custom-options::-webkit-scrollbar {
+        width: 8px;
+      }
+      .custom-options::-webkit-scrollbar-track {
+        background: var(--background-dark);
+        border-radius: 4px;
+      }
+      .custom-options::-webkit-scrollbar-thumb {
+        background: var(--border-color);
+        border-radius: 4px;
+      }
+      .custom-options::-webkit-scrollbar-thumb:hover {
+        background: var(--secondary-text);
+      }
+
+      * {
+        -webkit-backface-visibility: hidden;
+        -moz-backface-visibility: hidden;
+        backface-visibility: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-layout">
+      <!-- Sidebar injected by the shared layout system -->
+      <div id="sidebar-placeholder"></div>
+      <main class="main-content" id="mainContent">
+        <!-- Header injected by the shared layout system -->
+        <div id="header-placeholder"></div>
+        <div class="page-content-wrapper">
+          <div class="content-area">
+            <!-- Main multi-step form container for chamber onboarding -->
+            <section class="form-section fade-in">
+              <!-- Step indicator for the chamber creation workflow -->
+              <div class="stepper-wrapper">
+                <ul class="stepper-list">
+                  <li class="stepper-item active" data-step="0">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Câmara</div>
+                  </li>
+                  <li class="stepper-item" data-step="1">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Vereadores</div>
+                  </li>
+                  <li class="stepper-item" data-step="2">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Mídias</div>
+                  </li>
+                  <li class="stepper-item" data-step="3">
+                    <div class="step-number">4</div>
+                    <div class="step-label">Revisão</div>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Wizard form that groups chamber, council member, media, and review data -->
+              <form id="nova-camara-form" novalidate>
+                <!-- Step 1: Core chamber data and administrator access credentials -->
+                <div class="form-step active">
+                  <h2>1. Informações da Câmara</h2>
+                  <p class="form-description">
+                    Preencha os dados básicos da câmara municipal e crie as
+                    credenciais de acesso para o administrador.
+                  </p>
+                  <div class="form-grid">
+                    <div class="form-group">
+                      <label for="municipio" data-required="true"
+                        >Município</label
+                      >
+                      <input
+                        type="text"
+                        id="municipio"
+                        class="form-input"
+                        placeholder="Ex: São Paulo"
+                        required
+                        data-validate="true"
+                      />
+                      <span
+                        class="form-tooltip"
+                        data-tooltip="Nome do município onde a câmara está localizada"
+                      ></span>
+                    </div>
+                    <div class="form-group">
+                      <label for="estado" data-required="true">Estado</label>
+                      <div
+                        class="custom-select-wrapper"
+                        id="estado-select-wrapper"
+                      >
+                        <input type="hidden" id="estado" required />
+                        <div class="custom-select-trigger">
+                          <span>Selecione</span>
+                        </div>
+                        <div class="custom-options" id="estado-options"></div>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label for="qtd-vereadores" data-required="true"
+                        >Quantidade de Vereadores</label
+                      >
+                      <input
+                        type="number"
+                        id="qtd-vereadores"
+                        class="form-input"
+                        placeholder="Ex: 9"
+                        min="1"
+                        max="50"
+                        required
+                        data-validate="true"
+                      />
+                      <span
+                        class="form-tooltip"
+                        data-tooltip="Quantidade de vereadores da câmara (1-50)"
+                      ></span>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="brasao-input">Brasão / Logo da Câmara</label>
+                    <div class="file-input-wrapper">
+                      <label
+                        for="brasao-input"
+                        class="file-input-button"
+                        id="brasao-file-button"
+                        >Procurar...</label
+                      >
+                      <input
+                        type="file"
+                        id="brasao-input"
+                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                        class="form-file-input"
+                        required
+                      />
+                    </div>
+                    <span
+                      class="form-tooltip"
+                      data-tooltip="Imagem do brasão ou logo (máximo 5MB)"
+                    ></span>
+                  </div>
+                  <h3 class="section-title">
+                    Credenciais de Acesso (Admin da Câmara)
+                  </h3>
+                  <div class="form-grid">
+                    <div class="form-group">
+                      <label for="email-camara" data-required="true"
+                        >Email de Acesso</label
+                      >
+                      <input
+                        type="email"
+                        id="email-camara"
+                        class="form-input"
+                        placeholder="admin@camarapicos.leg.br"
+                        required
+                      />
+                      <span
+                        class="form-tooltip"
+                        data-tooltip="Email que será usado pelo administrador para acessar o sistema"
+                      ></span>
+                    </div>
+                    <div class="form-group">
+                      <label for="senha-camara" data-required="true"
+                        >Senha</label
+                      >
+                      <input
+                        type="password"
+                        id="senha-camara"
+                        class="form-input"
+                        placeholder="Mínimo 6 caracteres"
+                        required
+                      />
+                      <span
+                        class="form-tooltip"
+                        data-tooltip="Mínimo 6 caracteres"
+                      ></span>
+                    </div>
+
+                    <!-- Campos opcionais para a TV -->
+                    <div class="form-group">
+                      <label for="tv_email">Email da TV (opcional)</label>
+                      <input
+                        type="email"
+                        id="tv_email"
+                        class="form-input"
+                        placeholder="tv@camara.exemplo.com"
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label for="tv_senha">Senha da TV (opcional)</label>
+                      <input
+                        type="password"
+                        id="tv_senha"
+                        class="form-input"
+                        placeholder="Deixe em branco para não criar"
+                      />
+                    </div>
+                  </div>
+                  <div class="form-navigation">
+                    <span></span>
+                    <button
+                      type="button"
+                      class="btn btn-primary next-btn"
+                      id="btn-step1-next"
+                    >
+                      Avançar
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Step 2: Dynamic council member registration cards -->
+                <div class="form-step">
+                  <h2>2. Cadastro de Vereadores</h2>
+                  <p class="form-description">
+                    Cadastre os vereadores da câmara. Salve cada vereador
+                    individualmente antes de prosseguir. As informações serão
+                    enviadas apenas na finalização do formulário completo.
+                  </p>
+                  <div
+                    id="vereadores-container"
+                    class="dynamic-container"
+                  ></div>
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    id="add-vereador-btn"
+                  >
+                    <i class="fa-solid fa-plus"></i> Adicionar Vereador
+                  </button>
+                  <div class="form-navigation">
+                    <button type="button" class="btn btn-secondary prev-btn">
+                      Voltar
+                    </button>
+                    <button type="button" class="btn btn-primary next-btn">
+                      Avançar
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Step 3: Public communication, social media, and streaming settings -->
+                <div class="form-step">
+                  <h2>3. Mídias Sociais e Contato</h2>
+                  <p class="form-description">
+                    Informe os links para as redes sociais e o site oficial da
+                    câmara.
+                  </p>
+                  <div class="form-group">
+                    <label for="facebook">Facebook</label>
+                    <input
+                      type="url"
+                      id="facebook"
+                      placeholder="https://facebook.com/..."
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="instagram">Instagram</label>
+                    <input
+                      type="url"
+                      id="instagram"
+                      placeholder="https://instagram.com/..."
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="youtube">YouTube</label>
+                    <input
+                      type="url"
+                      id="youtube"
+                      placeholder="https://youtube.com/..."
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="site_oficial">Site Oficial</label>
+                    <input
+                      type="url"
+                      id="site_oficial"
+                      placeholder="https://..."
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="youtube_stream_key"
+                      >Chave de Transmissão do YouTube</label
+                    >
+                    <input
+                      type="text"
+                      id="youtube_stream_key"
+                      placeholder="Chave de stream do YouTube para transmissões ao vivo"
+                    />
+                    <span
+                      class="form-tooltip"
+                      data-tooltip="Chave de transmissão obtida no YouTube Studio para livestreams das sessões"
+                    ></span>
+                  </div>
+                  <div class="form-group">
+                    <label for="youtube_rtmp_url"
+                      >URL do Servidor RTMP do YouTube</label
+                    >
+                    <input
+                      type="url"
+                      id="youtube_rtmp_url"
+                      placeholder="rtmp://a.rtmp.youtube.com/live2"
+                    />
+                    <span
+                      class="form-tooltip"
+                      data-tooltip="URL do servidor RTMP obtida no YouTube Studio para configuração no OBS"
+                    ></span>
+                  </div>
+                  <div class="form-group">
+                    <label for="youtube_channel_id"
+                      >ID do Canal do YouTube</label
+                    >
+                    <input
+                      type="text"
+                      id="youtube_channel_id"
+                      placeholder="UC_x5XG1OV2P6uZZ5FSM9Ttw"
+                    />
+                    <span
+                      class="form-tooltip"
+                      data-tooltip="ID do canal para detecção automática de livestreams (encontre em youtube.com/channel/SEU_ID)"
+                    ></span>
+                  </div>
+                  <div class="form-group">
+                    <label for="youtube_channel_url"
+                      >URL do Canal do YouTube</label
+                    >
+                    <input
+                      type="url"
+                      id="youtube_channel_url"
+                      placeholder="https://www.youtube.com/@suacanal"
+                    />
+                    <span
+                      class="form-tooltip"
+                      data-tooltip="URL completa do canal do YouTube da câmara"
+                    ></span>
+                  </div>
+                  <div class="form-navigation">
+                    <button type="button" class="btn btn-secondary prev-btn">
+                      Voltar
+                    </button>
+                    <button type="button" class="btn btn-primary next-btn">
+                      Avançar
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Step 4: Final review before submission -->
+                <div class="form-step">
+                  <h2>4. Revisão e Confirmação</h2>
+                  <p class="form-description">
+                    Revise todas as informações antes de finalizar o cadastro da
+                    nova câmara.
+                  </p>
+                  <div class="review-section">
+                    <h3>Informações da Câmara</h3>
+                    <p>
+                      <strong>Local:</strong> <span id="review-local"></span>
+                    </p>
+                    <p>
+                      <strong>Admin:</strong> <span id="review-email"></span>
+                    </p>
+                    <h3 class="section-title">
+                      Vereadores a serem cadastrados
+                    </h3>
+                    <p>
+                      <strong>Total:</strong>
+                      <span id="review-vereadores"></span>
+                    </p>
+                  </div>
+                  <div class="form-navigation">
+                    <button type="button" class="btn btn-secondary prev-btn">
+                      Voltar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                      Finalizar Cadastro
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </section>
+          </div>
+        </div>
+
+        <!-- Footer injected by the shared layout system -->
+        <div id="footer-placeholder"></div>
+      </main>
+    </div>
+    <script src="../js/mockMode.js?v=3"></script>
+    <script src="../js/global.js"></script>
+    <script src="../js/formValidator.js"></script>
+    <script>
+      // Initialize the protected chamber creation workflow after the DOM is ready.
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Enforce authentication and role authorization before enabling the form.
+        try {
+          await protectPage({
+            allowedRoles: ["super_admin"],
+            requireAuth: true,
+            autoRedirect: true,
+          });
+        } catch (error) {
+          console.error("[AUTH] Falha na autenticação:", error);
+          return;
+        }
+
+        const authToken = localStorage.getItem("authToken");
+
+        let currentStep = 0;
+        let partidosFromDB = [];
+        let vereadorCounter = 0;
+
+        const form = document.getElementById("nova-camara-form");
+        const steps = document.querySelectorAll(".form-step");
+        const stepperItems = document.querySelectorAll(".stepper-item");
+        const vereadoresContainer = document.getElementById(
+          "vereadores-container"
+        );
+
+        // Synchronize the visual stepper with the current wizard position.
+        const updateStepper = () => {
+          stepperItems.forEach((item, index) => {
+            item.classList.remove("active", "completed");
+            const stepIndex = parseInt(item.dataset.step, 10);
+            if (stepIndex < currentStep) item.classList.add("completed");
+            else if (stepIndex === currentStep) item.classList.add("active");
+          });
+        };
+
+        // Display the requested step and hide the remaining wizard sections.
+        const showStep = (stepIndex) => {
+          steps.forEach((step, index) =>
+            step.classList.toggle("active", index === stepIndex)
+          );
+          updateStepper();
+        };
+
+        // Register validation rules for chamber fields, credentials, and council members.
+        const setupValidation = () => {
+          formValidator
+            .setRules("municipio", {
+              required: true,
+              municipio: true,
+              minLength: 2,
+              maxLength: 100,
+            })
+            .setRules("estado", {
+              required: true,
+              custom: (value) => {
+                const estados = [
+                  "AC",
+                  "AL",
+                  "AP",
+                  "AM",
+                  "BA",
+                  "CE",
+                  "DF",
+                  "ES",
+                  "GO",
+                  "MA",
+                  "MT",
+                  "MS",
+                  "MG",
+                  "PA",
+                  "PB",
+                  "PR",
+                  "PE",
+                  "PI",
+                  "RJ",
+                  "RN",
+                  "RS",
+                  "RO",
+                  "RR",
+                  "SC",
+                  "SP",
+                  "SE",
+                  "TO",
+                ];
+                return estados.includes(value)
+                  ? null
+                  : "Selecione um estado válido";
+              },
+            })
+            .setRules("qtd-vereadores", {
+              required: true,
+              min: 1,
+              max: 50,
+              custom: (value) => {
+                const num = parseInt(value);
+                if (isNaN(num)) return "Deve ser um número válido";
+                if (num < 1) return "Quantidade mínima é 1 vereador";
+                if (num > 50) return "Quantidade máxima é 50 vereadores";
+                if (num % 1 !== 0) return "Deve ser um número inteiro";
+                return null;
+              },
+            })
+            .setRules("email-camara", {
+              required: true,
+              email: true,
+              maxLength: 255,
+            })
+            .setRules("tv_email", {
+              required: false,
+              email: true,
+              maxLength: 255,
+            })
+            .setRules("tv_senha", {
+              required: false,
+              minLength: 6,
+              maxLength: 128,
+            })
+            .setRules("senha-camara", {
+              required: true,
+              minLength: 6,
+              maxLength: 128,
+            });
+
+          window.setupVereadorValidation = (cardId) => {
+            window.formValidator
+              .setRules(`vereador-nome-${cardId}`, {
+                required: true,
+                nomeParlamentar: true,
+                minLength: 2,
+                maxLength: 100,
+              })
+              .setRules(`vereador-partido-${cardId}`, {
+                required: true,
+                custom: (value) => (!value ? "Selecione um partido" : null),
+              })
+              .setRules(`vereador-email-${cardId}`, {
+                required: true,
+                email: true,
+                maxLength: 255,
+              })
+              .setRules(`vereador-senha-${cardId}`, {
+                required: true,
+                strongPassword: true,
+                minLength: 8,
+                maxLength: 128,
+              });
+          };
+
+          document
+            .querySelectorAll(".form-input, .form-select")
+            .forEach((field) => {
+              // Credenciais usam validação custom (para o erro sumir ao apagar)
+              const id = field.id;
+              if (
+                id === "email-camara" ||
+                id === "senha-camara" ||
+                id === "tv_email" ||
+                id === "tv_senha"
+              ) {
+                return;
+              }
+              field.setAttribute("data-validate", "true");
+            });
+
+          const setupCredentialRealtimeValidation = () => {
+            const fields = [
+              { id: "email-camara", name: "email-camara" },
+              { id: "senha-camara", name: "senha-camara" },
+              { id: "tv_email", name: "tv_email" },
+              { id: "tv_senha", name: "tv_senha" },
+            ];
+
+            fields.forEach(({ id, name }) => {
+              const el = document.getElementById(id);
+              if (!el) return;
+
+              const validateNow = () => {
+                if (typeof window.formValidator === "undefined") return;
+                const value = (el.value || "").trim();
+                if (!value) {
+                  window.formValidator.clearFieldError(name);
+                  return;
+                }
+                window.formValidator.validateField(name, value);
+              };
+
+              el.addEventListener("input", () => {
+                clearTimeout(el.validationTimeout);
+                el.validationTimeout = setTimeout(() => {
+                  if (typeof window.formValidator === "undefined") return;
+
+                  // Coerência TV: senha => email obrigatório
+                  const tvEmailVal = document.getElementById("tv_email")
+                    ? document.getElementById("tv_email").value.trim()
+                    : "";
+                  const tvSenhaVal = document.getElementById("tv_senha")
+                    ? document.getElementById("tv_senha").value
+                    : "";
+
+                  if (!tvEmailVal)
+                    window.formValidator.clearFieldError("tv_email");
+                  if (!tvSenhaVal)
+                    window.formValidator.clearFieldError("tv_senha");
+                  if (tvSenhaVal && !tvEmailVal) {
+                    window.formValidator.showFieldError(
+                      "tv_email",
+                      "Informe o email da TV para definir a senha"
+                    );
+                  }
+
+                  validateNow();
+                }, 350);
+              });
+
+              el.addEventListener("blur", validateNow);
+            });
+          };
+
+          setupCredentialRealtimeValidation();
+        };
+
+        // Validate the first step, including the required chamber crest upload.
+        const validateStep1 = () => {
+          formValidator.clearAllErrors();
+
+          const step1Fields = [
+            "municipio",
+            "estado",
+            "qtd-vereadores",
+            "email-camara",
+            "senha-camara",
+            "tv_email",
+            "tv_senha",
+          ];
+          let isValid = true;
+
+          step1Fields.forEach((fieldName) => {
+            const field = document.getElementById(fieldName);
+            if (field && !formValidator.validateField(fieldName, field.value)) {
+              isValid = false;
+            }
+          });
+
+          const brasaoInput = document.getElementById("brasao-input");
+          if (!brasaoInput?.files?.length) {
+            formValidator.showFieldError(
+              "brasao-input",
+              "Este campo é obrigatório"
+            );
+            isValid = false;
+          } else {
+            const file = brasaoInput.files[0];
+            if (file.size > 5 * 1024 * 1024) {
+              formValidator.showFieldError(
+                "brasao-input",
+                "Arquivo deve ter no máximo 5MB"
+              );
+              isValid = false;
+            }
+            const allowedTypes = [
+              "image/jpeg",
+              "image/jpg",
+              "image/png",
+              "image/gif",
+              "image/webp",
+            ];
+            if (!allowedTypes.includes(file.type)) {
+              formValidator.showFieldError(
+                "brasao-input",
+                "Apenas imagens são permitidas (JPG, PNG, GIF, WebP)"
+              );
+              isValid = false;
+            }
+          }
+
+          if (!isValid) {
+            const firstError = document.querySelector(
+              ".form-input-error, .form-select-error"
+            );
+            if (firstError) {
+              firstError.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+              });
+              firstError.focus();
+            }
+          }
+
+          return isValid;
+        };
+
+        // Populate the custom state selector with Brazilian federative units.
+        const populateEstados = () => {
+          const estados = {
+            AC: "Acre",
+            AL: "Alagoas",
+            AP: "Amapá",
+            AM: "Amazonas",
+            BA: "Bahia",
+            CE: "Ceará",
+            DF: "Distrito Federal",
+            ES: "Espírito Santo",
+            GO: "Goiás",
+            MA: "Maranhão",
+            MT: "Mato Grosso",
+            MS: "Mato Grosso do Sul",
+            MG: "Minas Gerais",
+            PA: "Pará",
+            PB: "Paraíba",
+            PR: "Paraná",
+            PE: "Pernambuco",
+            PI: "Piauí",
+            RJ: "Rio de Janeiro",
+            RN: "Rio Grande do Norte",
+            RS: "Rio Grande do Sul",
+            RO: "Rondônia",
+            RR: "Roraima",
+            SC: "Santa Catarina",
+            SP: "São Paulo",
+            SE: "Sergipe",
+            TO: "Tocantins",
+          };
+
+          const estadoOptions = document.getElementById("estado-options");
+          const estadoTrigger = document.querySelector(
+            "#estado-select-wrapper .custom-select-trigger"
+          );
+          const estadoInput = document.getElementById("estado");
+
+          for (const sigla in estados) {
+            const option = document.createElement("div");
+            option.className = "custom-option";
+            option.dataset.value = sigla;
+            option.textContent = `${estados[sigla]} (${sigla})`;
+            option.addEventListener("click", function () {
+              estadoInput.value = sigla;
+              estadoTrigger.innerHTML = `<span>${estados[sigla]} (${sigla})</span>`;
+              estadoOptions
+                .querySelectorAll(".custom-option")
+                .forEach((opt) => opt.classList.remove("selected"));
+              this.classList.add("selected");
+              estadoOptions.classList.remove("open");
+
+              if (typeof window.formValidator !== "undefined") {
+                window.formValidator.clearFieldError("estado");
+              }
+            });
+            estadoOptions.appendChild(option);
+          }
+
+          estadoTrigger.addEventListener("click", function (e) {
+            e.stopPropagation();
+            const isOpen = estadoOptions.classList.contains("open");
+            document
+              .querySelectorAll(".custom-options.open")
+              .forEach((dd) => dd.classList.remove("open"));
+            if (!isOpen) {
+              estadoOptions.classList.add("open");
+            }
+          });
+        };
+
+        // Fill the review step with the current form summary before submission.
+        const populateReviewStep = () => {
+          const municipio = document.getElementById("municipio").value;
+          const estadoValue = document.getElementById("estado").value;
+          const estadoText = document.querySelector(
+            "#estado-select-wrapper .custom-select-trigger span"
+          ).textContent;
+
+          document.getElementById(
+            "review-local"
+          ).textContent = `${municipio} - ${estadoText}`;
+          document.getElementById("review-email").textContent =
+            document.getElementById("email-camara").value;
+          const savedVereadores = vereadoresContainer.querySelectorAll(
+            ".dynamic-card.is-collapsed"
+          ).length;
+          document.getElementById(
+            "review-vereadores"
+          ).textContent = `${savedVereadores} vereador(es)`;
+        };
+
+        // Load party options from the API for council member assignment.
+        const loadPartidosFromDB = async () => {
+          try {
+            const response = await fetch("/api/partidos", {
+              headers: { Authorization: `Bearer ${authToken}` },
+            });
+            if (!response.ok)
+              throw new Error("Não foi possível carregar os partidos.");
+            const { data } = await response.json();
+            partidosFromDB = data || [];
+            updateAllPartidoSelects();
+          } catch (error) {
+            console.error("Erro ao carregar partidos:", error);
+            alert(error.message);
+          }
+        };
+
+        // Refresh every dynamic party selector with the latest loaded options.
+        const updateAllPartidoSelects = () => {
+          vereadoresContainer
+            .querySelectorAll(".vereador-partido-select-wrapper")
+            .forEach((wrapper) => {
+              const trigger = wrapper.querySelector(".custom-select-trigger");
+              const optionsList = wrapper.querySelector(".custom-options");
+              const hiddenInput = wrapper.querySelector(
+                ".vereador-partido-hidden-input"
+              );
+              const currentValue = hiddenInput.value;
+
+              optionsList.innerHTML = "";
+              if (partidosFromDB.length === 0) {
+                optionsList.innerHTML =
+                  '<div class="custom-option-placeholder">Nenhum partido cadastrado.</div>';
+                return;
+              }
+
+              partidosFromDB.forEach((partido) => {
+                const option = document.createElement("div");
+                option.className = "custom-option";
+                option.dataset.value = partido.id;
+                const logoSrc =
+                  partido.logo_url ||
+                  `https://ui-avatars.com/api/?name=${partido.sigla}&background=161B22&color=fff&size=24`;
+                option.innerHTML = `<img src="${logoSrc}" alt="Logo ${partido.sigla}"><span>${partido.sigla} - ${partido.nome}</span>`;
+                optionsList.appendChild(option);
+              });
+
+              if (
+                currentValue &&
+                partidosFromDB.find((p) => p.id == currentValue)
+              ) {
+                const selectedOption = Array.from(optionsList.children).find(
+                  (opt) => opt.dataset.value == currentValue
+                );
+                if (selectedOption)
+                  trigger.innerHTML = selectedOption.innerHTML;
+              }
+            });
+        };
+
+        // Add a new editable council member card, respecting the configured limit.
+        const addVereadorCard = () => {
+          const qtdPermitida = parseInt(
+            document.getElementById("qtd-vereadores").value,
+            10
+          );
+          if (!qtdPermitida || qtdPermitida < 1) {
+            alert(
+              "Por favor, defina uma quantidade válida de vereadores na primeira etapa."
+            );
+            return;
+          }
+          if (vereadoresContainer.children.length >= qtdPermitida) {
+            alert("A quantidade máxima de vereadores já foi atingida.");
+            document.getElementById("add-vereador-btn").disabled = true;
+            return;
+          }
+          if (
+            vereadoresContainer.querySelector(
+              ".dynamic-card:not(.is-collapsed)"
+            )
+          ) {
+            alert(
+              "Por favor, salve o vereador atual antes de adicionar um novo."
+            );
+            return;
+          }
+
+          vereadorCounter++;
+          const card = document.createElement("div");
+          card.className = "dynamic-card";
+          card.dataset.id = `vereador-${vereadorCounter}`;
+
+          window.setupVereadorValidation(vereadorCounter);
+          card.innerHTML = `
+                <div class="card-header"><h4>Novo Vereador</h4><button type="button" class="btn-remove-item"><i class="fa fa-trash"></i></button></div>
+                <div class="vereador-card-content">
+                    <div class="form-grid">
+                        <div class="form-group span-2">
+                            <label data-required="true">Nome Parlamentar</label>
+                            <input type="text" class="form-input vereador-nome" name="vereador-nome-${vereadorCounter}" data-validate required>
+                        </div>
+                        <div class="form-group">
+                            <label data-required="true">Partido</label>
+                            <div class="custom-select-wrapper vereador-partido-select-wrapper">
+                                <input type="hidden" class="vereador-partido-hidden-input" name="vereador-partido-${vereadorCounter}" data-validate required>
+                                <div class="custom-select-trigger"><span class="custom-option-placeholder">Selecione...</span></div>
+                                <div class="custom-options"></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label data-required="true">Email de Acesso</label>
+                            <input type="email" class="form-input vereador-email" name="vereador-email-${vereadorCounter}" data-validate required>
+                        </div>
+                        <div class="form-group">
+                            <label data-required="true">Senha <span class="form-tooltip" data-tooltip="Mínimo 8 caracteres com letras, números e símbolos"></span></label>
+                            <input type="password" class="form-input vereador-senha" name="vereador-senha-${vereadorCounter}" data-validate required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Cargo:</label>
+                        <div class="toggle-group">
+                            <div class="toggle-item">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" class="cargo-presidente-checkbox" data-cargo="presidente" data-card="${vereadorCounter}">
+                                    <span class="slider"></span>
+                                </label>
+                                <span>Presidente</span>
+                            </div>
+                            <div class="toggle-item">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" class="cargo-vice-checkbox" data-cargo="vice" data-card="${vereadorCounter}">
+                                    <span class="slider"></span>
+                                </label>
+                                <span>Vice-Presidente</span>
+                            </div>
+                        </div>
+                        <input type="hidden" class="cargo-presidente-input" data-card="${vereadorCounter}" value="false">
+                        <input type="hidden" class="cargo-vice-input" data-card="${vereadorCounter}" value="false">
+                    </div>
+                    <div class="form-group">
+                        <label>Foto</label>
+                        <div class="file-input-wrapper">
+                            <label for="vereador-foto-${vereadorCounter}" class="file-input-button">Procurar...</label>
+                            <input type="file" id="vereador-foto-${vereadorCounter}" class="form-file-input" accept="image/*" required>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-save-vereador" style="width: 100%; margin-top: 16px;">Salvar Vereador</button>
+                </div>
+                <div class="vereador-card-summary"></div>`;
+          vereadoresContainer.appendChild(card);
+          updateAllPartidoSelects();
+        };
+
+        // Validate and collapse a council member card after server-side checks.
+        const handleSaveVereador = async (card) => {
+          const button = card.querySelector(".btn-save-vereador");
+          const vereadorId = card.dataset.id.replace("vereador-", "");
+
+          // Validar campos
+          const nomeValid = window.formValidator.validateField(
+            `vereador-nome-${vereadorId}`,
+            card.querySelector(".vereador-nome").value
+          );
+          const partidoValid = window.formValidator.validateField(
+            `vereador-partido-${vereadorId}`,
+            card.querySelector(".vereador-partido-hidden-input").value
+          );
+          const emailValid = window.formValidator.validateField(
+            `vereador-email-${vereadorId}`,
+            card.querySelector(".vereador-email").value
+          );
+          const senhaValid = window.formValidator.validateField(
+            `vereador-senha-${vereadorId}`,
+            card.querySelector(".vereador-senha").value
+          );
+
+          // Validar foto obrigatória
+          const fotoInput = card.querySelector(".form-file-input");
+          const fotoValid = fotoInput.files.length > 0;
+          if (!fotoValid) {
+            showToast("Foto do vereador é obrigatória", "error");
+            return;
+          }
+
+          if (!nomeValid || !partidoValid || !emailValid || !senhaValid) {
+            return;
+          }
+
+          const nome = window.formValidator.sanitize(
+            card.querySelector(".vereador-nome").value.trim()
+          );
+          const email = window.formValidator.sanitize(
+            card.querySelector(".vereador-email").value.trim()
+          );
+          const isPresidente =
+            card.querySelector(
+              `.cargo-presidente-input[data-card="${vereadorId}"]`
+            ).value === "true";
+          const isVicePresidente =
+            card.querySelector(`.cargo-vice-input[data-card="${vereadorId}"]`)
+              .value === "true";
+
+          const outrosNomes = Array.from(
+            vereadoresContainer.querySelectorAll(
+              '.dynamic-card:not([data-id="' +
+                card.dataset.id +
+                '"]) .vereador-nome'
+            )
+          ).map((el) => el.value.trim());
+          if (outrosNomes.includes(nome)) {
+            alert("Já existe um vereador com este nome na lista.");
+            return;
+          }
+
+          button.disabled = true;
+          button.innerHTML =
+            '<i class="fa fa-spinner fa-spin"></i> Verificando...';
+
+          try {
+            // Verificar email duplicado
+            const emailCheckResponse = await fetch(
+              `/api/admin/check-email?email=${encodeURIComponent(email)}`,
+              {
+                headers: { Authorization: `Bearer ${authToken}` },
+              }
+            );
+            if (!emailCheckResponse.ok)
+              throw new Error("Falha ao verificar email no servidor.");
+
+            const emailCheckResult = await emailCheckResponse.json();
+            if (emailCheckResult.exists) {
+              throw new Error("Este email já está cadastrado no sistema.");
+            }
+
+            // Verificar cargos únicos
+            if (isPresidente || isVicePresidente) {
+              const outrosVereadores = Array.from(
+                vereadoresContainer.querySelectorAll(
+                  ".dynamic-card.is-collapsed"
+                )
+              );
+              const cargoAtual = isPresidente
+                ? "presidente"
+                : "vice-presidente";
+              const cargoLabel = isPresidente
+                ? "Presidente"
+                : "Vice-Presidente";
+
+              const vereadorComCargo = outrosVereadores.find((otherCard) => {
+                const otherCardId = otherCard.dataset.id.replace(
+                  "vereador-",
+                  ""
+                );
+                if (isPresidente) {
+                  return (
+                    otherCard.querySelector(
+                      `.cargo-presidente-input[data-card="${otherCardId}"]`
+                    ).value === "true"
+                  );
+                } else {
+                  return (
+                    otherCard.querySelector(
+                      `.cargo-vice-input[data-card="${otherCardId}"]`
+                    ).value === "true"
+                  );
+                }
+              });
+
+              if (vereadorComCargo) {
+                const otherNome =
+                  vereadorComCargo.querySelector(".vereador-nome").value;
+                const confirmar = confirm(
+                  `O vereador ${otherNome.toUpperCase()} já ocupa o cargo de ${cargoLabel}.\n\n` +
+                    `Deseja transferir o cargo de ${cargoLabel} para ${nome.toUpperCase()}?`
+                );
+
+                if (!confirmar) {
+                  return;
+                }
+
+                // Remover cargo do vereador anterior
+                const otherCardId = vereadorComCargo.dataset.id.replace(
+                  "vereador-",
+                  ""
+                );
+                if (isPresidente) {
+                  vereadorComCargo.querySelector(
+                    `.cargo-presidente-input[data-card="${otherCardId}"]`
+                  ).value = "false";
+                  vereadorComCargo
+                    .querySelector(
+                      `.toggle-button[data-cargo="presidente"][data-card="${otherCardId}"]`
+                    )
+                    .classList.remove("active");
+                } else {
+                  vereadorComCargo.querySelector(
+                    `.cargo-vice-input[data-card="${otherCardId}"]`
+                  ).value = "false";
+                  vereadorComCargo
+                    .querySelector(
+                      `.toggle-button[data-cargo="vice"][data-card="${otherCardId}"]`
+                    )
+                    .classList.remove("active");
+                }
+
+                // Atualizar resumo do card anterior
+                updateVereadorSummary(vereadorComCargo);
+              }
+            }
+
+            card.classList.add("is-collapsed");
+            updateVereadorSummary(card);
+          } catch (error) {
+            alert(error.message);
+          } finally {
+            button.disabled = false;
+            button.innerHTML = "Salvar Vereador";
+          }
+        };
+
+        // Build the compact summary displayed for a saved council member card.
+        const updateVereadorSummary = (card) => {
+          const vereadorId = card.dataset.id.replace("vereador-", "");
+          const nome = card.querySelector(".vereador-nome").value;
+          const partidoTrigger = card.querySelector(
+            ".vereador-partido-select-wrapper .custom-select-trigger"
+          );
+          const partidoText = partidoTrigger.textContent || "Não informado";
+          const isPresidente =
+            card.querySelector(
+              `.cargo-presidente-input[data-card="${vereadorId}"]`
+            ).value === "true";
+          const isVice =
+            card.querySelector(`.cargo-vice-input[data-card="${vereadorId}"]`)
+              .value === "true";
+
+          let badges = "";
+          if (isPresidente)
+            badges += '<span class="summary-badges">Presidente</span>';
+          if (isVice)
+            badges += '<span class="summary-badges">Vice-Presidente</span>';
+
+          card.querySelector(".vereador-card-summary").innerHTML = `
+                <div class="summary-info">
+                    <div>
+                        <p><strong>Nome:</strong> ${nome}</p>
+                        <p><strong>Partido:</strong> ${partidoText}</p>
+                    </div>
+                    <div>
+                        ${badges}
+                        <button type="button" class="btn btn-secondary btn-edit-vereador" style="margin-left: 16px;">Editar</button>
+                    </div>
+                    </div>`;
+        };
+
+        // Prevent duplicate assignment of unique leadership roles across saved council members.
+        const handleCargoConflictCheck = (
+          currentCard,
+          cargo,
+          nomeVereadorAtual
+        ) => {
+          const cargoLabel =
+            cargo === "presidente" ? "Presidente" : "Vice-Presidente";
+          const inputClass =
+            cargo === "presidente"
+              ? ".cargo-presidente-input"
+              : ".cargo-vice-input";
+
+          // Encontra outros vereadores que já foram salvos (estão "colapsados")
+          const outrosVereadoresSalvos = vereadoresContainer.querySelectorAll(
+            `.dynamic-card.is-collapsed:not([data-id="${currentCard.dataset.id}"])`
+          );
+
+          for (const otherCard of outrosVereadoresSalvos) {
+            const otherCardId = otherCard.dataset.id.replace("vereador-", "");
+            const hasCargo =
+              otherCard.querySelector(
+                `${inputClass}[data-card="${otherCardId}"]`
+              ).value === "true";
+
+            if (hasCargo) {
+              const otherNome = otherCard.querySelector(".vereador-nome").value;
+              const confirmar = confirm(
+                `O vereador ${otherNome.toUpperCase()} já ocupa o cargo de ${cargoLabel}.\n\n` +
+                  `Deseja transferir o cargo de ${cargoLabel} para ${nomeVereadorAtual.toUpperCase()}?`
+              );
+
+              if (confirmar) {
+                // Remove o cargo do vereador anterior
+                otherCard.querySelector(
+                  `${inputClass}[data-card="${otherCardId}"]`
+                ).value = "false";
+                const otherCheckbox = otherCard.querySelector(
+                  cargo === "presidente"
+                    ? ".cargo-presidente-checkbox"
+                    : ".cargo-vice-checkbox"
+                );
+                if (otherCheckbox) otherCheckbox.checked = false;
+
+                // Atualiza o resumo do card anterior para remover o emblema do cargo
+                updateVereadorSummary(otherCard);
+                return true; // Transferência bem-sucedida, pode continuar
+              } else {
+                return false; // Usuário cancelou, a ação deve ser revertida
+              }
+            }
+          }
+          return true; // Nenhum conflito encontrado
+        };
+
+        // Assemble the multipart payload and submit the completed chamber registration.
+        const handleFinalSubmit = async (event) => {
+          event.preventDefault();
+          if (
+            vereadoresContainer.querySelector(
+              ".dynamic-card:not(.is-collapsed)"
+            )
+          ) {
+            alert(
+              "Existem vereadores que não foram salvos. Por favor, salve ou remova-os antes de finalizar."
+            );
+            return;
+          }
+
+          // Validar brasão obrigatório
+          const brasaoInput = document.getElementById("brasao-input");
+          if (!brasaoInput.files.length) {
+            showToast("Brasão da câmara é obrigatório", "error");
+            return;
+          }
+
+          // Validar quantidade de vereadores antes de finalizar
+          const qtdVereadoresEl = document.getElementById("qtd-vereadores");
+          const qtdEsperada = qtdVereadoresEl
+            ? parseInt(qtdVereadoresEl.value, 10)
+            : NaN;
+          const vereadorCards = vereadoresContainer.querySelectorAll(
+            ".dynamic-card.is-collapsed"
+          );
+          if (
+            !Number.isNaN(qtdEsperada) &&
+            vereadorCards.length !== qtdEsperada
+          ) {
+            showToast(
+              `Você deve cadastrar ${qtdEsperada} vereador(es) antes de finalizar. Atualmente: ${vereadorCards.length}.`,
+              "error"
+            );
+            return;
+          }
+
+          const submitButton = form.querySelector('button[type="submit"]');
+          submitButton.disabled = true;
+          submitButton.innerHTML =
+            '<i class="fa fa-spinner fa-spin"></i> Finalizando...';
+
+          try {
+            const formData = new FormData();
+            formData.append(
+              "municipio",
+              document.getElementById("municipio").value
+            );
+            formData.append("estado", document.getElementById("estado").value);
+            formData.append(
+              "admin_email",
+              document.getElementById("email-camara").value
+            );
+            formData.append(
+              "admin_senha",
+              document.getElementById("senha-camara").value
+            );
+            // Credenciais opcionais da TV
+            const tvEmailVal = document.getElementById("tv_email")
+              ? document.getElementById("tv_email").value.trim()
+              : "";
+            const tvSenhaVal = document.getElementById("tv_senha")
+              ? document.getElementById("tv_senha").value
+              : "";
+            if (tvEmailVal) formData.append("tv_email", tvEmailVal);
+            if (tvSenhaVal) formData.append("tv_senha", tvSenhaVal);
+            formData.append(
+              "link_facebook",
+              document.getElementById("facebook").value
+            );
+            formData.append(
+              "link_instagram",
+              document.getElementById("instagram").value
+            );
+            formData.append(
+              "link_youtube",
+              document.getElementById("youtube").value
+            );
+            formData.append(
+              "site_oficial",
+              document.getElementById("site_oficial").value
+            );
+            formData.append(
+              "youtube_stream_key",
+              document.getElementById("youtube_stream_key").value
+            );
+            formData.append(
+              "youtube_rtmp_url",
+              document.getElementById("youtube_rtmp_url").value
+            );
+            formData.append(
+              "youtube_channel_id",
+              document.getElementById("youtube_channel_id").value
+            );
+            formData.append(
+              "youtube_channel_url",
+              document.getElementById("youtube_channel_url").value
+            );
+
+            const brasaoFile = document.getElementById("brasao-input").files[0];
+            if (brasaoFile) {
+              formData.append("brasao", brasaoFile);
+            }
+
+            const vereadoresPayload = [];
+            vereadorCards.forEach((card, index) => {
+              const vereadorId = card.dataset.id.replace("vereador-", "");
+              vereadoresPayload.push({
+                nome_parlamentar: card.querySelector(".vereador-nome").value,
+                partido_id: card.querySelector(".vereador-partido-hidden-input")
+                  .value,
+                email: card.querySelector(".vereador-email").value,
+                senha: card.querySelector(".vereador-senha").value,
+                is_presidente:
+                  card.querySelector(
+                    `.cargo-presidente-input[data-card="${vereadorId}"]`
+                  ).value === "true",
+                is_vice_presidente:
+                  card.querySelector(
+                    `.cargo-vice-input[data-card="${vereadorId}"]`
+                  ).value === "true",
+              });
+
+              const fotoFile = card.querySelector(".form-file-input").files[0];
+              if (fotoFile) {
+                const allowedTypes = [
+                  "image/jpeg",
+                  "image/jpg",
+                  "image/png",
+                  "image/gif",
+                  "image/webp",
+                ];
+                if (fotoFile.size > 5 * 1024 * 1024) {
+                  throw new Error(
+                    `A foto do vereador #${index + 1} deve ter no máximo 5MB.`
+                  );
+                }
+                if (!allowedTypes.includes(fotoFile.type)) {
+                  throw new Error(
+                    `A foto do vereador #${
+                      index + 1
+                    } deve ser uma imagem válida (JPG, PNG, GIF, WebP).`
+                  );
+                }
+                formData.append("vereador_fotos", fotoFile);
+              }
+            });
+
+            formData.append("vereadores", JSON.stringify(vereadoresPayload));
+
+            const response = await fetch("/api/admin/camaras", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${authToken}` },
+              body: formData,
+            });
+
+            const result = await response.json();
+            if (!response.ok) {
+              const errorMessage = result.details
+                ? Array.isArray(result.details)
+                  ? result.details
+                      .map((err) => err.msg || err.message || err)
+                      .join(", ")
+                  : result.details
+                : result.error ||
+                  result.message ||
+                  "Erro ao finalizar cadastro.";
+              throw new Error(errorMessage);
+            }
+
+            alert("Câmara, admin e vereadores cadastrados com sucesso!");
+            window.location.href = "/admin/dashboard_admin.html";
+          } catch (error) {
+            console.error("Falha no cadastro:", error);
+            alert(`Falha no cadastro: ${error.message}`);
+          } finally {
+            submitButton.disabled = false;
+            submitButton.innerHTML = "Finalizar Cadastro";
+          }
+        };
+
+        // Wire navigation, dynamic card actions, custom selects, and file input events.
+        const setupNavigationAndEvents = () => {
+          document
+            .getElementById("btn-step1-next")
+            .addEventListener("click", () => {
+              if (validateStep1()) {
+                currentStep = 1;
+                showStep(currentStep);
+              }
+            });
+          document
+            .querySelectorAll(".next-btn:not(#btn-step1-next)")
+            .forEach((btn) =>
+              btn.addEventListener("click", () => {
+                if (currentStep < steps.length - 1) {
+                  if (currentStep === 2) populateReviewStep();
+                  currentStep++;
+                  showStep(currentStep);
+                }
+              })
+            );
+          document.querySelectorAll(".prev-btn").forEach((btn) =>
+            btn.addEventListener("click", () => {
+              if (currentStep > 0) {
+                currentStep--;
+                showStep(currentStep);
+              }
+            })
+          );
+
+          document
+            .getElementById("add-vereador-btn")
+            .addEventListener("click", addVereadorCard);
+          form.addEventListener("submit", handleFinalSubmit);
+          form.addEventListener("click", (e) => {
+            const saveVereadorBtn = e.target.closest(".btn-save-vereador");
+            if (saveVereadorBtn) {
+              handleSaveVereador(e.target.closest(".dynamic-card"));
+              return;
+            }
+            const editVereadorBtn = e.target.closest(".btn-edit-vereador");
+            if (editVereadorBtn) {
+              editVereadorBtn
+                .closest(".dynamic-card")
+                .classList.remove("is-collapsed");
+              return;
+            }
+            const removeBtn = e.target.closest(".btn-remove-item");
+            if (removeBtn) {
+              removeBtn.closest(".dynamic-card").remove();
+              document.getElementById("add-vereador-btn").disabled = false;
+              return;
+            }
+            const trigger = e.target.closest(".custom-select-trigger");
+            if (trigger) {
+              if (trigger.closest("#estado-select-wrapper")) {
+                return;
+              }
+              const options = trigger.nextElementSibling;
+              const isOpen = options.classList.contains("open");
+              document
+                .querySelectorAll(".custom-options.open")
+                .forEach((dd) => dd.classList.remove("open"));
+              if (!isOpen) options.classList.add("open");
+              return;
+            }
+            const option = e.target.closest(".custom-option");
+            if (option) {
+              const wrapper = option.closest(".custom-select-wrapper");
+              if (
+                wrapper.classList.contains("vereador-partido-select-wrapper")
+              ) {
+                wrapper.querySelector(".custom-select-trigger").innerHTML =
+                  option.innerHTML;
+                const hidden = wrapper.querySelector(
+                  ".vereador-partido-hidden-input"
+                );
+                hidden.value = option.dataset.value;
+
+                if (typeof window.formValidator !== "undefined") {
+                  const fieldName = hidden.name;
+                  if (fieldName)
+                    window.formValidator.clearFieldError(fieldName);
+                }
+                wrapper
+                  .querySelector(".custom-options")
+                  .classList.remove("open");
+              }
+              return;
+            }
+
+            // Apply exclusive role-selection rules within each council member card.
+            const toggleBtn = e.target.closest(
+              ".cargo-presidente-checkbox, .cargo-vice-checkbox"
+            );
+            if (toggleBtn) {
+              const card = toggleBtn.closest(".dynamic-card");
+              const cardId = toggleBtn.dataset.card;
+              const cargo = toggleBtn.dataset.cargo;
+              const isChecked = toggleBtn.checked;
+
+              if (isChecked) {
+                // Chama a função de verificação de conflito ANTES de confirmar a alteração
+                const nomeAtual =
+                  card.querySelector(".vereador-nome").value || "Novo Vereador";
+                const podeProsseguir = handleCargoConflictCheck(
+                  card,
+                  cargo,
+                  nomeAtual
+                );
+
+                if (!podeProsseguir) {
+                  // Se o usuário cancelou a transferência, desfaz o clique
+                  toggleBtn.checked = false;
+                  return;
+                }
+
+                // Desmarcar o outro cargo
+                const otherCheckbox = card.querySelector(
+                  cargo === "presidente"
+                    ? ".cargo-vice-checkbox"
+                    : ".cargo-presidente-checkbox"
+                );
+                otherCheckbox.checked = false;
+
+                // Atualizar hidden inputs
+                if (cargo === "presidente") {
+                  card.querySelector(
+                    `.cargo-presidente-input[data-card="${cardId}"]`
+                  ).value = "true";
+                  card.querySelector(
+                    `.cargo-vice-input[data-card="${cardId}"]`
+                  ).value = "false";
+                } else {
+                  card.querySelector(
+                    `.cargo-vice-input[data-card="${cardId}"]`
+                  ).value = "true";
+                  card.querySelector(
+                    `.cargo-presidente-input[data-card="${cardId}"]`
+                  ).value = "false";
+                }
+              } else {
+                // Se o usuário está desmarcando, apenas atualiza o hidden input
+                if (cargo === "presidente") {
+                  card.querySelector(
+                    `.cargo-presidente-input[data-card="${cardId}"]`
+                  ).value = "false";
+                } else {
+                  card.querySelector(
+                    `.cargo-vice-input[data-card="${cardId}"]`
+                  ).value = "false";
+                }
+              }
+              return;
+            }
+
+            if (!e.target.closest(".custom-select-wrapper")) {
+              document
+                .querySelectorAll(".custom-options.open")
+                .forEach((dd) => dd.classList.remove("open"));
+            }
+          });
+          form.addEventListener("change", (e) => {
+            if (e.target.classList.contains("form-file-input")) {
+              const wrapper = e.target.parentElement;
+              const buttonLabel = wrapper
+                ? wrapper.querySelector(".file-input-button")
+                : null;
+              if (!buttonLabel) return;
+
+              buttonLabel.textContent = e.target.files[0]
+                ? e.target.files[0].name
+                : "Procurar...";
+
+              // Limpa erro do brasão ao escolher/remover arquivo.
+              if (
+                e.target.id === "brasao-input" &&
+                typeof window.formValidator !== "undefined"
+              ) {
+                window.formValidator.clearFieldError("brasao-input");
+              }
+            }
+          });
+
+          document.addEventListener("click", (e) => {
+            if (!e.target.closest(".custom-select-wrapper")) {
+              document
+                .querySelectorAll(".custom-options.open")
+                .forEach((dd) => dd.classList.remove("open"));
+            }
+          });
+        };
+
+        // Configure shared layout elements, validation, and initial data sources.
+        async function initializePage() {
+          try {
+            initLayout({
+              title: "Cadastrar Nova Câmara",
+              icon: "fa-plus-circle",
+              navActive: "nav-nova-camara",
+            });
+            setupValidation();
+            populateEstados();
+            await loadPartidosFromDB();
+            setupNavigationAndEvents();
+            showStep(currentStep);
+          } catch (err) {
+            console.error("Erro na inicialização:", err);
+            alert("Não foi possível carregar a página. Verifique a consola.");
+          }
+        }
+
+        initializePage();
+      });
+    </script>
+  </body>
+</html>
+
