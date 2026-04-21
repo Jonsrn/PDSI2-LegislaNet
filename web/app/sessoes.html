@@ -1,0 +1,1164 @@
+<!doctype html>
+<!--
+  File: sessoes.html
+  Purpose: Administrative management page for chamber users to browse,
+  filter, paginate, edit, and remove legislative sessions, with modal-based
+  workflows for updating scheduled sessions and confirming deletions.
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gerenciar Sessões - Legisla Net</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+    />
+
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/forms.css" />
+    <link rel="stylesheet" href="../css/admin.css" />
+    <link rel="stylesheet" href="../css/modals.css" />
+    <link rel="stylesheet" href="../css/toast.css" />
+    <link rel="stylesheet" href="../css/carregamento.css" />
+    <link rel="stylesheet" href="../css/customSelect.css" />
+    <link rel="stylesheet" href="../css/pagination.css" />
+    <script src="../js/mockMode.js?v=3"></script>
+    <script src="../js/global.js"></script>
+    <script src="../js/toast.js"></script>
+    <script src="../js/carregamento.js"></script>
+    <script src="../js/customSelect.js"></script>
+    <script src="../js/pagination.js"></script>
+
+    <style>
+      /* Estilos gerais da página (filtros, cabeçalho) permanecem os mesmos */
+      /* DEPOIS */
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 32px;
+        flex-shrink: 0; /* ADICIONAR ESTA LINHA */
+      }
+
+      /* Botão do header padronizado (desktop) */
+      .page-header .btn.btn-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        line-height: 1;
+        text-decoration: none;
+      }
+
+      .page-header .btn.btn-primary i {
+        margin: 0;
+      }
+      .filters-section {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr auto;
+        gap: 16px;
+        align-items: end;
+        flex-shrink: 0; /* ADICIONAR ESTA LINHA */
+      }
+
+      /* === SESSÕES GRID REESTRUTURADO === */
+      .sessoes-grid-wrapper {
+        flex: 1; /* OCUPA O ESPAÇO DISPONÍVEL */
+        min-height: 200px; /* Altura mínima para evitar colapso */
+        margin-bottom: 32px; /* Espaçamento inferior */
+      }
+
+      #sessoes-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 24px;
+      }
+
+      /* === CONTENT SECTION ESPECÍFICA === */
+      .content-section {
+        flex: 1; /* PERMITE QUE ESTA SEÇÃO CRESÇA */
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* --- MODIFICAÇÕES NOS CARDS DE SESSÃO --- */
+
+      .session-card {
+        background-color: var(--card-bg);
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        transition: all 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        min-height: 180px; /* Altura reduzida compacta */
+        position: relative;
+        justify-content: flex-start;
+        gap: 12px;
+      }
+
+      /* Novo container para o cabeçalho do card */
+      .session-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px; /* Pequeno espaçamento abaixo */
+      }
+
+      .session-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--accent-blue);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      }
+
+      .session-card:hover .session-title {
+        color: var(--accent-blue);
+      }
+
+      .session-date {
+        color: var(--accent-gold);
+        font-weight: 600;
+        font-size: 0.85rem;
+        margin-bottom: 0px;
+      }
+      /* NOVO ESTILO */
+      .session-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0px;
+        color: var(--primary-text);
+        padding-right: 0px;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        transition: color 0.2s ease;
+        flex-grow: 1; /* Ocupa espaço disponível empurrando ações para baixo */
+      }
+      /* O .session-type foi removido */
+
+      /* 2. Status badge reposicionado e com tamanho fixo */
+      /* Status badge modificado */
+      .status-badge {
+        /* Badge relative inside header */
+        position: relative;
+        top: auto;
+        right: auto;
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 99px;
+        font-weight: 600;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        border: 1px solid;
+        line-height: 1;
+      }
+      /* 3. Cores dos status baseadas no cadastro_de_pautas.html */
+      .status-badge.agendada {
+        background-color: rgba(240, 227, 51, 0.2);
+        color: rgb(233, 241, 110);
+        border-color: rgb(121, 128, 35);
+      }
+      .status-badge.em-andamento {
+        background-color: rgba(88, 166, 255, 0.2);
+        color: aqua;
+        border-color: rgba(88, 166, 255, 0.5);
+      }
+      .status-badge.finalizada {
+        background-color: rgba(46, 160, 67, 0.2);
+        color: #71e67f;
+        border-color: rgba(46, 160, 67, 0.5);
+      }
+
+      /* 4. Placeholder para a lista de pautas */
+      /* Botões de ícone (Padronização) */
+      /* Botões de ação nos cards */
+      .btn-action-color {
+        padding: 6px 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        margin-left: 0;
+        transition:
+          transform 0.2s,
+          background-color 0.2s,
+          filter 0.2s;
+        border: none;
+        cursor: pointer;
+        color: white;
+        font-weight: 600;
+        font-size: 0.8rem;
+        gap: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+      }
+      .btn-action-color:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.1);
+      }
+      .btn-action-color i {
+        font-size: 0.9rem;
+      }
+
+      /* Cores específicas de ação */
+      .btn-edit {
+        background-color: var(--accent-orange);
+      }
+      .btn-remove {
+        background-color: var(--accent-red);
+      }
+
+      /* NOVO ESTILO */
+      .session-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 16px; /* Adiciona um espaçamento acima dos botões */
+      }
+      .session-actions .btn {
+        padding: 6px 12px;
+      }
+      .session-actions .btn.btn-secondary {
+        background-color: var(--secondary-bg) !important;
+        color: var(--primary-text) !important;
+        border-color: var(--border-color) !important;
+      }
+
+      /* Modifique os controles para ficarem visíveis dentro do container */
+      .empty-state,
+      .loading-state {
+        text-align: center;
+        padding: 48px 24px;
+        color: var(--secondary-text);
+      }
+
+      /* === RESPONSIVIDADE ESPECÍFICA === */
+      @media (max-width: 768px) {
+        .page-header {
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        /* Botão vira ícone apenas (padrão mobile) */
+        .page-header .btn.btn-primary {
+          width: 40px;
+          height: 40px;
+          min-height: 40px;
+          padding: 0;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          white-space: nowrap;
+          border-radius: 10px;
+          flex: 0 0 auto;
+        }
+
+        .page-header .btn.btn-primary i {
+          margin: 0;
+        }
+
+        .page-header .btn.btn-primary .btn-text {
+          display: none;
+        }
+
+        .filters-section {
+          grid-template-columns: 1fr;
+          padding: 16px;
+          gap: 12px;
+          align-items: stretch;
+        }
+
+        #clear-filters {
+          min-height: 44px;
+          padding: 9px 12px;
+          font-size: 0.9rem;
+          font-weight: 600;
+        }
+
+        .form-group label {
+          font-size: 0.85rem;
+          margin-bottom: 6px;
+          font-weight: 500;
+        }
+
+        .form-input {
+          font-size: 16px !important;
+          padding: 9px 11px !important;
+          border-radius: 6px;
+        }
+
+        .custom-select-wrapper {
+          font-size: 0.95rem;
+        }
+
+        .custom-select-trigger {
+          padding: 9px 11px;
+          min-height: 44px;
+          display: flex;
+          align-items: center;
+        }
+
+        .custom-option {
+          padding: 9px 11px;
+        }
+
+        /* ADICIONAR ESTAS REGRAS */
+        .page-content-wrapper {
+          padding-left: 16px;
+          padding-right: 16px;
+        }
+
+        .pagination-container {
+          padding: 16px;
+        }
+
+        .session-card {
+          max-width: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-layout">
+      <!-- Sidebar injected by the shared layout system -->
+      <div id="sidebar-placeholder"></div>
+      <main class="main-content" id="mainContent">
+        <!-- Header injected by the shared layout system -->
+        <div id="header-placeholder"></div>
+
+        <div class="page-content-wrapper">
+          <div class="content-area">
+            <!-- Main session management area with filters, listing, and actions -->
+            <section class="content-section fade-in">
+              <!-- Page header with title and shortcut to create a new session -->
+              <div class="page-header">
+                <h2>Sessões Legislativas</h2>
+                <button
+                  type="button"
+                  id="btn-nova-sessao"
+                  class="btn btn-primary"
+                >
+                  <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                  <span class="btn-text">Nova Sessão</span>
+                </button>
+              </div>
+
+              <!-- Filter controls for type, status, and text-based search -->
+              <div class="filters-section">
+                <div class="form-group" style="margin: 0">
+                  <label>Tipo</label>
+                  <div class="custom-select-wrapper" id="filter-tipo-wrapper">
+                    <input type="hidden" id="filter-tipo-value" name="tipo" />
+                    <div class="custom-select-trigger">
+                      <span>Todos os tipos</span>
+                    </div>
+                    <div class="custom-options">
+                      <div class="custom-option" data-value="">
+                        <span>Todos os tipos</span>
+                      </div>
+                      <div class="custom-option" data-value="Ordinária">
+                        <span>Ordinária</span>
+                      </div>
+                      <div class="custom-option" data-value="Extraordinária">
+                        <span>Extraordinária</span>
+                      </div>
+                      <div class="custom-option" data-value="Solene">
+                        <span>Solene</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group" style="margin: 0">
+                  <label>Status</label>
+                  <div class="custom-select-wrapper" id="filter-status-wrapper">
+                    <input
+                      type="hidden"
+                      id="filter-status-value"
+                      name="status"
+                    />
+                    <div class="custom-select-trigger">
+                      <span>Todos os status</span>
+                    </div>
+                    <div class="custom-options">
+                      <div class="custom-option" data-value="">
+                        <span>Todos os status</span>
+                      </div>
+                      <div class="custom-option" data-value="Agendada">
+                        <span>Agendada</span>
+                      </div>
+                      <div class="custom-option" data-value="Finalizada">
+                        <span>Finalizada</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group" style="margin: 0">
+                  <label for="filter-search">Buscar</label>
+                  <input
+                    type="text"
+                    id="filter-search"
+                    class="form-input"
+                    placeholder="Nome da sessão..."
+                  />
+                </div>
+                <button
+                  type="button"
+                  id="clear-filters"
+                  class="btn btn-secondary"
+                >
+                  <i class="fa-solid fa-filter-circle-xmark"></i> Limpar
+                </button>
+              </div>
+
+              <!-- Dynamic grid container for paginated session cards -->
+              <div class="sessoes-grid-wrapper">
+                <div id="sessoes-grid"></div>
+              </div>
+            </section>
+          </div>
+
+          <div class="pagination-container" id="pagination-container">
+            <div class="pagination-controls" id="pagination-controls"></div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Deletion confirmation modal for session removal -->
+    <div class="modal-overlay" id="delete-modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Confirmar Exclusão</h3>
+          <button class="modal-close" data-close-modal="delete-modal-overlay">
+            <i class="fa-solid fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body confirm-text">
+          <p>Você tem certeza que deseja remover a sessão:</p>
+          <p><strong id="delete-session-name"></strong></p>
+          <p style="color: var(--accent-red); font-weight: 500">
+            ⚠️ Esta ação não poderá ser desfeita.
+          </p>
+          <p style="color: var(--secondary-text); font-size: 0.875rem">
+            Nota: ao remover a sessão, todas as pautas vinculadas serão
+            apagadas.
+          </p>
+          <p style="color: var(--secondary-text); font-size: 0.875rem">
+            Nota: só é possível remover sessões com status
+            <strong>Agendada</strong> (ainda não iniciadas).
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-close-modal="delete-modal-overlay"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn"
+            id="confirm-delete-btn"
+            style="background-color: var(--accent-red); color: white"
+          >
+            <i class="fa-solid fa-trash"></i> Excluir Sessão
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit modal for updating an existing scheduled session -->
+    <div class="modal-overlay" id="edit-modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Editar Sessão</h3>
+          <button class="modal-close" data-close-modal="edit-modal-overlay">
+            <i class="fa-solid fa-times"></i>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <form id="edit-sessao-form" novalidate>
+            <div class="form-group" style="margin-top: 8px">
+              <label for="edit-tipo-sessao">Tipo de Sessão</label>
+              <div class="custom-select-wrapper" id="edit-tipo-sessao-wrapper">
+                <input type="hidden" id="edit-tipo-sessao" name="tipo" />
+                <div class="custom-select-trigger">
+                  <span>Selecione um tipo...</span>
+                </div>
+                <div class="custom-options">
+                  <div class="custom-option" data-value="">
+                    <span>Selecione um tipo...</span>
+                  </div>
+                  <div class="custom-option" data-value="Ordinária">
+                    <span>Ordinária</span>
+                  </div>
+                  <div class="custom-option" data-value="Extraordinária">
+                    <span>Extraordinária</span>
+                  </div>
+                  <div class="custom-option" data-value="Solene">
+                    <span>Solene</span>
+                  </div>
+                </div>
+              </div>
+              <div
+                id="edit-tipo-sessao-error"
+                class="form-field-error"
+                style="display: none"
+              ></div>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-numero-sessao">Número da Sessão</label>
+              <input
+                type="number"
+                id="edit-numero-sessao"
+                class="form-input"
+                placeholder="Ex: 12"
+                min="1"
+              />
+              <div
+                id="edit-numero-sessao-error"
+                class="form-field-error"
+                style="display: none"
+              ></div>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-data-sessao">Data da Sessão</label>
+              <input
+                type="datetime-local"
+                id="edit-data-sessao"
+                class="form-input"
+              />
+              <div
+                id="edit-data-sessao-error"
+                class="form-field-error"
+                style="display: none"
+              ></div>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-status-sessao">Status</label>
+              <select id="edit-status-sessao" class="form-select" disabled>
+                <option value="Agendada" selected>Agendada</option>
+              </select>
+              <small class="form-text"
+                >O status não pode ser alterado por aqui.</small
+              >
+            </div>
+          </form>
+        </div>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-close-modal="edit-modal-overlay"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            id="confirm-edit-btn"
+            form="edit-sessao-form"
+          >
+            Salvar Alterações
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Initialize the protected session management page when the DOM is ready.
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Enforce authentication and chamber-admin authorization before loading data.
+        try {
+          await protectPage({
+            allowedRoles: ["admin_camara"],
+            requireAuth: true,
+            autoRedirect: true,
+          });
+        } catch (error) {
+          console.error("[AUTH] Falha na autenticação:", error);
+          return;
+        }
+
+        const btnNovaSessao = document.getElementById("btn-nova-sessao");
+        btnNovaSessao?.addEventListener("click", () => {
+          window.location.href = "/app/nova_sessao.html";
+        });
+
+        const SESSOES_PER_PAGE_MOBILE = 10;
+        const SESSOES_PER_PAGE_DESKTOP = 40;
+        const mediaSmall = window.matchMedia("(max-width: 768px)");
+        let SESSOES_PER_PAGE = mediaSmall.matches
+          ? SESSOES_PER_PAGE_MOBILE
+          : SESSOES_PER_PAGE_DESKTOP;
+        let currentPage = 1;
+
+        // Configure filter selectors and trigger data refresh on selection changes.
+        const tipoSelect = new CustomSelect({
+          wrapperId: "filter-tipo-wrapper",
+          placeholder: "Todos os tipos",
+          onSelect: () => applyFilters(),
+        });
+
+        // Configure the status filter selector.
+        const statusSelect = new CustomSelect({
+          wrapperId: "filter-status-wrapper",
+          placeholder: "Todos os status",
+          onSelect: () => applyFilters(),
+        });
+
+        // Cache frequently used DOM references and modal state objects.
+        const grid = document.getElementById("sessoes-grid");
+        const paginationControls = document.getElementById(
+          "pagination-controls",
+        );
+        const filterSearch = document.getElementById("filter-search");
+        const clearFiltersBtn = document.getElementById("clear-filters");
+
+        const deleteModal = {
+          overlay: document.getElementById("delete-modal-overlay"),
+          sessionName: document.getElementById("delete-session-name"),
+          confirmBtn: document.getElementById("confirm-delete-btn"),
+        };
+
+        const editModal = {
+          overlay: document.getElementById("edit-modal-overlay"),
+          form: document.getElementById("edit-sessao-form"),
+          confirmBtn: document.getElementById("confirm-edit-btn"),
+          fields: {
+            tipo: document.getElementById("edit-tipo-sessao"),
+            numero: document.getElementById("edit-numero-sessao"),
+            data: document.getElementById("edit-data-sessao"),
+          },
+        };
+
+        let editSubmitAttempted = false;
+        let editingSessaoId = null;
+
+        // Configure the custom selector used inside the edit modal form.
+        const editTipoSelect = new CustomSelect({
+          wrapperId: "edit-tipo-sessao-wrapper",
+          placeholder: "Selecione um tipo...",
+          onSelect: () => {
+            if (editSubmitAttempted) validateEditForm();
+            clearEditFieldError("tipo");
+          },
+        });
+
+        // Display a validation message and visual state for an edit field.
+        const setEditFieldError = (field, message) => {
+          const errorEl = document.getElementById(`edit-${field}-sessao-error`);
+          if (errorEl) {
+            errorEl.textContent = message;
+            errorEl.style.display = "block";
+          }
+
+          if (field === "tipo") {
+            const wrapper = document.getElementById("edit-tipo-sessao-wrapper");
+            const trigger = wrapper?.querySelector(".custom-select-trigger");
+            trigger?.classList.add("form-select-error");
+            return;
+          }
+
+          const inputId =
+            field === "numero" ? "edit-numero-sessao" : "edit-data-sessao";
+          document.getElementById(inputId)?.classList.add("form-input-error");
+        };
+
+        // Clear the validation state associated with an edit field.
+        const clearEditFieldError = (field) => {
+          const errorEl = document.getElementById(`edit-${field}-sessao-error`);
+          if (errorEl) {
+            errorEl.textContent = "";
+            errorEl.style.display = "none";
+          }
+
+          if (field === "tipo") {
+            const wrapper = document.getElementById("edit-tipo-sessao-wrapper");
+            const trigger = wrapper?.querySelector(".custom-select-trigger");
+            trigger?.classList.remove("form-select-error");
+            return;
+          }
+
+          const inputId =
+            field === "numero" ? "edit-numero-sessao" : "edit-data-sessao";
+          document
+            .getElementById(inputId)
+            ?.classList.remove("form-input-error");
+        };
+
+        // Validate the edit modal inputs before submitting changes.
+        const validateEditForm = () => {
+          let isValid = true;
+
+          const tipo = editModal.fields.tipo.value;
+          const numeroRaw = editModal.fields.numero.value;
+          const dataValue = editModal.fields.data.value;
+
+          if (!tipo) {
+            setEditFieldError("tipo", "Selecione o tipo da sessão.");
+            isValid = false;
+          } else {
+            clearEditFieldError("tipo");
+          }
+
+          if (!numeroRaw) {
+            setEditFieldError("numero", "Informe o número da sessão.");
+            isValid = false;
+          } else if (Number(numeroRaw) < 1) {
+            setEditFieldError(
+              "numero",
+              "O número da sessão deve ser maior ou igual a 1.",
+            );
+            isValid = false;
+          } else {
+            clearEditFieldError("numero");
+          }
+
+          if (!dataValue) {
+            setEditFieldError("data", "Informe a data e hora da sessão.");
+            isValid = false;
+          } else {
+            clearEditFieldError("data");
+          }
+
+          return isValid;
+        };
+
+        // Convert ISO date values to the datetime-local input format.
+        const toDatetimeLocalValue = (isoValue) => {
+          const date = new Date(isoValue);
+          if (!date || Number.isNaN(date.getTime())) return "";
+          const pad = (n) => String(n).padStart(2, "0");
+          const year = date.getFullYear();
+          const month = pad(date.getMonth() + 1);
+          const day = pad(date.getDate());
+          const hours = pad(date.getHours());
+          const minutes = pad(date.getMinutes());
+          return `${year}-${month}-${day}T${hours}:${minutes}`;
+        };
+
+        // Extract the leading session number from the generated session name.
+        const parseNumeroFromNome = (nome) => {
+          const match = String(nome || "").match(/^(\d+)/);
+          return match ? match[1] : "";
+        };
+
+        // Load session details and populate the edit modal for scheduled sessions only.
+        const openEditModal = async (id) => {
+          const authToken = localStorage.getItem("authToken");
+          editingSessaoId = id;
+          editSubmitAttempted = false;
+          clearEditFieldError("tipo");
+          clearEditFieldError("numero");
+          clearEditFieldError("data");
+
+          try {
+            const response = await fetch(`/api/sessoes/${id}`, {
+              headers: { Authorization: `Bearer ${authToken}` },
+            });
+
+            if (!response.ok) {
+              let message = "Falha ao carregar a sessão.";
+              try {
+                const body = await response.json();
+                message = body?.details || body?.error || message;
+              } catch (_) {
+                // ignora
+              }
+              throw new Error(message);
+            }
+
+            const sessao = await response.json();
+
+            if (sessao.status !== "Agendada") {
+              showToast(
+                "Não é possível editar uma sessão que já iniciou ou já terminou.",
+                "error",
+              );
+              return;
+            }
+
+            editModal.fields.numero.value = parseNumeroFromNome(sessao.nome);
+            editModal.fields.data.value = toDatetimeLocalValue(
+              sessao.data_sessao,
+            );
+            editTipoSelect.setValue(sessao.tipo || "");
+
+            openModal(editModal.overlay);
+          } catch (error) {
+            showToast(error.message, "error");
+          }
+        };
+
+        // Submit session updates from the edit modal after validation.
+        const handleEditConfirm = async (event) => {
+          event.preventDefault();
+
+          editSubmitAttempted = true;
+          if (!validateEditForm()) return;
+          if (!editingSessaoId) return;
+
+          const authToken = localStorage.getItem("authToken");
+          const submitButton = editModal.confirmBtn;
+          submitButton.disabled = true;
+          submitButton.innerHTML =
+            '<i class="fa fa-spinner fa-spin"></i> Salvando...';
+
+          try {
+            const payload = {
+              numero: editModal.fields.numero.value,
+              tipo: editModal.fields.tipo.value,
+              data_sessao: editModal.fields.data.value,
+              status: "Agendada",
+            };
+
+            const response = await fetch(`/api/sessoes/${editingSessaoId}`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${authToken}`,
+              },
+              body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+              let message = "Falha ao atualizar a sessão.";
+              try {
+                const body = await response.json();
+                message = body?.details || body?.error || message;
+              } catch (_) {
+                // ignora
+              }
+
+              if (response.status === 403) {
+                message =
+                  "Não é possível editar uma sessão que já iniciou ou já terminou.";
+              }
+
+              throw new Error(message);
+            }
+
+            showToast("Sessão atualizada com sucesso!", "success");
+            closeModal(editModal.overlay);
+            fetchSessoes(currentPage, {
+              tipo: tipoSelect.getValue(),
+              status: statusSelect.getValue(),
+              search: filterSearch.value.trim(),
+            });
+          } catch (error) {
+            showToast(error.message, "error");
+          } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = "Salvar Alterações";
+          }
+        };
+
+        // Fetch paginated sessions and refresh the grid and pagination controls.
+        const fetchSessoes = async (page = 1, filters = {}) => {
+          renderLoadingState(grid, "Carregando sessões...");
+
+          try {
+            const authToken = localStorage.getItem("authToken");
+            const params = new URLSearchParams({
+              page,
+              limit: SESSOES_PER_PAGE,
+              sortBy: "data_sessao",
+              sortOrder: "desc",
+              ...filters,
+            });
+
+            const response = await fetch(`/api/sessoes?${params}`, {
+              headers: { Authorization: `Bearer ${authToken}` },
+            });
+
+            if (!response.ok) throw new Error("Falha ao buscar as sessões.");
+
+            const result = await response.json();
+
+            renderSessoes(result.data);
+
+            const paginationContainer = document.getElementById(
+              "pagination-container",
+            );
+            paginationContainer.style.display = "flex"; // MUDANÇA AQUI
+
+            createPaginationControls({
+              containerId: "pagination-controls",
+              currentPage: page,
+              totalItems: result.pagination.totalItems,
+              itemsPerPage: SESSOES_PER_PAGE,
+              onPageChange: (newPage) => {
+                currentPage = newPage;
+                const currentFilters = {
+                  tipo: tipoSelect.getValue(),
+                  status: statusSelect.getValue(),
+                  search: filterSearch.value.trim(),
+                };
+                fetchSessoes(currentPage, currentFilters);
+              },
+            });
+          } catch (error) {
+            console.error("Erro ao carregar sessões:", error); // MANTIDO
+            renderErrorState(grid, error.message);
+          }
+        };
+
+        // Recalculate the per-page limit when the viewport breakpoint changes.
+        if (!mediaSmall._boundForSessoes) {
+          mediaSmall.addEventListener("change", () => {
+            const newLimit = mediaSmall.matches
+              ? SESSOES_PER_PAGE_MOBILE
+              : SESSOES_PER_PAGE_DESKTOP;
+            if (newLimit === SESSOES_PER_PAGE) return;
+
+            SESSOES_PER_PAGE = newLimit;
+            currentPage = 1;
+
+            const currentFilters = {
+              tipo: tipoSelect.getValue(),
+              status: statusSelect.getValue(),
+              search: filterSearch.value.trim(),
+            };
+            fetchSessoes(currentPage, currentFilters);
+          });
+          mediaSmall._boundForSessoes = true;
+        }
+
+        // Render the session cards or an empty state for the current result set.
+        const renderSessoes = (sessoes) => {
+          const grid = document.getElementById("sessoes-grid");
+          if (!grid) {
+            console.error("Elemento #sessoes-grid não encontrado!"); // MANTIDO
+            return;
+          }
+
+          grid.style.display = "grid";
+
+          if (!sessoes || sessoes.length === 0) {
+            renderEmptyState(
+              grid,
+              "Nenhuma sessão encontrada com os filtros atuais.",
+              "fa-solid fa-calendar-xmark",
+            );
+            return;
+          }
+
+          grid.innerHTML = "";
+          sessoes.forEach((sessao) => {
+            const card = document.createElement("div");
+            card.className = "session-card";
+
+            const dataDaSessao = new Date(sessao.data_sessao);
+            // NOVO CÓDIGO
+            const diaMes = dataDaSessao.toLocaleDateString("pt-BR", {
+              day: "numeric",
+              month: "long",
+            });
+            const ano = dataDaSessao.getFullYear();
+            const parteHora = dataDaSessao.toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            });
+            const dataFormatada = `${diaMes}, ${ano} - ${parteHora}`;
+
+            const statusClass = sessao.status
+              .toLowerCase()
+              .replace(/\s+/g, "-");
+
+            // PADRÃO DE CORES: Editar (Laranja), Remover (Vermelho)
+            card.innerHTML = `
+                        <div class="session-card-header">
+                            <div class="session-date">${dataFormatada}</div>
+                            <div class="status-badge ${statusClass}">${sessao.status}</div>
+                        </div>
+
+                        <h3 class="session-title" title="${sessao.nome}">${sessao.nome}</h3>
+                        
+                        <div style="flex-grow: 1;"></div>
+
+                        <div class="session-actions">
+                          <button class="btn edit-btn" style="background-color: var(--accent-orange); color: white; border: none;" data-id="${sessao.id}" data-status="${sessao.status}">Editar</button>
+                          <button class="btn delete-btn" style="background-color: var(--accent-red); color: white; border: none;" data-id="${sessao.id}" data-nome="${sessao.nome}">Remover</button>
+                        </div>
+                    `;
+
+            grid.appendChild(card);
+          });
+        };
+
+        // Toggle modal visibility while preserving compatibility with both modal state classes.
+        const openModal = (overlay) => {
+          overlay.classList.add("active");
+          overlay.classList.add("visible");
+        };
+        const closeModal = (overlay) => {
+          overlay.classList.remove("active");
+          overlay.classList.remove("visible");
+        };
+
+        // Populate and display the deletion confirmation modal.
+        const openDeleteModal = (id, nome) => {
+          deleteModal.sessionName.textContent = nome;
+          deleteModal.confirmBtn.dataset.id = id;
+          openModal(deleteModal.overlay);
+        };
+
+        // Confirm and process session deletion through the API.
+        const handleDeleteConfirm = async (event) => {
+          const id = event.target.dataset.id;
+          const authToken = localStorage.getItem("authToken");
+          const submitButton = event.target;
+          submitButton.disabled = true;
+          submitButton.innerHTML =
+            '<i class="fa fa-spinner fa-spin"></i> Removendo...';
+          try {
+            const response = await fetch(`/api/sessoes/${id}`, {
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${authToken}` },
+            });
+            if (!response.ok) {
+              let message = "Falha ao remover a sessão.";
+
+              try {
+                const maybeJson = await response.json();
+                message = maybeJson?.details || maybeJson?.error || message;
+              } catch (parseErr) {
+                try {
+                  const text = await response.text();
+                  if (text && text.trim()) message = text;
+                } catch (_) {
+                  // ignora
+                }
+              }
+
+              // Mensagem mais clara para o caso mais comum (regra de remoção)
+              if (response.status === 403) {
+                message =
+                  "Não é possível remover uma sessão que já iniciou ou já terminou.";
+              }
+
+              throw new Error(message);
+            }
+            showToast("Sessão removida com sucesso!", "success");
+            closeModal(deleteModal.overlay);
+            fetchSessoes(currentPage, {
+              tipo: tipoSelect.getValue(),
+              status: statusSelect.getValue(),
+              search: filterSearch.value.trim(),
+            });
+          } catch (error) {
+            showToast(error.message, "error");
+          } finally {
+            submitButton.disabled = false;
+            submitButton.innerHTML =
+              '<i class="fa-solid fa-trash"></i> Excluir Sessão';
+          }
+        };
+
+        // Apply the current filter state and restart pagination from the first page.
+        const applyFilters = () => {
+          const currentFilters = {
+            tipo: tipoSelect.getValue(),
+            status: statusSelect.getValue(),
+            search: filterSearch.value.trim(),
+          };
+          currentPage = 1;
+          fetchSessoes(currentPage, currentFilters);
+        };
+
+        let searchTimeout;
+        filterSearch.addEventListener("input", () => {
+          clearTimeout(searchTimeout);
+          searchTimeout = setTimeout(applyFilters, 500);
+        });
+
+        // Reset all filters to their default state.
+        clearFiltersBtn.addEventListener("click", () => {
+          tipoSelect.reset();
+          statusSelect.reset();
+          filterSearch.value = "";
+          applyFilters();
+        });
+
+        // Delegate session card actions for editing and deletion.
+        grid.addEventListener("click", (event) => {
+          const button = event.target.closest("button");
+          if (!button) return;
+          if (button.classList.contains("edit-btn")) {
+            if (button.dataset.status !== "Agendada") {
+              showToast(
+                "Não é possível editar uma sessão que já iniciou ou já terminou.",
+                "error",
+              );
+              return;
+            }
+            openEditModal(button.dataset.id);
+          }
+          if (button.classList.contains("delete-btn")) {
+            openDeleteModal(button.dataset.id, button.dataset.nome);
+          }
+        });
+        deleteModal.confirmBtn.addEventListener("click", handleDeleteConfirm);
+
+        editModal.form.addEventListener("submit", handleEditConfirm);
+
+        editModal.fields.numero.addEventListener("focus", () =>
+          clearEditFieldError("numero"),
+        );
+        editModal.fields.data.addEventListener("focus", () =>
+          clearEditFieldError("data"),
+        );
+        document
+          .getElementById("edit-tipo-sessao-wrapper")
+          ?.addEventListener("click", () => clearEditFieldError("tipo"));
+
+        document.querySelectorAll("[data-close-modal]").forEach((btn) => {
+          btn.addEventListener("click", () =>
+            closeModal(document.getElementById(btn.dataset.closeModal)),
+          );
+        });
+        document.querySelectorAll(".modal-overlay").forEach((overlay) => {
+          overlay.addEventListener("click", (event) => {
+            if (event.target === overlay) closeModal(overlay);
+          });
+        });
+
+        // Configure shared layout elements and load the initial session listing.
+        await initLayout({
+          title: "Gerenciar Sessões",
+          icon: "fa-calendar-days",
+          navActive: "nav-sessoes",
+        });
+        fetchSessoes(currentPage, {});
+      });
+    </script>
+  </body>
+</html>
