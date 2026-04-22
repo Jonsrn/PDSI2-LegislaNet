@@ -1,0 +1,366 @@
+<!doctype html>
+<!--
+  File: espera.html
+  Purpose: TV standby screen that authenticates the display client, shows the
+  selected council identity, monitors connection status, and redirects when live
+  voting or speech mode begins.
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>TV - Aguardando instruções</title>
+    <meta
+      http-equiv="Cache-Control"
+      content="no-cache, no-store, must-revalidate"
+    />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <link rel="stylesheet" href="/css/global.css" />
+    <link rel="stylesheet" href="/css/portal.css" />
+    <!-- small inline favicon to avoid automatic /favicon.ico 404 -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23007acc'/></svg>"
+    />
+    <style>
+      /* Page-specific fullscreen TV standby layout. */
+      body {
+        background: var(--background-dark);
+        color: var(--primary-text);
+        font-family: Inter, system-ui, sans-serif;
+        overflow: hidden; /* Evitar scrollbars na TV */
+      }
+
+      /* Main wrapper centers all standby content for large-screen display. */
+      .tv-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        width: 100vw;
+        padding: 4vmin;
+        box-sizing: border-box;
+      }
+
+      /* Responsive sizing keeps the chamber name legible across TV resolutions. */
+      .camara-name {
+        font-size: 8vmin; /* Escala com o menor lado da tela */
+        font-weight: 800;
+        margin-bottom: 2vh;
+        text-align: center;
+        line-height: 1.1;
+        max-width: 90%;
+      }
+
+      /* Chamber crest scales proportionally for presentation screens. */
+      .camara-logo {
+        height: 35vmin; /* Logo ocupa 35% da altura/largura menor */
+        width: auto;
+        object-fit: contain;
+        border-radius: 12px;
+        margin-bottom: 4vh;
+        max-width: 80vw;
+      }
+
+      /* Secondary status and message text. */
+      .status {
+        font-size: 3vmin;
+        color: var(--secondary-text);
+      }
+      .message {
+        margin-top: 4vh;
+        font-size: 4vmin;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Connection Status Badge -->
+    <div
+      id="connectionBadge"
+      style="
+        position: fixed;
+        top: 12px;
+        right: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #5cb85c;
+        padding: 8px 12px;
+        border-radius: 20px;
+        color: white;
+        font-weight: 600;
+        z-index: 1000;
+        animation: breathe 2s ease-in-out infinite;
+      "
+    >
+      <div id="connectionBadgeText">Conectado</div>
+    </div>
+
+    <style>
+      /* Subtle breathing animation highlights connection activity. */
+      @keyframes breathe {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.7;
+        }
+      }
+    </style>
+
+    <!-- TV Standby Content -->
+    <div class="tv-wrap">
+      <!-- Chamber Crest -->
+      <img
+        id="brasao"
+        class="camara-logo"
+        src=""
+        alt="Brasão"
+        style="display: none"
+      />
+
+      <!-- Chamber Name -->
+      <div id="nomeCamara" class="camara-name">Aguardando seleção...</div>
+
+      <!-- Manual Reconnect Action -->
+      <button
+        id="reconnectBtn"
+        style="
+          margin-top: 20px;
+          padding: 8px 12px;
+          border-radius: 8px;
+          border: none;
+          background: var(--accent-green);
+          color: white;
+          cursor: pointer;
+          display: none;
+        "
+      >
+        Reconectar
+      </button>
+    </div>
+
+    <!-- Realtime and shared application scripts -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="../js/mockMode.js?v=3"></script>
+    <script src="../js/global.js"></script>
+
+    <script>
+      // Cached UI references used throughout the TV standby flow.
+      const camaraNameEl = document.getElementById("nomeCamara");
+      const brasaoEl = document.getElementById("brasao");
+      const reconnectBtn = document.getElementById("reconnectBtn");
+      const connectionBadge = document.getElementById("connectionBadge");
+      const connectionBadgeText = document.getElementById(
+        "connectionBadgeText",
+      );
+
+      // Stores the active Socket.IO instance for reconnect and lifecycle handling.
+      let tvSocket = null;
+
+      // Initializes authentication, chamber data loading, realtime connection, and TV event handling.
+      async function init() {
+        // Ensures only authenticated TV-role users can access this screen.
+        const isAuthenticated = await protectPage({
+          allowedRoles: ["tv"],
+          requireAuth: true,
+          autoRedirect: true,
+        });
+
+        if (!isAuthenticated) {
+          console.error("[TV] Falha na autenticação");
+          return;
+        }
+
+        const token = localStorage.getItem("authToken");
+        try {
+          if (!token) {
+            console.log("❌ Token não encontrado");
+            return;
+          }
+          const resp = await fetch("/api/me", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (!resp.ok) {
+            console.log("❌ Autenticação falhou");
+            return;
+          }
+          const me = await resp.json();
+          // API returns { user, profile, camara }
+          const camaraId =
+            (me.profile && me.profile.camara_id) || (me.camara && me.camara.id);
+
+          // Normalizes the chamber display name to avoid duplicated prefixes.
+          if (me.camara && me.camara.nome_camara) {
+            const nomeCamara = me.camara.nome_camara;
+            // Se já contém "Câmara Municipal", usar apenas o nome
+            if (nomeCamara.includes("Câmara Municipal")) {
+              camaraNameEl.textContent = nomeCamara;
+            } else {
+              camaraNameEl.textContent = `Câmara Municipal de ${nomeCamara}`;
+            }
+          } else if (me.profile && me.profile.nome) {
+            const nomeProfile = me.profile.nome;
+            if (nomeProfile.includes("Câmara Municipal")) {
+              camaraNameEl.textContent = nomeProfile;
+            } else {
+              camaraNameEl.textContent = `Câmara Municipal de ${nomeProfile}`;
+            }
+          }
+
+          if (me.camara && me.camara.brasao_url) {
+            brasaoEl.src = me.camara.brasao_url;
+            brasaoEl.style.display = "block";
+          }
+
+          // Ensures the realtime client is available before opening the socket.
+          if (typeof io === "undefined") {
+            console.log("📡 Carregando cliente de WebSocket...");
+            await new Promise((resolve, reject) => {
+              const s = document.createElement("script");
+              s.src = "https://cdn.socket.io/4.7.2/socket.io.min.js";
+              s.onload = resolve;
+              s.onerror = () =>
+                reject(new Error("Falha ao carregar script Socket.IO"));
+              document.head.appendChild(s);
+            });
+          }
+
+          // Polls the live-voting status as a fallback in case realtime events are missed.
+          async function checkActiveVoting(cId) {
+            try {
+              const statusResp = await fetch(
+                `/api/votacao-ao-vivo/status/${cId}`,
+              );
+              if (statusResp.ok) {
+                const statusData = await statusResp.json();
+                if (
+                  statusData.isLive &&
+                  statusData.votacoes &&
+                  statusData.votacoes.length > 0
+                ) {
+                  const pautaAtiva = statusData.votacoes[0];
+                  console.log(
+                    "⚠️ Votação em andamento detectada! Redirecionando...",
+                    pautaAtiva,
+                  );
+                  window.location.href = `/tv/votacao_tv.html?pauta=${pautaAtiva.pautaId}&t=${Date.now()}`;
+                }
+              }
+            } catch (err) {
+              console.error("Erro ao verificar status da votação:", err);
+            }
+          }
+
+          // Opens the realtime connection and joins the TV room for the chamber.
+          tvSocket = io(undefined, { auth: { token } });
+
+          tvSocket.on("connect", async () => {
+            console.log("📡 TV conectada ao servidor");
+            connectionBadge.style.background = "#5cb85c";
+            connectionBadgeText.textContent = "Conectado";
+            reconnectBtn.style.display = "none";
+
+            // Joins the chamber room after a successful socket connection.
+            if (camaraId) {
+              tvSocket.emit("tv:join-camara", { camaraId });
+
+              // Immediately checks for an active vote after connect or reconnect.
+              checkActiveVoting(camaraId);
+
+              // Starts safety polling to catch missed vote-start events.
+              if (!window.__tvEsperaPolling) {
+                window.__tvEsperaPolling = setInterval(
+                  () => checkActiveVoting(camaraId),
+                  5000,
+                );
+                console.log("⏱️ Polling de espera iniciado (5s)");
+              }
+            }
+          });
+
+          tvSocket.on("tv:iniciar-votacao", (data) => {
+            // Redirect to voting template and pass pauta id
+            const pautaId = data.pauta?.id;
+            const url = `/tv/votacao_tv.html?pauta=${pautaId}`;
+            window.location.href = url;
+          });
+
+          tvSocket.on("disconnect", () => {
+            console.log("📡 TV desconectada do servidor");
+            connectionBadge.style.background = "#d9534f";
+            connectionBadgeText.textContent = "Desconectado";
+            reconnectBtn.style.display = "inline-block";
+
+            // Stops the fallback polling loop while disconnected.
+            if (window.__tvEsperaPolling) {
+              clearInterval(window.__tvEsperaPolling);
+              window.__tvEsperaPolling = null;
+              console.log("🛑 Polling de espera parado");
+            }
+          });
+
+          tvSocket.on("tv:mostrar-espera", (data) => {
+            if (data.camara && data.camara.nome_camara) {
+              const nomeCamara = data.camara.nome_camara;
+              if (nomeCamara.includes("Câmara Municipal")) {
+                camaraNameEl.textContent = nomeCamara;
+              } else {
+                camaraNameEl.textContent = `Câmara Municipal de ${nomeCamara}`;
+              }
+            }
+            if (data.camara && data.camara.brasao_url) {
+              brasaoEl.src = data.camara.brasao_url;
+              brasaoEl.style.display = "block";
+            }
+          });
+
+          tvSocket.on("tv:join-error", (err) => {
+            console.error("❌ Erro ao autenticar TV:", err);
+            connectionBadge.style.background = "#d9534f";
+            connectionBadgeText.textContent = "Erro de Auth";
+            reconnectBtn.style.display = "inline-block";
+            console.warn("tv:join-error", err);
+          });
+
+          // Allows the operator to retry the realtime connection manually.
+          reconnectBtn.addEventListener("click", () => {
+            try {
+              if (tvSocket) {
+                console.log("🔄 Tentando reconectar...");
+                connectionBadge.style.background = "#ffd24d";
+                connectionBadgeText.textContent = "Reconectando...";
+                tvSocket.connect();
+              } else {
+                window.location.reload();
+              }
+            } catch (e) {
+              console.error("Erro ao reconectar:", e);
+              window.location.reload();
+            }
+          });
+
+          tvSocket.on("tv:iniciar-fala", () => {
+            // Opens the speech display template on the initial speech event.
+            window.location.href = `/tv/fala_tv.html?t=${Date.now()}`;
+          });
+
+          tvSocket.on("tv:iniciar-fala-start", () => {
+            // Provides a fallback if the first speech event was missed.
+            window.location.href = `/tv/fala_tv.html?t=${Date.now()}`;
+          });
+        } catch (err) {
+          console.error("❌ Erro ao iniciar TV:", err);
+          console.error("TV espera init error", err);
+        }
+      }
+
+      // Starts the TV standby initialization flow as soon as the page loads.
+      init();
+    </script>
+  </body>
+</html>
+

@@ -1,0 +1,1007 @@
+<!doctype html>
+<!--
+  File: selecionar_camara.html
+  Purpose: Public portal page for searching, browsing, and selecting a
+  municipal chamber before entering its public transparency and session view.
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Selecione sua Câmara - Legisla Net</title>
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+    />
+
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/portal.css" />
+    <link rel="stylesheet" href="../css/btn-voltar.css" />
+    <link rel="stylesheet" href="../css/animations.css" />
+    <link rel="stylesheet" href="../css/pagination.css" />
+
+    <style>
+      /* ESTILOS ESPECÍFICOS DA SELEÇÃO DE CÂMARA */
+
+      body {
+        background: var(--background-dark);
+        background-image:
+          linear-gradient(
+            135deg,
+            rgba(88, 166, 255, 0.08) 0%,
+            rgba(46, 160, 67, 0.06) 25%,
+            rgba(138, 58, 185, 0.05) 50%,
+            rgba(240, 136, 51, 0.07) 75%,
+            rgba(88, 166, 255, 0.04) 100%
+          ),
+          radial-gradient(
+            circle at 20% 30%,
+            rgba(46, 160, 67, 0.05) 0%,
+            transparent 60%
+          ),
+          radial-gradient(
+            circle at 80% 70%,
+            rgba(138, 58, 185, 0.04) 0%,
+            transparent 60%
+          );
+        min-height: 100vh;
+        padding-top: 80px; /* Espaço para navbar fixo */
+      }
+
+      .selection-container {
+        max-width: 1600px; /* Ainda maior para telas grandes */
+        margin: 0 auto;
+        padding: 2rem 1rem;
+        min-height: calc(100vh - 80px);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .selection-header {
+        text-align: center;
+        margin-bottom: 3rem;
+      }
+
+      /* Logo removida - agora está no navbar */
+      .selection-header .logo {
+        display: none;
+      }
+
+      .selection-header h1 {
+        font-size: 3rem;
+        font-weight: 800;
+        margin-bottom: 1rem;
+        background: linear-gradient(
+          135deg,
+          var(--accent-blue),
+          var(--accent-green)
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .selection-header p {
+        font-size: 1.2rem;
+        color: var(--secondary-text);
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.6;
+      }
+
+      .search-container {
+        position: relative;
+        margin-bottom: 2rem;
+      }
+
+      .search-input {
+        width: 100%;
+        padding: 1rem 1rem 1rem 3rem;
+        background-color: var(--card-bg);
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        font-size: 1.1rem;
+        color: var(--primary-text);
+        transition: all 0.3s ease;
+      }
+
+      .search-input:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
+      }
+
+      .search-input::placeholder {
+        color: var(--secondary-text);
+      }
+
+      .search-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--secondary-text);
+        font-size: 1.2rem;
+      }
+
+      .loading-indicator {
+        display: none;
+        text-align: center;
+        padding: 2rem;
+        color: var(--secondary-text);
+      }
+
+      .loading-spinner {
+        width: 32px;
+        height: 32px;
+        border: 3px solid var(--border-color);
+        border-top: 3px solid var(--accent-blue);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .camaras-grid-wrapper {
+        flex: 1;
+        min-height: 200px;
+        margin-bottom: 2rem;
+      }
+
+      .camaras-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 24px;
+      }
+
+      .camara-card {
+        background-color: var(--card-bg);
+        padding: 24px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        min-height: 250px;
+        position: relative;
+        overflow: hidden;
+        justify-content: space-between;
+        width: 100%;
+        cursor: pointer;
+      }
+
+      .camara-card:hover {
+        border-color: var(--accent-blue);
+        transform: translateY(-4px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      }
+
+      .camara-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(
+          90deg,
+          var(--accent-blue),
+          var(--accent-green)
+        );
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .camara-card:hover::before {
+        opacity: 1;
+      }
+
+      .camara-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .camara-brasao {
+        width: 60px;
+        height: 60px;
+        border-radius: 8px;
+        background-color: var(--background-dark);
+        border: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .camara-brasao img {
+        width: 40px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: 4px;
+      }
+
+      .camara-brasao i {
+        font-size: 1.5rem;
+        color: var(--accent-blue);
+      }
+
+      .camara-info h3 {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--primary-text);
+        margin-bottom: 0.5rem;
+        line-height: 1.3;
+      }
+
+      .camara-location {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--secondary-text);
+        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .camara-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border-color);
+      }
+
+      .stat-item {
+        text-align: center;
+      }
+
+      .stat-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--accent-blue);
+        display: block;
+        line-height: 1;
+        margin-bottom: 0.25rem;
+      }
+
+      .stat-label {
+        font-size: 0.8rem;
+        color: var(--secondary-text);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      /* Remoção do status badge - não é necessário mostrar ativo/inativo */
+
+      /* Estilos da paginação */
+      .pagination-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 2rem 0;
+        margin-top: auto;
+      }
+
+      .pagination-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .pagination-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border: 1px solid var(--border-color);
+        background-color: var(--card-bg);
+        color: var(--primary-text);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-weight: 500;
+      }
+
+      .pagination-btn:hover:not(.disabled) {
+        border-color: var(--accent-blue);
+        background-color: var(--accent-blue);
+        color: white;
+      }
+
+      .pagination-btn.active {
+        border-color: var(--accent-blue);
+        background-color: var(--accent-blue);
+        color: white;
+      }
+
+      .pagination-btn.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .pagination-info {
+        padding: 0 1rem;
+        font-size: 0.9rem;
+        color: var(--secondary-text);
+      }
+
+      .no-results {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--secondary-text);
+      }
+
+      .no-results i {
+        font-size: 4rem;
+        color: var(--border-color);
+        margin-bottom: 1rem;
+      }
+
+      .no-results h3 {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        color: var(--primary-text);
+      }
+
+      /* Link voltar ocultado - agora está no navbar */
+      .back-link {
+        display: none;
+      }
+
+      /* Responsividade */
+      @media (max-width: 1024px) {
+        body {
+          padding-top: 70px;
+        }
+
+        .selection-container {
+          max-width: 100%;
+          padding: 1.5rem 1rem;
+          min-height: calc(100vh - 70px);
+        }
+
+        .selection-header h1 {
+          font-size: 2.5rem;
+        }
+
+        .camaras-grid {
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 20px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        body {
+          padding-top: 60px;
+        }
+
+        .selection-container {
+          padding: 1rem;
+          min-height: calc(100vh - 60px);
+        }
+
+        .selection-header {
+          margin-bottom: 2rem;
+        }
+
+        .selection-header .logo {
+          font-size: 1.25rem;
+          margin-bottom: 1.5rem;
+        }
+
+        .selection-header .logo svg {
+          width: 28px;
+          height: 28px;
+        }
+
+        .selection-header h1 {
+          font-size: 2rem;
+        }
+
+        .selection-header p {
+          font-size: 1rem;
+        }
+
+        .search-input {
+          font-size: 1rem;
+          padding: 0.875rem 0.875rem 0.875rem 2.75rem;
+        }
+
+        .search-icon {
+          left: 0.875rem;
+          font-size: 1.1rem;
+        }
+
+        .camaras-grid {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+
+        .camara-card {
+          min-height: 220px;
+          padding: 20px;
+        }
+
+        .camara-info h3 {
+          font-size: 1.15rem;
+        }
+
+        .stat-number {
+          font-size: 1.25rem;
+        }
+
+        .pagination-container {
+          padding: 1rem 0;
+        }
+      }
+
+      @media (max-width: 480px) {
+        body {
+          padding-top: 56px;
+        }
+
+        .selection-container {
+          padding: 0.75rem;
+          min-height: calc(100vh - 56px);
+        }
+
+        .selection-header {
+          margin-bottom: 1.5rem;
+        }
+
+        .selection-header .logo {
+          font-size: 1.1rem;
+          margin-bottom: 1rem;
+        }
+
+        .selection-header .logo svg {
+          width: 24px;
+          height: 24px;
+        }
+
+        .selection-header h1 {
+          font-size: 1.75rem;
+        }
+
+        .selection-header p {
+          font-size: 0.9rem;
+        }
+
+        .search-input {
+          font-size: 0.9rem;
+          padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+        }
+
+        .search-icon {
+          left: 0.75rem;
+          font-size: 1rem;
+        }
+
+        .camara-card {
+          min-height: 200px;
+          padding: 16px;
+        }
+
+        .camara-brasao {
+          width: 50px;
+          height: 50px;
+        }
+
+        .camara-brasao img {
+          width: 32px;
+          height: 32px;
+        }
+
+        .camara-brasao i {
+          font-size: 1.25rem;
+        }
+
+        .camara-info h3 {
+          font-size: 1rem;
+        }
+
+        .camara-location {
+          font-size: 0.85rem;
+        }
+
+        .camara-stats {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+          margin-top: 1rem;
+          padding-top: 1rem;
+        }
+
+        .stat-number {
+          font-size: 1.125rem;
+        }
+
+        .stat-label {
+          font-size: 0.7rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Dynamic portal navigation placeholder -->
+    <div id="navbar-placeholder"></div>
+
+    <!-- Fallback back link kept in the markup but visually hidden -->
+    <a href="../index.html" class="back-link">
+      <i class="fas fa-arrow-left"></i>
+      Voltar ao início
+    </a>
+
+    <!-- Main chamber selection layout -->
+    <div class="selection-container">
+      <!-- Introductory header for the chamber selection experience -->
+      <div class="selection-header fade-in">
+        <a href="../index.html" class="logo">
+          <svg viewBox="0 0 44 40" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient
+                id="logoGradient"
+                x1="0%"
+                y1="0%"
+                x2="100%"
+                y2="100%"
+              >
+                <stop offset="0%" stop-color="var(--accent-blue)" />
+                <stop offset="100%" stop-color="var(--accent-green)" />
+              </linearGradient>
+            </defs>
+            <path
+              fill="url(#logoGradient)"
+              d="M 8 5 V 35 H 14 V 5 Z M 19 5 V 35 H 25 V 5 Z M 30 5 V 35 H 36 V 5 Z M 5 35 H 39 V 40 H 5 Z"
+            />
+          </svg>
+          <span>Legisla Net</span>
+        </a>
+        <h1>Selecione sua Câmara</h1>
+        <p>
+          Encontre a câmara municipal da sua cidade para acompanhar as sessões,
+          votações e atividades dos vereadores em tempo real.
+        </p>
+      </div>
+
+      <!-- Search input for filtering chambers by city or chamber name -->
+      <div class="search-container fade-in">
+        <i class="fas fa-search search-icon"></i>
+        <input
+          type="text"
+          id="searchInput"
+          class="search-input"
+          placeholder="Digite o nome da cidade ou câmara..."
+          autocomplete="off"
+        />
+      </div>
+
+      <!-- Loading feedback displayed while chamber data is being fetched -->
+      <div id="loadingIndicator" class="loading-indicator">
+        <div class="loading-spinner"></div>
+        <p>Carregando câmaras...</p>
+      </div>
+
+      <!-- Dynamic grid used to render the available chambers -->
+      <div class="camaras-grid-wrapper fade-in">
+        <div id="camarasContainer" class="camaras-grid">
+          <!-- Câmaras serão carregadas dinamicamente -->
+        </div>
+      </div>
+
+      <!-- Empty state shown when the current search yields no results -->
+      <div id="noResults" class="no-results" style="display: none">
+        <i class="fas fa-search"></i>
+        <h3>Nenhuma câmara encontrada</h3>
+        <p>Tente buscar pelo nome da cidade ou câmara municipal.</p>
+      </div>
+
+      <!-- Pagination area for navigating through chamber result pages -->
+      <div
+        class="pagination-container"
+        id="pagination-container"
+        style="display: none"
+      >
+        <div class="pagination-controls" id="pagination-controls"></div>
+      </div>
+    </div>
+
+    <!-- Dynamic portal footer placeholder -->
+    <div id="footer-placeholder"></div>
+
+    <script src="../js/mockMode.js?v=3"></script>
+    <script src="../js/global.js"></script>
+    <script src="../js/pagination.js"></script>
+    <script>
+      // Configure portal navbar content specific to the chamber-selection page.
+      function setupSelecionarCamaraNavbar() {
+        // Insert the back action in the left navbar slot.
+        const backButtonContainer = document.getElementById("nav-back-button");
+        if (backButtonContainer) {
+          backButtonContainer.innerHTML = `
+                    <a href="../index.html" class="btn-voltar-header">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Voltar ao início</span>
+                    </a>
+                `;
+        }
+
+        // The right side of the navbar remains intentionally empty on this page.
+      }
+
+      // Initialize layout, search, data loading, and pagination after the DOM is ready.
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Load shared portal components.
+        await initLayout({});
+
+        // Configure page-specific navbar content.
+        setupSelecionarCamaraNavbar();
+
+        // Start shared portal animations.
+        initUnifiedAnimations();
+
+        // Debug inicial da tela
+        console.log("🚀 Página carregada - Debug inicial:");
+        console.log(
+          "🖥️ Resolução da tela:",
+          window.screen.width + "x" + window.screen.height,
+        );
+        console.log(
+          "🌐 Viewport:",
+          window.innerWidth + "x" + window.innerHeight,
+        );
+
+        // Elementos do DOM
+        const searchInput = document.getElementById("searchInput");
+        const camarasContainer = document.getElementById("camarasContainer");
+        const loadingIndicator = document.getElementById("loadingIndicator");
+        const noResults = document.getElementById("noResults");
+        const paginationContainer = document.getElementById(
+          "pagination-container",
+        );
+
+        const CAMARAS_PER_PAGE = 8;
+        let currentPage = 1;
+        let currentSearch = "";
+
+        // Load the initial chamber list.
+        await loadCamaras();
+
+        // Configure debounced search filtering.
+        searchInput.addEventListener("input", () => {
+          clearTimeout(searchTimeout);
+          currentSearch = searchInput.value.trim();
+          searchTimeout = setTimeout(() => {
+            currentPage = 1; // Reset para primeira página na busca
+            loadCamaras(currentPage, currentSearch);
+          }, 300);
+        });
+
+        let searchTimeout = null;
+
+        // Fetch chambers from the public API and refresh the list UI.
+        async function loadCamaras(page = 1, search = "") {
+          showLoading(true);
+          hideResultsAndPagination();
+
+          try {
+            console.log(
+              `🔍 Carregando câmaras - Página: ${page}, Busca: ${search}`,
+            );
+
+            const params = new URLSearchParams({
+              page,
+              limit: CAMARAS_PER_PAGE,
+              ...(search && { search }),
+            });
+
+            const response = await fetch(`/api/camaras/publicas?${params}`);
+
+            if (!response.ok) {
+              throw new Error(`Erro ao carregar câmaras: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const camaras = data.camaras || [];
+            const pagination = data.pagination || {};
+
+            console.log("✅ Câmaras carregadas:", camaras.length);
+
+            renderCamaras(camaras);
+            setupPagination(pagination, search);
+          } catch (error) {
+            console.error("❌ Erro ao carregar câmaras:", error);
+
+            // Use a lightweight fallback dataset during development failures.
+            const mockCamaras = [
+              {
+                id: "1",
+                nome_camara: "Câmara Municipal de São Paulo",
+                municipio: "São Paulo",
+                estado: "SP",
+                brasao_url: null,
+                vereadores_count: 55,
+                sessoes_totais: 12,
+              },
+              {
+                id: "2",
+                nome_camara: "Câmara Municipal do Rio de Janeiro",
+                municipio: "Rio de Janeiro",
+                estado: "RJ",
+                brasao_url: null,
+                vereadores_count: 51,
+                sessoes_totais: 8,
+              },
+              {
+                id: "3",
+                nome_camara: "Câmara Municipal de Picos",
+                municipio: "Picos",
+                estado: "PI",
+                brasao_url: null,
+                vereadores_count: 15,
+                sessoes_totais: 5,
+              },
+            ];
+
+            console.log("⚠️ Usando dados mockados para desenvolvimento");
+            renderCamaras(mockCamaras);
+
+            // Build pagination metadata for the fallback dataset.
+            const mockPagination = {
+              total: mockCamaras.length,
+              totalPages: 1,
+              currentPage: 1,
+              limit: CAMARAS_PER_PAGE,
+            };
+            setupPagination(mockPagination, search);
+          }
+
+          showLoading(false);
+        }
+
+        // Render chamber cards and bind card-selection behavior.
+        function renderCamaras(camaras) {
+          if (camaras.length === 0) {
+            showNoResults(true);
+            return;
+          }
+
+          showNoResults(false);
+
+          const html = camaras
+            .map(
+              (camara) => `
+                    <div class="camara-card fade-in" data-camara-id="${camara.id}" data-camara-nome="${escapeHtml(camara.nome_camara)}">
+                        <div class="camara-header">
+                            <div class="camara-brasao">
+                                ${
+                                  camara.brasao_url
+                                    ? `<img src="${camara.brasao_url}" alt="Brasão">`
+                                    : '<i class="fas fa-university"></i>'
+                                }
+                            </div>
+                            <div class="camara-info">
+                                <h3>${escapeHtml(camara.nome_camara)}</h3>
+                                <div class="camara-location">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>${escapeHtml(camara.municipio)} - ${camara.estado}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="camara-stats">
+                            <div class="stat-item">
+                                <span class="stat-number">${camara.vereadores_count || 0}</span>
+                                <span class="stat-label">Vereadores</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">${camara.sessoes_totais || 0}</span>
+                                <span class="stat-label">Sessões Totais</span>
+                            </div>
+                        </div>
+                    </div>
+                `,
+            )
+            .join("");
+
+          camarasContainer.innerHTML = html;
+
+          // Adicionar event listeners para os cards
+          document.querySelectorAll(".camara-card").forEach((card) => {
+            card.addEventListener("click", () => {
+              const camaraId = card.dataset.camaraId;
+              const camaraNome = card.dataset.camaraNome;
+              selectCamara(camaraId, camaraNome);
+            });
+
+            // Adicionar indicação visual de que é clicável
+            card.style.cursor = "pointer";
+          });
+
+          // Emit layout diagnostics for grid debugging.
+          debugGridLayout();
+
+          // Re-run reveal animations for newly injected cards.
+          setTimeout(() => {
+            initUnifiedAnimations();
+          }, 100);
+        }
+
+        // Configure pagination controls for the current chamber result set.
+        function setupPagination(pagination, search) {
+          if (pagination.totalPages <= 1) {
+            paginationContainer.style.display = "none";
+            return;
+          }
+
+          paginationContainer.style.display = "flex";
+
+          createPaginationControls({
+            containerId: "pagination-controls",
+            currentPage: pagination.currentPage,
+            totalItems: pagination.total,
+            itemsPerPage: CAMARAS_PER_PAGE,
+            onPageChange: (newPage) => {
+              currentPage = newPage;
+              loadCamaras(newPage, search);
+            },
+          });
+        }
+
+        // Hide results and pagination while a new search request is in progress.
+        function hideResultsAndPagination() {
+          camarasContainer.style.display = "none";
+          paginationContainer.style.display = "none";
+          showNoResults(false);
+        }
+
+        // Persist the selected chamber and redirect to the public portal view.
+        function selectCamara(camaraId, camaraNome) {
+          console.log("🏛️ Câmara selecionada:", {
+            id: camaraId,
+            nome: camaraNome,
+          });
+
+          try {
+            // Armazenar seleção no localStorage
+            localStorage.setItem("selectedCamaraId", camaraId);
+            localStorage.setItem("selectedCamaraNome", camaraNome);
+
+            console.log("✅ Dados salvos no localStorage");
+
+            // Redirecionar para o portal público
+            const targetUrl = `portal_publico.html?camara=${encodeURIComponent(camaraId)}`;
+            console.log("🔄 Redirecionando para:", targetUrl);
+
+            window.location.href = targetUrl;
+          } catch (error) {
+            console.error("❌ Erro ao selecionar câmara:", error);
+            alert("Erro ao selecionar câmara. Tente novamente.");
+          }
+        }
+
+        // Toggle the loading indicator and grid visibility.
+        function showLoading(show) {
+          loadingIndicator.style.display = show ? "block" : "none";
+          if (!show) {
+            camarasContainer.style.display = "grid";
+          }
+        }
+
+        // Toggle the empty-state message and result visibility.
+        function showNoResults(show) {
+          noResults.style.display = show ? "block" : "none";
+          if (show) {
+            camarasContainer.style.display = "none";
+            paginationContainer.style.display = "none";
+          } else {
+            camarasContainer.style.display = "grid";
+          }
+        }
+
+        // Log grid layout diagnostics to help inspect responsive rendering.
+        function debugGridLayout() {
+          const container = document.querySelector(".selection-container");
+          const grid = document.getElementById("camarasContainer");
+          const cards = document.querySelectorAll(".camara-card");
+
+          console.log("=== DEBUG GRID LAYOUT ===");
+
+          // Dimensões da janela
+          console.log("🖥️ Viewport:", {
+            width: window.innerWidth,
+            height: window.innerHeight,
+          });
+
+          // Dimensões do container
+          if (container) {
+            const containerRect = container.getBoundingClientRect();
+            console.log("📦 Container:", {
+              width: containerRect.width,
+              maxWidth: window.getComputedStyle(container).maxWidth,
+              padding: window.getComputedStyle(container).padding,
+            });
+          }
+
+          // Dimensões do grid
+          if (grid) {
+            const gridRect = grid.getBoundingClientRect();
+            const gridStyles = window.getComputedStyle(grid);
+            console.log("🔲 Grid:", {
+              width: gridRect.width,
+              gridTemplateColumns: gridStyles.gridTemplateColumns,
+              gap: gridStyles.gap,
+              display: gridStyles.display,
+            });
+          }
+
+          // Cards
+          console.log("🃏 Cards encontrados:", cards.length);
+          if (cards.length > 0) {
+            const firstCard = cards[0];
+            const cardRect = firstCard.getBoundingClientRect();
+            console.log("🃏 Primeira card:", {
+              width: cardRect.width,
+              minWidth: "320px (esperado)",
+            });
+
+            // Calcular quantos cards cabem teoricamente
+            const availableWidth = grid.getBoundingClientRect().width;
+            const cardWidth = 320; // minWidth
+            const gap = 24; // gap do grid
+            const theoreticalCards = Math.floor(
+              (availableWidth + gap) / (cardWidth + gap),
+            );
+            console.log("📊 Cálculo teórico:", {
+              availableWidth,
+              cardMinWidth: cardWidth,
+              gap,
+              shouldFit: theoreticalCards + " cards por linha",
+            });
+          }
+
+          console.log("=== FIM DEBUG ===");
+        }
+
+        // Escape text content before inserting dynamic values into HTML.
+        function escapeHtml(text) {
+          const map = {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;",
+          };
+          return text.replace(/[&<>"']/g, function (m) {
+            return map[m];
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
+
