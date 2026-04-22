@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<!--
+  File: votacao_publica.html
+  Purpose: Public portal page that displays a single agenda item's voting details,
+  including metadata, live summary statistics, and the list of recorded votes.
+-->
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Votação Pública - Legisla Net</title>
+
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+
+
+    <link rel="stylesheet" href="../css/portal.css">
+    <link rel="stylesheet" href="../css/animations.css">
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/carregamento.css">
+    <link rel="stylesheet" href="../css/btn-voltar.css">
+
+    <style>
+        /* Page-specific layout and presentation for the public voting detail view. */
+
+        /* Base layout keeps the footer anchored below the main content. */
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        main {
+            flex: 1;
+            padding-top: 80px; /* Espaço para o header fixo */
+        }
+
+        /* Main two-column layout for agenda details and voter results. */
+        .votacao-publica-layout {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 24px;
+            flex-grow: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 16px 24px 32px 24px;
+        }
+
+        .info-column, .votantes-column {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .info-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+
+        .info-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-card h3 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--secondary-text);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-card p, .info-card a {
+            font-size: 1rem;
+            color: var(--primary-text);
+            line-height: 1.5;
+        }
+
+        .info-card a {
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .info-card a:hover {
+            text-decoration: underline;
+        }
+
+        /* Voting statistics summary cards. */
+        .stats-card {
+            background: linear-gradient(135deg, var(--card-bg) 0%, var(--background-light) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .stats-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .stats-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-text);
+        }
+
+
+        .vote-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 20px 16px;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 10px 10px 0 0;
+            transition: all 0.3s ease;
+        }
+
+        .stat-item.favor {
+            background-color: rgba(46, 160, 67, 0.1);
+            border-color: rgba(46, 160, 67, 0.3);
+        }
+
+        .stat-item.favor::before {
+            background-color: var(--accent-green);
+        }
+
+        .stat-item.against {
+            background-color: rgba(248, 81, 73, 0.1);
+            border-color: rgba(248, 81, 73, 0.3);
+        }
+
+        .stat-item.against::before {
+            background-color: var(--accent-red);
+        }
+
+        .stat-item.abstention {
+            background-color: rgba(212, 175, 55, 0.1);
+            border-color: rgba(212, 175, 55, 0.3);
+        }
+
+        .stat-item.abstention::before {
+            background-color: var(--accent-gold);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            display: block;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .stat-item.favor .stat-number { color: var(--accent-green); }
+        .stat-item.against .stat-number { color: var(--accent-red); }
+        .stat-item.abstention .stat-number { color: var(--accent-gold); }
+
+        .stat-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--secondary-text);
+        }
+
+        .stat-icon {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .stat-item.favor .stat-icon { color: var(--accent-green); }
+        .stat-item.against .stat-icon { color: var(--accent-red); }
+        .stat-item.abstention .stat-icon { color: var(--accent-gold); }
+
+        .total-votes {
+            text-align: center;
+            padding: 16px;
+            background-color: var(--background-dark);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .total-votes .number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            display: block;
+        }
+
+        .total-votes .label {
+            font-size: 0.9rem;
+            color: var(--secondary-text);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Responsive voter grid and individual vote cards. */
+        .votantes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .votante-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .votante-card:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+        }
+
+        .votante-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            min-height: 40px;
+        }
+
+        .votante-info {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .votante-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+            border: 2px solid var(--accent-blue);
+        }
+
+        .votante-detalhes {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .votante-name {
+            font-weight: 600;
+            color: var(--primary-text);
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            line-height: 1.2;
+        }
+
+        .partido-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .partido-logo {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            object-fit: contain;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 2px;
+        }
+
+        .partido-sigla {
+            font-size: 0.75rem;
+            color: var(--secondary-text);
+            font-weight: 500;
+            padding: 2px 6px;
+            background-color: rgba(88, 166, 255, 0.1);
+            border-radius: 4px;
+            border: 1px solid rgba(88, 166, 255, 0.3);
+        }
+
+        .tag {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 99px;
+            flex-shrink: 0;
+            align-self: flex-start;
+        }
+
+        .tag-presidente {
+            background-color: rgba(240, 136, 51, 0.2);
+            color: var(--accent-orange);
+            border: 1px solid rgba(240, 136, 51, 0.3);
+        }
+
+        .voto-display {
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .voto-sim { background-color: var(--accent-green); }
+        .voto-nao { background-color: var(--accent-red); }
+        .voto-abstencao { background-color: var(--accent-orange); }
+
+        .votante-timestamp {
+            font-size: 0.75rem;
+            color: var(--secondary-text);
+            text-align: center;
+            margin-top: 4px;
+        }
+
+        /* Empty state shown when no votes are available. */
+        .empty-votantes {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 48px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-top: 24px;
+        }
+
+        .empty-votantes i {
+            font-size: 3rem;
+            color: var(--secondary-text);
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .empty-votantes h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-text);
+            margin-bottom: 8px;
+        }
+
+        .empty-votantes p {
+            color: var(--secondary-text);
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 0;
+        }
+
+        /* Status and outcome badge styles. */
+        .badge-aprovado {
+            background-color: rgba(46, 160, 67, 0.2);
+            color: #71e67f;
+            border: 1px solid rgba(46, 160, 67, 0.4);
+            padding: 6px 12px;
+            border-radius: 99px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-reprovado {
+            background-color: rgba(218, 54, 51, 0.2);
+            color: #f85149;
+            border: 1px solid rgba(218, 54, 51, 0.4);
+            padding: 6px 12px;
+            border-radius: 99px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-em-votacao {
+            background-color: rgba(88, 166, 255, 0.2);
+            color: #58a6ff;
+            border: 1px solid rgba(88, 166, 255, 0.4);
+            padding: 6px 12px;
+            border-radius: 99px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-pendente {
+            background-color: rgba(240, 227, 51, 0.2);
+            color: #d4af37;
+            border: 1px solid rgba(240, 227, 51, 0.4);
+            padding: 6px 12px;
+            border-radius: 99px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-finalizada {
+            background-color: rgba(46, 160, 67, 0.2);
+            color: #71e67f;
+            border: 1px solid rgba(46, 160, 67, 0.4);
+            padding: 6px 12px;
+            border-radius: 99px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-nao-votada {
+            background-color: rgba(108, 117, 125, 0.2);
+            color: #6c757d;
+            border: 1px solid rgba(108, 117, 125, 0.4);
+            padding: 6px 12px;
+            border-radius: 99px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+
+        /* Responsive adjustments for tablet and mobile layouts. */
+        @media (max-width: 1024px) {
+            .votacao-publica-layout {
+                grid-template-columns: 1fr;
+                padding: 0 16px 24px 16px;
+            }
+
+            .vote-stats {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            main {
+                padding-top: 70px;
+            }
+
+            .votantes-grid {
+                grid-template-columns: 1fr;
+            }
+
+            /* Layout horizontal compacto para badges */
+            .vote-stats {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+            }
+
+            .stat-item {
+                padding: 12px 8px;
+            }
+
+            .stat-icon {
+                font-size: 1.1rem;
+                margin-bottom: 4px;
+            }
+
+            .stat-number {
+                font-size: 1.5rem;
+                margin-bottom: 4px;
+            }
+
+            .stat-label {
+                font-size: 0.65rem;
+            }
+
+            .stats-title {
+                font-size: 1rem;
+            }
+
+            .info-card {
+                margin-bottom: 12px;
+                padding: 16px;
+            }
+
+            .stats-card {
+                margin-bottom: 16px;
+                padding: 16px;
+            }
+
+            .votante-card {
+                padding: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            main {
+                padding-top: 60px;
+            }
+
+            .votacao-publica-layout {
+                padding: 12px 12px 24px 12px;
+                gap: 16px;
+            }
+
+            /* Badges ainda mais compactos em telas pequenas */
+            .vote-stats {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 6px;
+            }
+
+            .stat-item {
+                padding: 10px 6px;
+            }
+
+            .stat-icon {
+                font-size: 1rem;
+                margin-bottom: 3px;
+            }
+
+            .stat-number {
+                font-size: 1.25rem;
+                margin-bottom: 3px;
+            }
+
+            .stat-label {
+                font-size: 0.6rem;
+            }
+
+            .stats-title {
+                font-size: 0.9rem;
+            }
+
+            .info-card {
+                padding: 12px;
+            }
+
+            .stats-card {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Dynamic Navbar Placeholder -->
+    <div id="navbar-placeholder"></div>
+
+    <main>
+        <!-- Voting Content: agenda details and voter results -->
+        <div class="votacao-publica-layout fade-in" id="votacao-layout">
+            <!-- Agenda Information Column -->
+            <div class="info-column" id="info-column">
+                <!-- Informações da pauta serão carregadas aqui -->
+            </div>
+
+            <!-- Vote Results Column -->
+            <div class="votantes-column" id="votantes-column">
+                <!-- Grid de votantes será carregado aqui -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Dynamic Footer Placeholder -->
+    <div id="footer-placeholder"></div>
+
+    <script src="../js/mockMode.js?v=3"></script>
+    <script src="../js/global.js"></script>
+    <script src="../js/carregamento.js"></script>
+    <script>
+        // Initializes shared layout, navbar context, animations, and page data loading.
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Loads shared layout components.
+            await initLayout({});
+
+            // Configures page-specific navbar content.
+            setupVotacaoPublicaNavbar();
+
+            // Enables entrance animations for the page.
+            initUnifiedAnimations();
+
+            // Starts loading voting details and results.
+            await initializeVotacao();
+        });
+
+        // Configures the navbar content used specifically by this page.
+        function setupVotacaoPublicaNavbar() {
+            // Injects the back button into the navbar's left area.
+            const backButtonContainer = document.getElementById('nav-back-button');
+            if (backButtonContainer) {
+                backButtonContainer.innerHTML = `
+                    <a href="portal_publico.html" class="btn-voltar-header">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Voltar</span>
+                    </a>
+                `;
+            }
+
+            // The right navbar area remains intentionally empty on this page.
+        }
+
+        // Shared page state.
+        let pautaId = null;
+
+        // Extracts the agenda item identifier from the current URL.
+        function getPautaIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+
+        // Loads and renders all data required for the public voting view.
+        async function initializeVotacao() {
+            pautaId = getPautaIdFromUrl();
+
+            if (!pautaId) {
+                showError('ID da pauta não encontrado na URL');
+                return;
+            }
+
+            console.log('🔍 Carregando votação pública para pauta:', pautaId);
+
+            const infoColumn = document.getElementById('info-column');
+            const votantesColumn = document.getElementById('votantes-column');
+
+            // Shows loading placeholders in both content columns.
+            renderLoadingState(infoColumn, 'Carregando informações da votação...');
+            renderLoadingState(votantesColumn, 'Carregando votos...');
+
+            try {
+                // Requests agenda metadata and vote data in parallel.
+                const [pautaData, votosData] = await Promise.all([
+                    fetchPautaData(pautaId),
+                    fetchVotosData(pautaId)
+                ]);
+
+                if (pautaData && votosData) {
+                    renderPautaInfo(pautaData);
+                    renderVotosData(votosData);
+                }
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+                renderErrorState(infoColumn, 'Erro ao carregar dados da votação');
+                renderErrorState(votantesColumn, 'Erro ao carregar votos');
+            }
+        }
+
+        // Fetches public metadata for the selected agenda item.
+        async function fetchPautaData(id) {
+            const response = await fetch(`/api/pautas/${id}/publica`);
+
+            if (!response.ok) {
+                throw new Error(`Erro ao buscar pauta: ${response.status}`);
+            }
+
+            return await response.json();
+        }
+
+        // Fetches the public vote list and summary statistics for the agenda item.
+        async function fetchVotosData(id) {
+            const response = await fetch(`/api/votos/pauta/${id}/publico`);
+
+            if (!response.ok) {
+                throw new Error(`Erro ao buscar votos: ${response.status}`);
+            }
+
+            return await response.json();
+        }
+
+        // Renders the left-column agenda metadata and status information.
+        function renderPautaInfo(pauta) {
+            const infoColumn = document.getElementById('info-column');
+
+            // Builds the status badge for the current agenda state.
+            const getStatusBadge = (status) => {
+                if (status === 'Finalizada') {
+                    return '<span class="badge-finalizada">Finalizada</span>';
+                } else if (status === 'Em Votação') {
+                    return '<span class="badge-em-votacao">Em Votação</span>';
+                } else {
+                    return '<span class="badge-pendente">Pendente</span>';
+                }
+            };
+
+            // Builds the outcome badge when the vote has been finalized.
+            const getResultadoBadge = (status, resultado) => {
+                // Outcome is shown only after finalization.
+                if (status !== 'Finalizada') {
+                    return '';
+                }
+
+                switch (resultado) {
+                    case 'Aprovada':
+                        return '<span class="badge-aprovado">Aprovado</span>';
+                    case 'Reprovada':
+                        return '<span class="badge-reprovado">Reprovado</span>';
+                    case 'Não Votada':
+                        return '<span class="badge-nao-votada">Não Votada</span>';
+                    default:
+                        return '<span class="badge-nao-votada">Não Votada</span>';
+                }
+            };
+
+            // Generates a display timestamp for the last refresh.
+            const dataAtualizacao = new Date().toLocaleString('pt-BR');
+
+            // Updates the document title to reflect the loaded agenda item.
+            document.getElementById('pageTitle').textContent = `${pauta.nome} - Votação Pública`;
+
+            infoColumn.innerHTML = `
+                <div class="info-card">
+                    <h3>${escapeHtml(pauta.nome)}</h3>
+                    <p style="color: var(--secondary-text); font-size: 0.875rem; margin-bottom: 16px;">
+                        Atualizado em ${dataAtualizacao}
+                    </p>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        ${getStatusBadge(pauta.status)}
+                        ${getResultadoBadge(pauta.status, pauta.resultado_votacao)}
+                    </div>
+                </div>
+                <div class="info-card">
+                    <h3>Descrição da pauta</h3>
+                    <p>${escapeHtml(pauta.descricao || 'Sem descrição disponível')}</p>
+                </div>
+                <div class="info-card">
+                    <h3>Detalhes</h3>
+                    <p><strong>Autor:</strong> ${escapeHtml(pauta.autor || 'Não informado')}</p>
+                    <p><strong>Sessão:</strong> ${escapeHtml(pauta.sessoes?.nome || 'N/A')}</p>
+                    <p><strong>Data:</strong> ${pauta.sessoes?.data_sessao ? new Date(pauta.sessoes.data_sessao).toLocaleDateString('pt-BR') : 'N/A'}</p>
+                </div>
+            `;
+        }
+
+        // Renders the vote summary and the voter grid in the right column.
+        function renderVotosData(votosData) {
+            const { votos, estatisticas } = votosData;
+            const votantesColumn = document.getElementById('votantes-column');
+
+            // Builds the voting statistics section.
+            const statsHtml = renderEstatisticas(estatisticas);
+
+            // Builds the voter card grid.
+            const votantesHtml = renderVotantesGrid(votos);
+
+            votantesColumn.innerHTML = statsHtml + votantesHtml;
+        }
+
+        // Renders the aggregated vote statistics block.
+        function renderEstatisticas(estatisticas) {
+            if (!estatisticas) {
+                return `
+                    <div class="empty-state">
+                        <i class="fas fa-chart-bar"></i>
+                        <h3>Carregando estatísticas...</h3>
+                        <p>As estatísticas aparecerão aqui em breve.</p>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="stats-card">
+                    <div class="stats-header">
+                        <div class="stats-title">
+                            <i class="fas fa-chart-bar"></i>
+                            Estatísticas da Votação
+                        </div>
+                    </div>
+                    <div class="vote-stats">
+                        <div class="stat-item favor">
+                            <i class="fas fa-thumbs-up stat-icon"></i>
+                            <span class="stat-number">${estatisticas.sim || 0}</span>
+                            <span class="stat-label">A Favor</span>
+                        </div>
+                        <div class="stat-item against">
+                            <i class="fas fa-thumbs-down stat-icon"></i>
+                            <span class="stat-number">${estatisticas.nao || 0}</span>
+                            <span class="stat-label">Contra</span>
+                        </div>
+                        <div class="stat-item abstention">
+                            <i class="fas fa-hand stat-icon"></i>
+                            <span class="stat-number">${estatisticas.abstencao || 0}</span>
+                            <span class="stat-label">Abstenção</span>
+                        </div>
+                    </div>
+                    <div class="total-votes">
+                        <span class="number">${estatisticas.total || 0}</span>
+                        <span class="label">Total de Votos</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Renders the grid of recorded votes and voter identities.
+        function renderVotantesGrid(votos) {
+            if (!votos || votos.length === 0) {
+                return `
+                    <div class="empty-votantes">
+                        <i class="fas fa-vote-yea"></i>
+                        <h3>Nenhum voto registrado</h3>
+                        <p>Não há votos registrados para esta votação.</p>
+                    </div>
+                `;
+            }
+
+            const votosHtml = votos.map(voto => {
+                const vereador = voto.vereadores;
+                const partido = vereador.partidos;
+                const timestamp = new Date(voto.created_at).toLocaleString('pt-BR');
+                const votoClass = getVotoClass(voto.voto);
+                const votoIcon = getVotoIcon(voto.voto);
+                const presidenteTag = voto.era_presidente_no_voto ? '<span class="tag tag-presidente">Presidente</span>' : '';
+
+                // Uses the stored avatar when available, with a generated fallback.
+                const avatarUrl = vereador.foto_url || `https://i.pravatar.cc/50?u=${vereador.id}`;
+
+                // Renders party branding when party data is available.
+                const partidoInfo = partido ? `
+                    <div class="partido-info">
+                        ${partido.logo_url ? `<img src="${partido.logo_url}" alt="${partido.sigla}" class="partido-logo" onerror="this.style.display='none'">` : ''}
+                        <span class="partido-sigla">${escapeHtml(partido.sigla || 'S/P')}</span>
+                    </div>
+                ` : '<div class="partido-info"><span class="partido-sigla">S/P</span></div>';
+
+                return `
+                    <div class="votante-card">
+                        <div class="votante-header">
+                            <div class="votante-info">
+                                <img src="${avatarUrl}" alt="Avatar" class="votante-avatar" onerror="this.src='https://i.pravatar.cc/50?u=${vereador.id}'">
+                                <div class="votante-detalhes">
+                                    <span class="votante-name">${escapeHtml(vereador.nome_parlamentar)}</span>
+                                    ${partidoInfo}
+                                </div>
+                            </div>
+                            ${presidenteTag}
+                        </div>
+                        <div class="voto-display ${votoClass}">${votoIcon} ${voto.voto}</div>
+                        <div class="votante-timestamp">Votou em: ${timestamp}</div>
+                    </div>
+                `;
+            }).join('');
+
+            return `<div class="votantes-grid">${votosHtml}</div>`;
+        }
+
+        // Helper utilities for vote rendering and safe HTML output.
+        function getVotoClass(voto) {
+            switch (voto) {
+                case 'SIM': return 'voto-sim';
+                case 'NÃO': return 'voto-nao';
+                case 'ABSTENÇÃO': return 'voto-abstencao';
+                default: return '';
+            }
+        }
+
+        function getVotoIcon(voto) {
+            switch (voto) {
+                case 'SIM': return '<i class="fa-regular fa-circle-check"></i>';
+                case 'NÃO': return '<i class="fa-regular fa-circle-xmark"></i>';
+                case 'ABSTENÇÃO': return '<i class="fa-solid fa-hand"></i>';
+                default: return '';
+            }
+        }
+
+        function escapeHtml(text = "") {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function showError(message) {
+            const votacaoLayout = document.getElementById('votacao-layout');
+            votacaoLayout.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <i class="fas fa-exclamation-triangle" style="color: var(--accent-red);"></i>
+                    <h3>Erro</h3>
+                    <p>${message}</p>
+                    <a href="portal_publico.html" class="btn btn-primary" style="margin-top: 16px; display: inline-block; padding: 8px 16px; text-decoration: none;">
+                        Voltar ao Portal
+                    </a>
+                </div>
+            `;
+        }
+
+    </script>
+</body>
+</html>
