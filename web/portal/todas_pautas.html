@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<!--
+  File: todas_pautas.html
+  Purpose: Public portal page that lists all agenda items for a selected council,
+  with search, filter, loading, empty, error, and pagination states.
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Todas as Pautas - Portal Público</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>"
+    />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/portal.css" />
+    <link rel="stylesheet" href="../css/pagination.css" />
+    <link rel="stylesheet" href="../css/customSelect.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <script src="../js/mockMode.js?v=3"></script>
+    <script src="../js/global.js"></script>
+    <script src="../js/pagination.js"></script>
+    <script src="../js/customSelect.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Page Header: back navigation, page title, and portal context indicator -->
+      <header class="portal-header">
+        <div class="header-content-left">
+          <button id="btn-voltar" class="btn-back">
+            <i class="fas fa-arrow-left"></i>
+            Voltar ao Portal
+          </button>
+          <h1 class="portal-title">
+            <i class="fas fa-gavel"></i>
+            Todas as Pautas
+          </h1>
+          <div class="live-indicator">
+            <div class="live-dot"></div>
+            Portal Público
+          </div>
+        </div>
+      </header>
+
+      <!-- Filter Toolbar: text search and quick status/result filters -->
+      <div class="filters-section">
+        <div class="filters-container">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input
+              type="text"
+              id="search-input"
+              placeholder="Buscar pautas por nome ou autor..."
+            />
+            <button
+              type="button"
+              id="clear-search"
+              class="btn-clear"
+              id="btn-limpar-filtros"
+              style="display: none"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="filter-controls">
+            <div class="custom-select-wrapper" id="status-filter-wrapper">
+              <div class="custom-select-trigger" id="status-filter-trigger">
+                <span>Todos os Status</span>
+              </div>
+              <div class="custom-options" id="status-filter-options">
+                <div class="custom-option" data-value="">Todos os Status</div>
+                <div class="custom-option" data-value="Pendente">Pendente</div>
+                <div class="custom-option" data-value="Em Votação">
+                  Em Votação
+                </div>
+                <div class="custom-option" data-value="Finalizada">
+                  Finalizada
+                </div>
+              </div>
+            </div>
+            <div class="custom-select-wrapper" id="resultado-filter-wrapper">
+              <div class="custom-select-trigger" id="resultado-filter-trigger">
+                <span>Todos os Resultados</span>
+              </div>
+              <div class="custom-options" id="resultado-filter-options">
+                <div class="custom-option" data-value="">
+                  Todos os Resultados
+                </div>
+                <div class="custom-option" data-value="Aprovada">Aprovada</div>
+                <div class="custom-option" data-value="Reprovada">
+                  Reprovada
+                </div>
+                <div class="custom-option" data-value="Não Votada">
+                  Não Votada
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading State: shown while agenda data is being requested -->
+      <div id="loading-state" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Carregando pautas...</p>
+      </div>
+
+      <!-- Error State: displayed when the agenda request fails -->
+      <div id="error-state" class="error-container" style="display: none">
+        <div class="error-content">
+          <i class="fas fa-exclamation-triangle"></i>
+          <h3>Erro ao Carregar Pautas</h3>
+          <p id="error-message">
+            Não foi possível carregar as pautas. Tente novamente.
+          </p>
+          <button id="btn-tentar-novamente" class="btn-primary">
+            <i class="fas fa-refresh"></i>
+            Tentar Novamente
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Content: agenda card grid and empty-result messaging -->
+      <div class="content-section">
+        <div class="pautas-grid-wrapper">
+          <!-- Agenda Grid: cards are rendered dynamically -->
+          <div id="pautas-grid" class="pautas-grid">
+            <!-- Pautas will be rendered here -->
+          </div>
+
+          <!-- Empty State: shown when no agenda items match the current view -->
+          <div id="empty-state" class="empty-state" style="display: none">
+            <i class="fas fa-inbox"></i>
+            <h3>Nenhuma Pauta Encontrada</h3>
+            <p>
+              Não há pautas disponíveis no momento ou nenhuma pauta corresponde
+              aos filtros aplicados.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination: client-side navigation controls for paged results -->
+      <div class="pagination-container" style="display: none">
+        <div class="pagination-controls" id="pagination-controls">
+          <!-- Pagination will be rendered here -->
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Page state shared across filters, pagination, and navigation handlers.
+      let camaraId = null;
+      let currentPage = 1;
+      let totalPages = 1;
+      let totalItems = 0;
+      let itemsPerPage = 18;
+      let currentFilters = {
+        search: "",
+        status: "",
+        resultado: "",
+      };
+
+      // Initializes the page, resolves the selected council, and loads the first result set.
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Reads the selected council identifier from the query string.
+        const urlParams = new URLSearchParams(window.location.search);
+        camaraId = urlParams.get("camara_id");
+
+        if (!camaraId) {
+          mostrarErro("ID da câmara não fornecido.");
+          return;
+        }
+
+        // Wires up filter interactions before loading data.
+        setupFilters();
+
+        // Registers the main page actions.
+        document.getElementById('btn-voltar')?.addEventListener('click', voltarPortal);
+        document.getElementById('btn-tentar-novamente')?.addEventListener('click', () => carregarPautas(1));
+        document.getElementById('btn-limpar-filtros')?.addEventListener('click', limparFiltros);
+
+        // Requests the initial page of agenda items.
+        await carregarPautas(1);
+      });
+
+      // Configures search and custom select filters for the agenda listing.
+      function setupFilters() {
+        const searchInput = document.getElementById("search-input");
+
+        // Debounces search input to avoid unnecessary requests while typing.
+        let searchTimeout;
+        searchInput.addEventListener("input", (e) => {
+          clearTimeout(searchTimeout);
+          searchTimeout = setTimeout(() => {
+            currentFilters.search = e.target.value.trim();
+            carregarPautas(1);
+          }, 500);
+        });
+
+        // Initializes both custom filter dropdowns.
+        initCustomSelect("status-filter", (value) => {
+          currentFilters.status = value;
+          carregarPautas(1);
+        });
+
+        initCustomSelect("resultado-filter", (value) => {
+          currentFilters.resultado = value;
+          carregarPautas(1);
+        });
+      }
+
+      // Initializes a lightweight custom select interaction for a filter control.
+      function initCustomSelect(id, callback) {
+        const wrapper = document.getElementById(`${id}-wrapper`);
+        const trigger = document.getElementById(`${id}-trigger`);
+        const options = document.getElementById(`${id}-options`);
+
+        trigger.addEventListener("click", () => {
+          options.classList.toggle("open");
+        });
+
+        options.addEventListener("click", (e) => {
+          if (e.target.classList.contains("custom-option")) {
+            const value = e.target.getAttribute("data-value");
+            const text = e.target.textContent;
+
+            trigger.querySelector("span").textContent = text;
+            options.classList.remove("open");
+
+            callback(value);
+          }
+        });
+
+        // Closes the dropdown when the user clicks outside the wrapper.
+        document.addEventListener("click", (e) => {
+          if (!wrapper.contains(e.target)) {
+            options.classList.remove("open");
+          }
+        });
+      }
+
+      // Loads agenda items for the selected council and updates the current UI state.
+      async function carregarPautas(page = 1) {
+        try {
+          mostrarLoading();
+          currentPage = page;
+
+          // Builds the request query for the current pagination settings.
+          const params = new URLSearchParams({
+            page: currentPage,
+            limit: itemsPerPage,
+          });
+
+          const response = await fetch(
+            `/api/camaras/${camaraId}/todas-pautas?${params}`
+          );
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const data = await response.json();
+
+          // Council header details are intentionally not rendered here.
+          // atualizarInfoCamara(data.camara);
+
+          // Applies client-side filters after the page response is received.
+          let pautasFiltradas = data.pautas;
+          if (
+            currentFilters.search ||
+            currentFilters.status ||
+            currentFilters.resultado
+          ) {
+            pautasFiltradas = aplicarFiltros(data.pautas);
+          }
+
+          // Renders the filtered result set.
+          renderizarPautas(pautasFiltradas);
+
+          // Additional summary statistics are intentionally omitted.
+
+          // Updates pagination state and controls.
+          totalPages = data.paginacao.total_pages;
+          totalItems = data.paginacao.total_items;
+          setupPagination();
+
+          ocultarLoading();
+        } catch (error) {
+          console.error("Erro ao carregar pautas:", error);
+          mostrarErro(error.message);
+        }
+      }
+
+      // Duplicate custom select initializer kept in place for compatibility with the current page script.
+      function initCustomSelect(id, callback) {
+        const wrapper = document.getElementById(`${id}-wrapper`);
+        const trigger = document.getElementById(`${id}-trigger`);
+        const options = document.getElementById(`${id}-options`);
+
+        trigger.addEventListener("click", () => {
+          options.classList.toggle("open");
+        });
+
+        options.addEventListener("click", (e) => {
+          if (e.target.classList.contains("custom-option")) {
+            const value = e.target.getAttribute("data-value");
+            const text = e.target.textContent;
+
+            trigger.querySelector("span").textContent = text;
+            options.classList.remove("open");
+
+            callback(value);
+          }
+        });
+
+        // Closes the dropdown when the user clicks outside the wrapper.
+        document.addEventListener("click", (e) => {
+          if (!wrapper.contains(e.target)) {
+            options.classList.remove("open");
+          }
+        });
+      }
+
+      // Applies search, status, and result filters to the current agenda set.
+      function aplicarFiltros(pautas) {
+        return pautas.filter((pauta) => {
+          const matchSearch =
+            !currentFilters.search ||
+            pauta.nome
+              .toLowerCase()
+              .includes(currentFilters.search.toLowerCase()) ||
+            pauta.autor
+              .toLowerCase()
+              .includes(currentFilters.search.toLowerCase());
+
+          const matchStatus =
+            !currentFilters.status || pauta.status === currentFilters.status;
+          const matchResultado =
+            !currentFilters.resultado ||
+            pauta.resultado_votacao === currentFilters.resultado;
+
+          return matchSearch && matchStatus && matchResultado;
+        });
+      }
+
+      // Updates the council label when that header area is available.
+      function atualizarInfoCamara(camara) {
+        const camaraInfo = document.getElementById("camara-info");
+        camaraInfo.textContent = `${camara.nome} - Visualização Pública`;
+      }
+
+      // Renders agenda cards or the empty state depending on the available results.
+      function renderizarPautas(pautas) {
+        const grid = document.getElementById("pautas-grid");
+        const emptyState = document.getElementById("empty-state");
+
+        if (!pautas || pautas.length === 0) {
+          grid.style.display = "none";
+          emptyState.style.display = "block";
+          return;
+        }
+
+        emptyState.style.display = "none";
+        grid.style.display = "grid";
+
+        const pautasHtml = pautas
+          .map((pauta) => criarCardPauta(pauta))
+          .join("");
+        grid.innerHTML = pautasHtml;
+
+        // Makes each agenda card navigate to its public voting detail page.
+        const pautaCards = grid.querySelectorAll('.pauta-card[data-pauta-id]');
+        pautaCards.forEach(card => {
+          card.addEventListener('click', (e) => {
+            e.preventDefault();
+            const pautaId = card.getAttribute('data-pauta-id');
+            abrirPauta(pautaId); // Remover parseInt - IDs são UUIDs
+          });
+        });
+      }
+
+      // Builds the HTML for a single agenda card.
+      function criarCardPauta(pauta) {
+        console.log('🔍 Criando card para pauta:', pauta.id, 'Nome:', pauta.nome);
+
+        const statusBadge = getStatusBadge(pauta.status);
+        const resultadoBadge =
+          pauta.status === "Finalizada" && pauta.resultado_votacao
+            ? getResultadoBadge(pauta.resultado_votacao)
+            : "";
+
+        const dataFormatada = new Date(pauta.created_at).toLocaleDateString(
+          "pt-BR",
+          {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          }
+        );
+
+        // Vote summary metrics are intentionally not displayed in this card layout.
+
+        return `
+                <div class="pauta-card" data-pauta-id="${pauta.id}" style="cursor: pointer;">
+                    <div class="pauta-card-header">
+                        <div class="pauta-date">${dataFormatada}</div>
+                        <div class="pauta-badges">
+                            ${statusBadge}
+                            ${resultadoBadge}
+                        </div>
+                    </div>
+                    <h3 class="pauta-title">${escapeHtml(pauta.nome)}</h3>
+                    <p class="pauta-description">${escapeHtml(
+                      pauta.descricao || "Sem descrição"
+                    )}</p>
+                    <div class="pauta-actions">
+                        <span class="pauta-author">${escapeHtml(
+                          pauta.autor
+                        )}</span>
+                        <i class="fas fa-chevron-right pauta-arrow"></i>
+                    </div>
+                </div>
+            `;
+      }
+
+      // Returns the status badge markup for an agenda item.
+      function getStatusBadge(status) {
+        const statusClass = status.toLowerCase().replace(" ", "-");
+        return `<span class="status-badge-new ${statusClass}">${status}</span>`;
+      }
+
+      // Returns the voting result badge markup for a finalized agenda item.
+      function getResultadoBadge(resultado) {
+        const resultadoClass = resultado
+          .toLowerCase()
+          .replace(" ", "-")
+          .replace("ã", "a");
+        return `<span class="situacao-badge ${resultadoClass}">${resultado}</span>`;
+      }
+
+      // Renders pagination controls for the current result set.
+      function setupPagination() {
+        createPaginationControls({
+          containerId: "pagination-controls",
+          currentPage: currentPage,
+          totalItems: totalItems,
+          itemsPerPage: itemsPerPage,
+          onPageChange: (page) => {
+            carregarPautas(page);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          },
+        });
+      }
+
+      // Navigates to the public voting page for the selected agenda item.
+      function abrirPauta(pautaId) {
+        console.log('🔗 Abrindo votação pública para pauta:', pautaId);
+        console.log('🔍 Tipo do pautaId:', typeof pautaId);
+        console.log('🔍 CamaraId atual:', camaraId);
+
+        // Reuses the same public portal navigation pattern used elsewhere.
+        const url = `votacao_publica.html?id=${pautaId}&camara=${camaraId}`;
+        console.log('🔗 Navegando para votação:', url);
+        window.location.href = url;
+      }
+
+      // Returns the user to the selected council public portal.
+      function voltarPortal() {
+        window.location.href = `portal_publico.html?camara_id=${camaraId}`;
+      }
+
+      // Shows the loading state and hides content-specific UI sections.
+      function mostrarLoading() {
+        document.getElementById("loading-state").style.display = "flex";
+        document.getElementById("error-state").style.display = "none";
+        document.getElementById("pautas-grid").style.display = "none";
+        document.getElementById("empty-state").style.display = "none";
+        document.querySelector(".pagination-container").style.display = "none";
+      }
+
+      // Hides the loading state after the request finishes.
+      function ocultarLoading() {
+        document.getElementById("loading-state").style.display = "none";
+      }
+
+      // Displays the error state with a contextual message.
+      function mostrarErro(message) {
+        document.getElementById("loading-state").style.display = "none";
+        document.getElementById("error-state").style.display = "block";
+        document.getElementById("error-message").textContent = message;
+        document.getElementById("pautas-grid").style.display = "none";
+        document.getElementById("empty-state").style.display = "none";
+      }
+
+      // Resets search and dropdown filters to their default values.
+      function limparFiltros() {
+        // Clears the search field.
+        const searchInput = document.getElementById("search-input");
+        if (searchInput) {
+          searchInput.value = '';
+        }
+
+        // Restores in-memory filter state.
+        currentFilters = {
+          search: '',
+          status: '',
+          resultado: ''
+        };
+
+        // Restores default labels in the custom select triggers.
+        const statusTrigger = document.getElementById('status-filter-trigger');
+        const resultadoTrigger = document.getElementById('resultado-filter-trigger');
+
+        if (statusTrigger) {
+          statusTrigger.querySelector('span').textContent = 'Todos os Status';
+        }
+        if (resultadoTrigger) {
+          resultadoTrigger.querySelector('span').textContent = 'Todos os Resultados';
+        }
+
+        // Hides the clear button after the reset.
+        const clearBtn = document.getElementById('clear-search');
+        if (clearBtn) {
+          clearBtn.style.display = 'none';
+        }
+
+        // Reloads the first page using default filters.
+        carregarPautas(1);
+      }
+
+      // Escapes text content before injecting it into HTML templates.
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+    </script>
+
+    <style>
+      /* Page-specific layout and component refinements for the agenda listing view. */
+      .header-content-left {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        padding: 0;
+      }
+
+      .header-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .btn-back {
+        margin-right: 0;
+      }
+
+      .live-indicator {
+        margin-left: auto;
+      }
+
+      .content-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .pautas-grid-wrapper {
+        flex: 1;
+        min-height: 200px;
+        margin-bottom: 32px;
+      }
+      .pautas-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+        margin-bottom: 32px;
+        flex: 1;
+      }
+
+      .pauta-card {
+        background-color: var(--card-bg);
+        padding: 24px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        min-height: 200px;
+        position: relative;
+        overflow: hidden;
+        justify-content: space-between;
+        width: 100%;
+        cursor: pointer;
+      }
+
+      .pauta-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--accent-blue);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      }
+
+      .pauta-card.voting-active {
+        border-color: var(--accent-green);
+        background: linear-gradient(
+          135deg,
+          var(--card-bg) 0%,
+          rgba(46, 160, 67, 0.05) 100%
+        );
+      }
+
+      .pauta-card.voting-active::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: var(--accent-green);
+      }
+
+      .pauta-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .pauta-date {
+        color: var(--accent-gold);
+        font-weight: 600;
+        margin-bottom: 0px;
+        font-size: 0.85rem;
+      }
+
+      .pauta-badges {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .pauta-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 16px;
+        color: var(--primary-text);
+        min-height: 2.5em;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        transition: color 0.2s ease;
+      }
+
+      .pauta-card:hover .pauta-title {
+        color: var(--accent-blue);
+      }
+
+      .pauta-description {
+        color: var(--secondary-text);
+        font-size: 0.875rem;
+        line-height: 1.5;
+        margin-bottom: 16px;
+        flex-grow: 1;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .pauta-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: auto;
+        padding-top: 16px;
+        border-top: 1px solid var(--border-color);
+      }
+
+      .pauta-author {
+        color: var(--secondary-text);
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+
+      .pauta-arrow {
+        color: var(--accent-blue);
+        font-size: 1.1rem;
+        opacity: 0.7;
+        transition: all 0.2s ease;
+      }
+
+      .pauta-card:hover .pauta-arrow {
+        opacity: 1;
+        transform: translateX(4px);
+      }
+
+      .filters-section {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 24px;
+      }
+
+      .filters-container {
+        display: flex;
+        gap: 16px;
+        align-items: stretch;
+        flex-wrap: wrap;
+      }
+
+      .search-box {
+        position: relative;
+        flex: 1;
+        min-width: 280px;
+      }
+
+      .search-box i {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--secondary-text);
+      }
+
+      .search-box input {
+        width: 100%;
+        padding: 10px 12px 10px 36px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--input-bg);
+        color: var(--primary-text);
+        font-size: 0.95rem;
+      }
+
+      .search-box input:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px rgba(var(--accent-blue-rgb), 0.1);
+      }
+
+      .btn-clear {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: var(--secondary-text);
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+      }
+
+      .btn-clear:hover {
+        background-color: var(--hover-bg);
+        color: var(--primary-text);
+      }
+
+      .filter-controls {
+        display: flex;
+        gap: 12px;
+        align-items: stretch;
+      }
+
+      .custom-select-wrapper {
+        min-width: 180px;
+        height: 42px;
+      }
+
+      .custom-select-trigger {
+        height: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .filter-select:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px rgba(var(--accent-blue-rgb), 0.1);
+      }
+
+
+      /* Standardized status badge presentation. */
+      .status-badge-new {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 99px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-align: center;
+        white-space: nowrap;
+      }
+
+      .status-badge-new.pendente {
+        background-color: rgba(240, 227, 51, 0.2);
+        color: rgb(233, 241, 110);
+        border: 1px solid rgba(240, 227, 51, 0.4);
+      }
+
+      .status-badge-new.em-votacao {
+        background-color: rgba(88, 166, 255, 0.2);
+        color: aqua;
+        border: 1px solid rgba(88, 166, 255, 0.4);
+      }
+
+      .status-badge-new.finalizada {
+        background-color: rgba(46, 160, 67, 0.2);
+        color: #71e67f;
+        border: 1px solid rgba(46, 160, 67, 0.4);
+      }
+
+      /* Standardized voting result badge presentation. */
+      .situacao-badge {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 99px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-align: center;
+        white-space: nowrap;
+      }
+
+      .situacao-badge.aprovada {
+        background-color: rgba(46, 160, 67, 0.2);
+        color: #71e67f;
+        border: 1px solid rgba(46, 160, 67, 0.4);
+      }
+
+      .situacao-badge.reprovada {
+        background-color: rgba(218, 54, 51, 0.2);
+        color: #f85149;
+        border: 1px solid rgba(218, 54, 51, 0.4);
+      }
+
+      .situacao-badge.nao-votada {
+        background-color: rgba(108, 117, 125, 0.2);
+        color: #adb5bd;
+        border: 1px solid rgba(108, 117, 125, 0.4);
+      }
+
+      /* Responsive adjustments for smaller screens. */
+      @media (max-width: 768px) {
+        .pautas-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .filters-container {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .search-box {
+          min-width: auto;
+        }
+
+        .filter-controls {
+          justify-content: stretch;
+        }
+
+        .custom-select-wrapper {
+          min-width: 140px;
+        }
+      }
+    </style>
+  </body>
+</html>
+
