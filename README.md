@@ -1,84 +1,100 @@
-# LegislaNet
+# LegislaNet (PDSI2)
 
-System under development to support digital legislative management for city councils.
+![Project Type](https://img.shields.io/badge/project-academic-blue)
+![Status](https://img.shields.io/badge/status-active%20development-yellow)
+![Web Scope](https://img.shields.io/badge/web-sprint%201%20implemented-0A66C2)
+![Backend Scope](https://img.shields.io/badge/backend-auth--only%20runtime-orange)
+![Node](https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js&logoColor=white)
+![Flutter](https://img.shields.io/badge/flutter-tablet_app%20present-02569B?logo=flutter&logoColor=white)
 
-## About the project
+Digital legislative management platform for city councils, maintained as an academic project in Projeto e Desenvolvimento de Sistemas de Informacao II.
 
-**LegislaNet** is an academic project developed in the course **Projeto e Desenvolvimento de Sistemas de Informação II**, aiming to create a platform focused on supporting the legislative process.
+## Current repository state
 
-The system is designed to provide:
+This repository currently contains:
 
-- management of councils;
-- registration and organization of agendas;
-- session control;
-- support for the voting process;
-- public display of legislative information;
-- access for different user roles.
+- Web module with static pages/components/assets under web/ (including admin, app, portal, and tv sections).
+- Minimal Node.js auth runtime at repository root (server.js + package.json + package-lock.json).
+- Flutter tablet application under tablet_app/.
+- Local environment file .env is expected for auth runtime execution.
 
-## Current status
+Current backend scope in this repository is intentionally limited to authentication endpoints and static file serving.
 
-At the moment, the project is in its early development stages.
+## Implemented runtime (root)
 
-### Completed so far
+The root server exposes:
 
-- definition of the system proposal;
-- creation of the project schedule;
-- requirements gathering (functional and non-functional);
-- definition of business rules;
-- initial modeling with diagrams;
-- interface prototyping.
+- POST /api/auth/login
+- POST /api/auth/refresh
+- POST /api/auth/logout
+- GET /api/health
+- Static hosting for web/
 
-### Next step
+The server returns 404 for unknown API routes and for direct requests to non-existent static files.
 
-According to the project schedule, the next sprint will focus on:
+## Tech stack present in repo
 
-- **mobile front-end development**.
+- Node.js + Express
+- Supabase JS client
+- Flutter + Dart (tablet app)
+- HTML/CSS/JavaScript (web frontend)
 
-## User roles
+## Quick start
 
-The system is designed to support different user roles, such as:
+### 1. Install dependencies (root)
 
-- Super Administrador
-- Administrador da Câmara
-- Vereador
-- TV
-- Cidadão
+```bash
+npm install
+```
 
-## Planned technologies
+### 2. Configure environment
 
-The technologies planned for the project include:
+Create/update .env in repository root with:
 
-### Mobile (Flutter)
+- SUPABASE_URL
+- SUPABASE_ANON_KEY
+- SUPABASE_SERVICE_KEY
+- PORT (optional, default 3000)
 
-- Flutter  
-  https://flutter.dev/
+### 3. Run the auth runtime + web host
 
-- Dart  
-  https://dart.dev/
+```bash
+npm run dev
+```
 
+or
 
+```bash
+npm start
+```
 
+### 4. Access
 
+- App login page: /app/login.html
+- Health endpoint: /api/health
 
-- Flutter Toast (simple notifications)  
-  https://pub.dev/packages/fluttertoast
+## Current top-level structure
 
-> Note: additional dependencies may be added as the project evolves.
+```text
+PDSI2-LegislaNet/
+|- tablet_app/
+|- web/
+|- server.js
+|- package.json
+|- package-lock.json
+|- .gitignore
+|- README.md
+```
 
+## Notes
 
-
-## Project structure
-
-The repository structure will be gradually organized as the development progresses.
-
-## Academic purpose
-
-This repository aims to document the evolution of the project throughout the sprints of the course, covering analysis, modeling, prototyping, and implementation stages.
+- .env.example is not present at the moment.
+- node_modules/ and local generated files are intentionally ignored by Git.
 
 ## Team
 
-- Henrique dos Santos  
-- João Batista  
-- Jonathan dos Santos  
-- Pedro Tércio  
-- Simão Morais  
+- Henrique dos Santos
+- Joao Batista
+- Jonathan dos Santos
+- Pedro Tercio
+- Simao Morais
