@@ -1,0 +1,1198 @@
+<!doctype html>
+<!--
+  TV Voting Display Page
+  Shows live voting information on chamber TV screens, including pauta details,
+  real-time vote totals, registered voters, and Socket.IO connection state.
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>TV - Votação</title>
+    <meta
+      http-equiv="Cache-Control"
+      content="no-cache, no-store, must-revalidate"
+    />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📺</text></svg>"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="/css/global.css" />
+    <link rel="stylesheet" href="/css/portal.css" />
+
+    <style>
+      /* ESTILOS ESPECÍFICOS DA TV BASEADOS NO TEMPLATE PÚBLICO */
+
+      body {
+        font-family: Inter, system-ui, sans-serif;
+        background: var(--background-dark);
+        color: var(--primary-text);
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Layout da TV - Versão Adaptada do Público */
+      .tv-layout {
+        display: grid;
+        grid-template-columns: 0.85fr 2.15fr; /* Info reduzida em ~15% pra dar espaço aos votos */
+        gap: 3vmin;
+        flex-grow: 1;
+        width: 96vw; /* Aumentado para 96% */
+        height: 100vh;
+        margin: 0 auto;
+        padding: 2vmin; /* Reduzido padding geral */
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+
+      .info-column,
+      .votantes-column {
+        display: flex;
+        flex-direction: column;
+        gap: 3vmin;
+        height: 100%;
+        overflow: hidden;
+      }
+
+      /* Cards de Informação */
+      .info-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 1.5vmin;
+        padding: 2.5vmin;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .info-card h3 {
+        font-size: 2vmin;
+        font-weight: 600;
+        color: var(--secondary-text);
+        margin-bottom: 1vmin;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .info-card p,
+      .info-card a {
+        font-size: 2.5vmin; /* Legível na TV */
+        color: var(--primary-text);
+        line-height: 1.4;
+        margin: 0;
+      }
+
+      .info-card a {
+        color: var(--accent-blue);
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      /* Título da Pauta - Maior para TV */
+      .pauta-title {
+        font-size: 4vmin;
+        font-weight: 700;
+        color: var(--primary-text);
+        margin-bottom: 2vmin;
+        line-height: 1.2;
+      }
+
+      /* Badge de Votantes - Simbólica Compacta */
+      .badge-simbolica {
+        background-color: rgba(218, 54, 51, 0.2);
+        color: #f85149;
+        border: 1px solid rgba(218, 54, 51, 0.4);
+        padding: 0.5vmin 1vmin;
+        border-radius: 0.8vmin;
+        font-size: 1.5vmin; /* Reduzido significativamente */
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        position: absolute;
+        top: 2vmin;
+        right: 2vmin;
+        z-index: 10;
+      }
+
+      /* Estatísticas de Votação - MENOR que no público */
+      .stats-card {
+        background: linear-gradient(
+          135deg,
+          var(--card-bg) 0%,
+          var(--background-light) 100%
+        );
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 18px; /* Reduzido de 24px */
+        position: relative;
+        overflow: hidden;
+      }
+
+      .stats-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px; /* Reduzido de 20px */
+      }
+
+      .stats-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 1.1rem; /* Reduzido de 1.2rem */
+        font-weight: 600;
+        color: var(--primary-text);
+      }
+
+      .live-indicator {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.75rem; /* Reduzido de 0.8rem */
+        font-weight: 600;
+        color: var(--accent-blue);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .live-dot {
+        width: 8px;
+        height: 8px;
+        background-color: var(--accent-blue);
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+      }
+
+      .vote-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px; /* Reduzido de 16px */
+        margin-bottom: 16px; /* Reduzido de 20px */
+      }
+
+      .stat-item {
+        text-align: center;
+        padding: 1vmin;
+        border-radius: 1vmin;
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .stat-item::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        border-radius: 10px 10px 0 0;
+        transition: all 0.3s ease;
+      }
+
+      .stat-item.favor {
+        background-color: rgba(46, 160, 67, 0.1);
+        border-color: rgba(46, 160, 67, 0.3);
+      }
+
+      .stat-item.favor::before {
+        background-color: var(--accent-green);
+      }
+
+      .stat-item.against {
+        background-color: rgba(248, 81, 73, 0.1);
+        border-color: rgba(248, 81, 73, 0.3);
+      }
+
+      .stat-item.against::before {
+        background-color: var(--accent-red);
+      }
+
+      .stat-item.abstention {
+        background-color: rgba(212, 175, 55, 0.1);
+        border-color: rgba(212, 175, 55, 0.3);
+      }
+
+      .stat-item.abstention::before {
+        background-color: var(--accent-gold);
+      }
+
+      .stat-number {
+        font-size: 4vmin;
+        font-weight: 700;
+        display: block;
+        line-height: 1;
+        margin-bottom: 0.5vmin;
+      }
+
+      .stat-item.favor .stat-number {
+        color: var(--accent-green);
+      }
+      .stat-item.against .stat-number {
+        color: var(--accent-red);
+      }
+      .stat-item.abstention .stat-number {
+        color: var(--accent-gold);
+      }
+
+      .stat-label {
+        font-size: 1.2vmin; /* Reduzido para não estourar */
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: white; /* Texto branco solicitado */
+      }
+
+      .stat-icon {
+        font-size: 1.1rem; /* Reduzido de 1.2rem */
+        margin-bottom: 6px; /* Reduzido de 8px */
+        display: block;
+      }
+
+      .stat-item.favor .stat-icon {
+        color: var(--accent-green);
+      }
+      .stat-item.against .stat-icon {
+        color: var(--accent-red);
+      }
+      .stat-item.abstention .stat-icon {
+        color: var(--accent-gold);
+      }
+
+      .total-votes {
+        text-align: center;
+        padding: 14px; /* Reduzido de 16px */
+        background-color: transparent; /* Removido fundo preto */
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+      }
+
+      .total-votes .number {
+        font-size: 1.3rem; /* Reduzido de 1.5rem */
+        font-weight: 700;
+        color: var(--accent-blue);
+        display: block;
+      }
+
+      .total-votes .label {
+        font-size: 0.8rem; /* Reduzido de 0.9rem */
+        color: var(--secondary-text);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      /* Grid de Votantes - Densa e Responsiva (TV) */
+      .votantes-grid {
+        display: grid;
+        /* Forçar sempre 3 colunas minímo em telas widescreen de TV, ou auto-adjust */
+        grid-template-columns: repeat(auto-fill, minmax(28%, 1fr));
+        gap: 1.5vmin;
+        align-content: start;
+      }
+
+      .votante-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 1vmin;
+        padding: 1.5vmin;
+        display: flex;
+        flex-direction: column;
+        gap: 1vmin;
+        transition: all 0.2s ease;
+      }
+
+      .votante-card:hover {
+        border-color: var(--accent-blue);
+        transform: translateY(-2px);
+      }
+
+      .votante-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        min-height: 4vh;
+      }
+
+      .votante-info {
+        display: flex;
+        align-items: center; /* Alinhar centro verticalmente */
+        gap: 1.5vmin;
+        flex: 1;
+      }
+
+      .votante-avatar {
+        width: 6vmin; /* Responsivo à tela (kb. 50-60px em 1080p) */
+        height: 6vmin;
+        border-radius: 50%;
+        object-fit: cover;
+        flex-shrink: 0;
+        border: 2px solid var(--accent-blue);
+      }
+
+      .votante-detalhes {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5vmin;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .votante-name {
+        font-weight: 600;
+        color: var(--primary-text);
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        line-height: 1.1;
+        font-size: 2.2vmin; /* Aprox 20-24px em 1080p */
+      }
+
+      .partido-info {
+        display: flex;
+        align-items: center;
+        gap: 0.8vmin;
+      }
+
+      .partido-logo {
+        width: 2.5vmin;
+        height: 2.5vmin;
+        border-radius: 4px;
+        object-fit: contain;
+        background-color: rgba(255, 255, 255, 0.1);
+        padding: 2px;
+      }
+
+      .partido-sigla {
+        font-size: 1.8vmin;
+        color: var(--secondary-text);
+        font-weight: 500;
+        padding: 0.2vmin 0.8vmin;
+        background-color: rgba(88, 166, 255, 0.1);
+        border-radius: 4px;
+        border: 1px solid rgba(88, 166, 255, 0.3);
+      }
+
+      .tag {
+        font-size: 1.5vmin;
+        font-weight: 600;
+        padding: 0.5vmin 1vmin;
+        border-radius: 99px;
+        flex-shrink: 0;
+        align-self: flex-start;
+      }
+
+      .tag-presidente {
+        background-color: rgba(240, 136, 51, 0.2);
+        color: var(--accent-orange);
+        border: 1px solid rgba(240, 136, 51, 0.3);
+      }
+
+      .voto-display {
+        padding: 1vmin;
+        border-radius: 1vmin;
+        text-align: center;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1vmin;
+        color: white;
+        font-size: 2vmin;
+      }
+
+      .voto-sim {
+        background-color: var(--accent-green);
+      }
+      .voto-nao {
+        background-color: var(--accent-red);
+      }
+      .voto-abstencao {
+        background-color: var(--accent-orange);
+      }
+
+      .votante-timestamp {
+        font-size: 1.5vmin;
+        color: var(--secondary-text);
+        text-align: center;
+        margin-top: 0.5vmin;
+      }
+
+      /* Status de Conexão - Igual ao template de espera */
+      .connection-status {
+        position: fixed;
+        top: 12px;
+        right: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #5cb85c;
+        padding: 8px 12px;
+        border-radius: 20px;
+        color: white;
+        font-weight: 600;
+        z-index: 1000;
+        animation: breathe 2s ease-in-out infinite;
+      }
+
+      .connection-status.status-disconnected {
+        background: #d9534f;
+      }
+
+      /* Animação de respiro para os badges */
+      @keyframes breathe {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.7;
+        }
+      }
+
+      .badge-simbolica {
+        animation: breathe 2s ease-in-out infinite;
+      }
+
+      .reconnect-btn {
+        padding: 6px 12px;
+        background: var(--accent-blue);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        margin-left: 8px;
+      }
+
+      .reconnect-btn:hover {
+        background: var(--accent-blue-hover);
+      }
+
+      /* Animações */
+      @keyframes pulse {
+        0% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
+      /* Responsividade para TVs grandes */
+      @media (min-width: 1800px) {
+        .pauta-title {
+          font-size: 2.8rem;
+        }
+        .stat-number {
+          font-size: 2.8rem;
+        }
+        .info-card p {
+          font-size: 1.2rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Live Socket.IO connection status and manual reconnect action. -->
+    <!-- Status de Conexão -->
+    <div class="connection-status" id="connectionStatus">
+      <span id="statusText">Conectado</span>
+      <button class="reconnect-btn" id="reconnectBtn" style="display: none">
+        Reconectar
+      </button>
+    </div>
+
+    <!-- Full-screen TV voting layout with pauta information and voter cards. -->
+    <div class="tv-layout">
+      <!-- Pauta metadata and live vote summary column. -->
+      <!-- Coluna de Informações -->
+      <div class="info-column">
+        <!-- Current pauta title and symbolic-voting badge. -->
+        <!-- Informações da Pauta -->
+        <div class="info-card" style="position: relative">
+          <div
+            class="badge-simbolica"
+            id="badgeSimbolica"
+            style="display: none"
+          >
+            Votação Simbólica
+          </div>
+          <h3 id="pautaTitleLabel">Pauta em Votação</h3>
+          <div class="pauta-title" id="pautaTitle">Carregando pauta...</div>
+        </div>
+
+        <!-- Current pauta description for the TV audience. -->
+        <!-- Descrição da Pauta -->
+        <div class="info-card">
+          <h3>Descrição da Pauta</h3>
+          <p id="pautaDescricao">Carregando descrição...</p>
+        </div>
+
+        <!-- Live vote counters grouped by voting option. -->
+        <!-- Estatísticas de Votação -->
+        <div class="stats-card">
+          <div class="stats-header">
+            <div class="stats-title">
+              <i class="fas fa-chart-bar"></i>
+              Resultado da Votação
+            </div>
+            <div class="live-indicator">
+              <div class="live-dot"></div>
+              Ao Vivo
+            </div>
+          </div>
+
+          <div class="vote-stats">
+            <div class="stat-item favor">
+              <i class="fas fa-check-circle stat-icon"></i>
+              <span class="stat-number" id="simCount">0</span>
+              <div class="stat-label">Favoráveis</div>
+            </div>
+            <div class="stat-item against">
+              <i class="fas fa-times-circle stat-icon"></i>
+              <span class="stat-number" id="naoCount">0</span>
+              <div class="stat-label">Contrários</div>
+            </div>
+            <div class="stat-item abstention">
+              <i class="fas fa-hand stat-icon"></i>
+              <span class="stat-number" id="absCount">0</span>
+              <div class="stat-label">Abstenções</div>
+            </div>
+          </div>
+
+          <div class="total-votes">
+            <span class="number" id="totalVotes">0</span>
+            <div class="label">Total de Votos</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Registered voters grid updated by initial fetches and socket events. -->
+      <!-- Coluna de Votantes -->
+      <div class="votantes-column">
+        <h3
+          style="
+            color: var(--secondary-text);
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          "
+        >
+          Votos Registrados
+        </h3>
+        <div class="votantes-grid" id="votantes">
+          <!-- Cards de votantes serão inseridos aqui -->
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="../js/mockMode.js?v=4"></script>
+    <script src="../js/global.js"></script>
+
+    <script>
+      let tvSocket = null;
+      let camaraId = null;
+
+      // Ensures the Socket.IO client is available before creating the TV socket.
+      // Função para garantir carregamento do Socket.IO
+      async function ensureSocketClient() {
+        if (typeof io === "undefined") {
+          await new Promise((resolve, reject) => {
+            const s = document.createElement("script");
+            s.src = "https://cdn.socket.io/4.6.1/socket.io.min.js";
+            s.onload = resolve;
+            s.onerror = () => reject(new Error("Falha ao carregar Socket.IO"));
+            document.head.appendChild(s);
+          });
+        }
+      }
+
+      // Request context and cached DOM references for the live voting UI.
+      // Parâmetros e elementos DOM
+      const token = localStorage.getItem("authToken");
+      const params = new URLSearchParams(window.location.search);
+      let pautaId = params.get("pauta");
+
+      const connectionStatus = document.getElementById("connectionStatus");
+      const statusText = document.getElementById("statusText");
+      const reconnectBtn = document.getElementById("reconnectBtn");
+
+      const pautaTitle = document.getElementById("pautaTitle");
+      const pautaDescricao = document.getElementById("pautaDescricao");
+      const badgeSimbolica = document.getElementById("badgeSimbolica");
+
+      const simEl = document.getElementById("simCount");
+      const naoEl = document.getElementById("naoCount");
+      const absEl = document.getElementById("absCount");
+      const totalVotesEl = document.getElementById("totalVotes");
+      const votantesEl = document.getElementById("votantes");
+
+      // Avoids unnecessary image reloads when repeated vote updates arrive.
+      // Cache de URLs de imagens já carregadas (evita re-download)
+      const imageCache = new Map();
+
+      // Returns a cached image URL reference for councilor photos.
+      function getCachedImageUrl(url) {
+        if (!url) return null;
+        if (imageCache.has(url)) return imageCache.get(url);
+        imageCache.set(url, url);
+        return url;
+      }
+
+      // Builds a voter card for the live voting grid.
+      function renderVotante(v) {
+        const card = document.createElement("div");
+        card.className = "votante-card";
+        card.dataset.votoId = v.id || "";
+
+        const vereador = v.vereadores;
+        const partido = vereador?.partidos;
+        const timestamp = new Date(v.created_at).toLocaleString("pt-BR");
+        const votoClass = getVotoClass(v.voto);
+        const votoIcon = getVotoIcon(v.voto);
+        const presidenteTag = v.era_presidente_no_voto
+          ? '<span class="tag tag-presidente">Presidente</span>'
+          : "";
+
+        // Avatar do vereador (com cache)
+        const avatarUrl =
+          getCachedImageUrl(vereador?.foto_url) ||
+          `https://ui-avatars.com/api/?name=${encodeURIComponent(
+            vereador?.nome_parlamentar || "N",
+          )}`;
+
+        // Informações do partido
+        const partidoInfo = partido
+          ? `
+            <div class="partido-info">
+                ${
+                  partido.logo_url
+                    ? `<img src="${partido.logo_url}" alt="${partido.sigla}" class="partido-logo" onerror="this.style.display='none'">`
+                    : ""
+                }
+                <span class="partido-sigla">${escapeHtml(
+                  partido.sigla || "S/P",
+                )}</span>
+            </div>
+        `
+          : '<div class="partido-info"><span class="partido-sigla">S/P</span></div>';
+
+        card.innerHTML = `
+            <div class="votante-header">
+                <div class="votante-info">
+                    <img src="${avatarUrl}" alt="Avatar" class="votante-avatar" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      vereador?.nome_parlamentar || "N",
+                    )}'">
+                    <div class="votante-detalhes">
+                        <span class="votante-name">${escapeHtml(
+                          vereador?.nome_parlamentar || "Vereador",
+                        )}</span>
+                        ${partidoInfo}
+                    </div>
+                </div>
+                ${presidenteTag}
+            </div>
+            <div class="votante-timestamp">Votou em: ${timestamp}</div>
+            <div class="voto-display ${votoClass}">${votoIcon} ${v.voto}</div>
+        `;
+
+        return card;
+      }
+
+      // Maps vote labels to display classes.
+      // 📺 FUNÇÃO PARA MOSTRAR NOTIFICAÇÃO DE VOTO NA TV
+      function getVotoClass(voto) {
+        switch (voto) {
+          case "SIM":
+            return "voto-sim";
+          case "NÃO":
+            return "voto-nao";
+          case "ABSTENÇÃO":
+            return "voto-abstencao";
+          default:
+            return "";
+        }
+      }
+
+      // Maps vote labels to Font Awesome icons.
+      function getVotoIcon(voto) {
+        switch (voto) {
+          case "SIM":
+            return '<i class="fa-regular fa-circle-check"></i>';
+          case "NÃO":
+            return '<i class="fa-regular fa-circle-xmark"></i>';
+          case "ABSTENÇÃO":
+            return '<i class="fas fa-hand"></i>';
+          default:
+            return "";
+        }
+      }
+
+      // Escapes dynamic text before inserting it into HTML strings.
+      function escapeHtml(text = "") {
+        return text
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      // Deduplicates short-lived vote notifications received from sockets.
+      // Cache para deduplicação de notificações (evita toasts duplicados)
+      const recentNotifications = new Set();
+
+      // Displays a temporary TV overlay when a vote is created or changed.
+      function showVoteNotification(vereadorNome, voto, isUpdate) {
+        // ID único da notificação
+        const notificationId = `${vereadorNome}-${voto}-${isUpdate}-${Date.now()}`;
+
+        // Verificar duplicata recente (ignorar se recebido nos últimos 2s com mesmos dados)
+        // Usamos uma chave composta pelos dados, excluindo timestamp exato para pegar "mesmo evento"
+        const duplicateKey = `${vereadorNome}-${voto}-${isUpdate}`;
+        const now = Date.now();
+
+        // Limpar cache antigo
+        for (const key of recentNotifications) {
+          const [v, vo, upd, time] = key.split("|");
+          if (now - Number(time) > 2000) recentNotifications.delete(key);
+        }
+
+        // Verificar se existe chave recente
+        let isDuplicate = false;
+        for (const key of recentNotifications) {
+          if (key.startsWith(duplicateKey)) {
+            isDuplicate = true;
+            break;
+          }
+        }
+
+        if (isDuplicate) {
+          console.log(`⚠️ Notificação duplicada ignorada: ${duplicateKey}`);
+          return;
+        }
+
+        // Adicionar ao cache
+        recentNotifications.add(`${duplicateKey}|${now}`);
+
+        // Criar container de notificação se não existir
+        let notificationContainer = document.getElementById(
+          "tv-notification-container",
+        );
+        if (!notificationContainer) {
+          notificationContainer = document.createElement("div");
+          notificationContainer.id = "tv-notification-container";
+          notificationContainer.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+          `;
+          document.body.appendChild(notificationContainer);
+        }
+
+        // Determinar cor do voto
+        let bgColor, icon;
+        switch (voto) {
+          case "SIM":
+            bgColor = "#2ea043";
+            icon = "✅";
+            break;
+          case "NÃO":
+            bgColor = "#da3633";
+            icon = "❌";
+            break;
+          case "ABSTENÇÃO":
+            bgColor = "#f08833";
+            icon = "🤚";
+            break;
+          default:
+            bgColor = "#58a6ff";
+            icon = "🗳️";
+        }
+
+        // Criar notificação
+        const notification = document.createElement("div");
+        notification.style.cssText = `
+          background: ${bgColor};
+          color: white;
+          padding: 16px 20px;
+          border-radius: 12px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+          font-weight: 600;
+          font-size: 1.4rem;
+          max-width: 400px;
+          animation: slideInFromRight 0.3s ease-out;
+        `;
+
+        const updateText = isUpdate ? " (alterou voto)" : "";
+        notification.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 1.6rem;">${icon}</span>
+            <div>
+              <div style="font-size: 1.2rem; margin-bottom: 4px;">${vereadorNome}</div>
+              <div style="font-size: 1.4rem; font-weight: 700;">Votou: ${voto}${updateText}</div>
+            </div>
+          </div>
+        `;
+
+        // Adicionar estilos de animação se não existirem
+        if (!document.getElementById("tv-notification-animations")) {
+          const style = document.createElement("style");
+          style.id = "tv-notification-animations";
+          style.textContent = `
+            @keyframes slideInFromRight {
+              from { transform: translateX(100%); opacity: 0; }
+              to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOutToRight {
+              from { transform: translateX(0); opacity: 1; }
+              to { transform: translateX(100%); opacity: 0; }
+            }
+          `;
+          document.head.appendChild(style);
+        }
+
+        // Adicionar à container
+        notificationContainer.appendChild(notification);
+
+        // Remover automaticamente após 4 segundos
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.style.animation = "slideOutToRight 0.3s ease-in";
+            setTimeout(() => {
+              if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+              }
+            }, 300);
+          }
+        }, 4000);
+      }
+
+      // Loads the pauta, current totals, and existing votes from the backend.
+      // Função para carregar dados iniciais e atualizar interface
+      async function fetchInitial() {
+        try {
+          const resp = await fetch(`/api/votos/pauta/${pautaId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (!resp.ok) return;
+          const data = await resp.json();
+
+          // Armazenar camaraId para uso no WebSocket
+          camaraId = data.pauta?.sessoes?.camara_id;
+
+          // Atualizar informações da pauta
+          const pautaData = data.pauta;
+          console.log("📋 Dados da pauta (fetchInitial):", pautaData);
+
+          // Verificar se é votação simbólica e não mostrar no título
+          let pautaNome = pautaData?.nome || "Pauta sem nome";
+          if (pautaNome.toLowerCase().includes("votação simbólica")) {
+            // Remove "Votação Simbólica" do título e mostra o badge
+            pautaNome = pautaNome.replace(/votação simbólica/gi, "").trim();
+            badgeSimbolica.style.display = "block";
+          } else if (pautaData?.votacao_simbolica) {
+            // Se tem flag votacao_simbolica, mostra o badge
+            badgeSimbolica.style.display = "block";
+          } else {
+            badgeSimbolica.style.display = "none";
+          }
+
+          pautaTitle.textContent = pautaNome;
+          const descricao = pautaData?.descricao || "Sem descrição disponível";
+          pautaDescricao.textContent = descricao;
+          console.log("📝 Descrição atualizada (fetchInitial):", descricao); // Atualizar estatísticas
+          updateStats(data.estatisticas);
+
+          // Renderizar votantes
+          votantesEl.innerHTML = "";
+          (data.votos || []).forEach((v) =>
+            votantesEl.appendChild(renderVotante(v)),
+          );
+        } catch (err) {
+          console.error("Erro fetchInitial", err);
+        }
+      }
+
+      // Updates the live vote counters.
+      // Função para atualizar estatísticas
+      function updateStats(stats) {
+        const sim = stats?.sim || 0;
+        const nao = stats?.nao || 0;
+        const abstencao = stats?.abstencao || 0;
+        const total = sim + nao + abstencao;
+
+        simEl.textContent = sim;
+        naoEl.textContent = nao;
+        absEl.textContent = abstencao;
+        totalVotesEl.textContent = total;
+      }
+
+      // Verifies that the current pauta is still the active live voting session.
+      // Fallback leve: sincronizar status de votação ao vivo via HTTP
+      async function syncVotacaoAoVivoStatus() {
+        try {
+          if (!camaraId) return;
+
+          const headers = token
+            ? {
+                Authorization: `Bearer ${token}`,
+              }
+            : undefined;
+
+          const resp = await fetch(
+            `/api/votacao-ao-vivo/status/${encodeURIComponent(camaraId)}`,
+            headers ? { headers } : undefined,
+          );
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          const data = await resp.json();
+
+          // Se a votação não está mais ao vivo, voltar para o template base.
+          if (!data || !data.isLive || !Array.isArray(data.votacoes)) {
+            window.location.href = `/tv/espera.html?t=${Date.now()}`;
+            return;
+          }
+
+          const active = data.votacoes.find(
+            (v) =>
+              v && v.pautaId && v.pautaId.toString() === pautaId.toString(),
+          );
+
+          if (!active) {
+            window.location.href = `/tv/espera.html?t=${Date.now()}`;
+            return;
+          }
+
+          if (active.status && active.status !== "iniciada") {
+            window.location.href = `/tv/espera.html?t=${Date.now()}`;
+            return;
+          }
+
+          // Recarregar dados da pauta APENAS se mudou o ID (evita reload desnecessário)
+          // Se for a mesma pauta, confiamos no WebSocket para atualizações de votos
+          if (
+            active.pautaId &&
+            active.pautaId.toString() !== pautaId.toString()
+          ) {
+            console.log(
+              "🔄 Pauta mudou no servidor, recarregando...",
+              active.pautaId,
+            );
+            // Atualizar ID local e recarregar
+            pautaId = active.pautaId;
+            await fetchInitial();
+          } else {
+            // Mesmo ID: Verificar se precisamos recuperar de algum estado inconsistente?
+            // Por enquanto, assumimos que o socket cuida, mas podemos checar metadados leves se necessário.
+            // Manter o título atualizado apenas
+            document.getElementById("pautaTitleLabel").textContent =
+              "Pauta em Votação";
+          }
+        } catch (err) {
+          console.warn(
+            "⚠️ [TV] Falha ao sincronizar status da votação ao vivo:",
+            err?.message || err,
+          );
+        }
+      }
+
+      // Initializes data loading, socket subscriptions, and reconnect behavior.
+      (async () => {
+        try {
+          // Primeiro carregar dados para obter camaraId
+          await fetchInitial();
+
+          await ensureSocketClient();
+          tvSocket = io(undefined, { auth: { token } });
+          tvSocket.on("connect", async () => {
+            console.log("TV conectado ao socket");
+            statusText.textContent = "Conectado";
+            connectionStatus.style.background = "#5cb85c";
+            connectionStatus.classList.remove("status-disconnected");
+            reconnectBtn.style.display = "none";
+
+            // Conectar à sala da pauta E da câmara
+            tvSocket.emit("tv:join-pauta", { pautaId });
+
+            // Tentar recuperar camaraId se estiver faltando (erro de carga inicial)
+            if (!camaraId) {
+              console.log(
+                "⚠️ camaraId ausente, tentando buscar dados novamente...",
+              );
+              await fetchInitial();
+            }
+
+            if (camaraId) {
+              tvSocket.emit("tv:join-camara", { camaraId });
+              console.log(
+                `📺 TV conectada à câmara ${camaraId} e pauta ${pautaId}`,
+              );
+            }
+
+            // Sincronizar status para evitar ficar fora de sync se perdeu evento
+            syncVotacaoAoVivoStatus();
+          });
+
+          tvSocket.on("disconnect", () => {
+            statusText.textContent = "Desconectado";
+            connectionStatus.style.background = "#d9534f";
+            connectionStatus.classList.add("status-disconnected");
+            reconnectBtn.style.display = "inline-block";
+          });
+
+          tvSocket.on("votacao-ao-vivo-update", (data) => {
+            if (
+              data.pautaId &&
+              data.pautaId.toString() === pautaId.toString()
+            ) {
+              // Se recebeu update marcando encerramento, voltar para o template base.
+              if (data.status && data.status !== "iniciada") {
+                window.location.href = `/tv/espera.html?t=${Date.now()}`;
+                return;
+              }
+
+              if (data.isLive === false) {
+                window.location.href = `/tv/espera.html?t=${Date.now()}`;
+                return;
+              }
+
+              if (data.totals) {
+                updateStats(data.totals);
+              }
+              if (data.voto) {
+                const existing = votantesEl.querySelector(
+                  `[data-voto-id="${data.voto.id}"]`,
+                );
+                if (existing) existing.remove();
+                votantesEl.prepend(renderVotante(data.voto));
+              }
+            }
+          });
+
+          // 📺 LISTENER PARA INICIO DE VOTAÇÃO COM DADOS DA PAUTA
+          tvSocket.on("tv:iniciar-votacao", (data) => {
+            console.log("📺 Iniciando votação na TV:", data);
+
+            if (data.pauta) {
+              // Atualizar todas as informações da pauta recebidas
+              const pautaData = data.pauta;
+              console.log("📋 Dados da pauta recebidos:", pautaData);
+
+              // Verificar votação simbólica
+              let pautaNome = pautaData.nome || "Pauta sem nome";
+              if (pautaNome.toLowerCase().includes("votação simbólica")) {
+                pautaNome = pautaNome.replace(/votação simbólica/gi, "").trim();
+                badgeSimbolica.style.display = "block";
+              } else if (pautaData.votacao_simbolica) {
+                badgeSimbolica.style.display = "block";
+              } else {
+                badgeSimbolica.style.display = "none";
+              }
+
+              pautaTitle.textContent = pautaNome;
+              const descricao =
+                pautaData.descricao || "Sem descrição disponível";
+              pautaDescricao.textContent = descricao;
+              console.log("📝 Descrição atualizada:", descricao);
+
+              document.getElementById("pautaTitleLabel").textContent =
+                "Pauta em Votação";
+            } else {
+              console.log("❌ Nenhum dado de pauta recebido");
+            }
+          });
+
+          // 📺 LISTENER PARA NOTIFICAÇÕES DE VOTOS DOS TABLETS
+          tvSocket.on("tv:voto-notification", (data) => {
+            console.log("🗳️ Voto recebido na TV:", data);
+
+            if (
+              data.pautaId &&
+              data.pautaId.toString() === pautaId.toString()
+            ) {
+              // Mostrar notificação visual na TV
+              showVoteNotification(data.vereadorNome, data.voto, data.isUpdate);
+
+              // Atualizar dados se necessário (recarregar estatísticas)
+              setTimeout(() => {
+                fetchInitial();
+              }, 1000);
+            }
+          });
+
+          tvSocket.on("votacao-finalizada", (data) => {
+            console.log("🏁 Votação finalizada recebida na TV:", data);
+            if (
+              data.pautaId &&
+              data.pautaId.toString() === pautaId.toString()
+            ) {
+              console.log("✅ Pauta corresponde, finalizando votação...");
+              document.getElementById("pautaTitleLabel").textContent =
+                "Votação Finalizada";
+
+              // Redirecionar para a página de espera após 3 segundos
+              console.log("⏱️ Redirecionando para espera em 3 segundos...");
+              setTimeout(() => {
+                console.log("🔄 Redirecionando para /tv/espera.html");
+                window.location.href = `/tv/espera.html?t=${Date.now()}`;
+              }, 3000);
+            } else {
+              console.log(
+                "❌ Pauta não corresponde - Recebida:",
+                data.pautaId,
+                "Esperada:",
+                pautaId,
+              );
+            }
+          });
+
+          // 📺 LISTENER PARA ENCERRAMENTO DE VOTAÇÃO
+          tvSocket.on("tv:encerrar-votacao", (data) => {
+            console.log("� Encerrando votação na TV (evento direto):", data);
+
+            // Redirecionar imediatamente para a página de espera
+            console.log("🔄 Redirecionando imediatamente para /tv/espera.html");
+            window.location.href = `/tv/espera.html?t=${Date.now()}`;
+          });
+
+          tvSocket.on("connect_error", (err) => {
+            console.error("Erro de conexão socket:", err);
+          });
+
+          reconnectBtn.addEventListener("click", () => {
+            if (tvSocket) tvSocket.connect();
+            else window.location.reload();
+          });
+        } catch (error) {
+          console.error("Erro na inicialização:", error);
+          statusText.textContent = "Erro de inicialização";
+        }
+      })();
+    </script>
+  </body>
+</html>
