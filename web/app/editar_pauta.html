@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<!--
+  Edit Agenda Item Page
+  Provides the authenticated chamber administrator workflow for loading,
+  validating, updating, and optionally replacing the attachment of an existing agenda item.
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Editar Pauta - Legisla Net</title>
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+    />
+
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/forms.css" />
+    <link rel="stylesheet" href="../css/toast.css" />
+    <link rel="stylesheet" href="../css/customSelect.css" />
+
+    <style>
+      /* ESTILOS ESPECÍFICOS DO FORMULÁRIO DE EDIÇÃO DE PAUTA */
+
+      .file-upload-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .file-display {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .file-display .file-badge {
+        background-color: var(--accent-blue);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+      }
+
+      .file-display .btn-preview {
+        background-color: var(--hover-bg);
+        border: 1px solid var(--border-color);
+        color: var(--primary-text);
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      .btn-preview:hover {
+        background-color: #2e343b;
+      }
+
+      .file-input-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .file-input-wrapper input[type="file"] {
+        display: none;
+      }
+
+      .file-input-wrapper .custom-file-upload {
+        background-color: var(--hover-bg);
+        border: 1px solid var(--border-color);
+        color: var(--primary-text);
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      .custom-file-upload:hover {
+        background-color: #2e343b;
+      }
+
+      .file-name {
+        color: var(--secondary-text);
+        font-size: 0.875rem;
+      }
+
+      .form-actions {
+        margin-top: 20px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Application shell with shared sidebar and header placeholders. -->
+    <div class="app-layout">
+      <div id="sidebar-placeholder"></div>
+
+      <main class="main-content" id="mainContent">
+        <div id="header-placeholder"></div>
+
+        <!-- Agenda edit workspace with loading, form, and error states. -->
+        <section class="form-section fade-in">
+          <!-- Loading state displayed while agenda data is fetched from the API. -->
+          <div id="loading-state" style="text-align: center; padding: 2rem">
+            <i
+              class="fa fa-spinner fa-spin"
+              style="font-size: 2rem; color: var(--accent-blue)"
+            ></i>
+            <p style="margin-top: 1rem; color: var(--secondary-text)">
+              Carregando dados da pauta...
+            </p>
+          </div>
+
+          <!-- Main edit form populated with the selected agenda item data. -->
+          <form id="form-editar-pauta" style="display: none">
+            <!-- Agenda metadata fields with inline validation feedback. -->
+            <div class="form-group">
+              <label for="autorPauta" data-required="true"
+                >Autor da pauta</label
+              >
+              <input
+                type="text"
+                id="autorPauta"
+                class="form-input"
+                placeholder="Ex: Ver. João Silva"
+                maxlength="100"
+              />
+              <div
+                id="autorPauta-error"
+                class="form-field-error"
+                style="display: none"
+              ></div>
+              <small
+                style="
+                  color: var(--secondary-text);
+                  font-size: 0.75rem;
+                  margin-top: 2px;
+                  display: block;
+                "
+              >
+                <span id="autorPauta-count">0</span>/100 caracteres
+              </small>
+            </div>
+
+            <div class="form-group">
+              <label for="nomePauta" data-required="true">Nome da Pauta</label>
+              <input
+                type="text"
+                id="nomePauta"
+                class="form-input"
+                placeholder="Ex: Projeto de Lei nº 123/2025"
+                maxlength="150"
+              />
+              <div
+                id="nomePauta-error"
+                class="form-field-error"
+                style="display: none"
+              ></div>
+              <small
+                style="
+                  color: var(--secondary-text);
+                  font-size: 0.75rem;
+                  margin-top: 2px;
+                  display: block;
+                "
+              >
+                <span id="nomePauta-count">0</span>/150 caracteres
+              </small>
+            </div>
+
+            <div class="form-group">
+              <label for="statusPauta" data-required="true"
+                >Status da Pauta</label
+              >
+              <div class="custom-select-wrapper" id="statusPauta-custom-select">
+                <input
+                  type="hidden"
+                  id="statusPauta"
+                  name="status"
+                  value="Pendente"
+                />
+                <div class="custom-select-trigger" id="statusPauta-trigger">
+                  <span>Pendente</span>
+                </div>
+                <div class="custom-options">
+                  <div class="custom-option" data-value="Pendente">
+                    <span>Pendente</span>
+                  </div>
+                  <div class="custom-option" data-value="Em Votação">
+                    <span>Em Votação</span>
+                  </div>
+                  <div class="custom-option" data-value="Finalizada">
+                    <span>Finalizada</span>
+                  </div>
+                </div>
+              </div>
+              <div
+                id="statusPauta-error"
+                class="form-field-error"
+                style="display: none"
+              ></div>
+            </div>
+
+            <div class="form-group">
+              <label for="descricaoPauta" data-required="true">Descrição</label>
+              <textarea
+                id="descricaoPauta"
+                class="form-textarea"
+                placeholder="Descreva brevemente o conteúdo da pauta..."
+                rows="4"
+                maxlength="500"
+              ></textarea>
+              <div
+                id="descricaoPauta-error"
+                class="form-field-error"
+                style="display: none"
+              ></div>
+              <small
+                style="
+                  color: var(--secondary-text);
+                  font-size: 0.75rem;
+                  margin-top: 2px;
+                  display: block;
+                "
+              >
+                <span id="descricaoPauta-count">0</span>/500 caracteres
+              </small>
+            </div>
+
+            <!-- Current attachment preview and optional replacement upload. -->
+            <div class="file-upload-group">
+              <label>Arquivo Atual</label>
+              <div
+                id="arquivo-atual"
+                class="file-display"
+                style="display: none"
+              >
+                <span class="file-badge">PDF</span>
+                <button
+                  type="button"
+                  class="btn-preview"
+                  id="btn-preview-atual"
+                >
+                  <i class="fa-solid fa-eye"></i> Ver Preview
+                </button>
+              </div>
+              <div
+                id="sem-arquivo"
+                style="
+                  display: none;
+                  color: var(--secondary-text);
+                  font-style: italic;
+                "
+              >
+                Nenhum arquivo anexado
+              </div>
+
+              <label style="margin-top: 16px"
+                >Substituir arquivo (opcional)</label
+              >
+              <div class="file-input-wrapper">
+                <label for="file-input" class="custom-file-upload">
+                  <i class="fa-solid fa-upload"></i> Escolher novo arquivo
+                </label>
+                <input type="file" id="file-input" accept=".pdf" />
+                <span class="file-name" id="file-name"
+                  >Nenhum arquivo escolhido</span
+                >
+              </div>
+              <small class="form-text"
+                >Opcional - Formatos aceitos: PDF, DOC, DOCX (máximo
+                10MB)</small
+              >
+            </div>
+
+            <!-- Form actions for discarding changes or submitting the update. -->
+            <div class="form-actions" style="justify-content: flex-end">
+              <button type="button" class="btn btn-secondary" id="btn-cancelar">
+                <i class="fa-solid fa-arrow-left"></i> Voltar
+              </button>
+              <button type="submit" class="btn btn-primary" id="btn-salvar">
+                <i class="fa-solid fa-save"></i> Atualizar Pauta
+              </button>
+            </div>
+          </form>
+
+          <!-- Error state shown when the agenda item cannot be loaded or edited. -->
+          <div
+            id="error-state"
+            style="display: none; text-align: center; padding: 2rem"
+          >
+            <i
+              class="fa-solid fa-triangle-exclamation"
+              style="font-size: 2rem; color: var(--accent-red)"
+            ></i>
+            <p
+              style="margin-top: 1rem; color: var(--accent-red)"
+              id="error-message"
+            >
+              Erro ao carregar pauta
+            </p>
+            <button
+              class="btn btn-secondary"
+              id="btn-retry"
+              style="margin-top: 1rem"
+            >
+              <i class="fa-solid fa-refresh"></i> Tentar Novamente
+            </button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="../js/mockMode.js?v=4"></script>
+    <script src="../js/global.js"></script>
+    <script src="../js/forms.js"></script>
+    <script src="../js/toast.js"></script>
+    <script src="../js/customSelect.js"></script>
+
+    <script>
+      // Page-level state for the loaded agenda item and form behavior.
+      let pautaAtual = null;
+      let pautaId = null;
+      let statusCustomSelect = null;
+      let submitAttempted = false;
+
+      // Initialize authentication, layout, data loading, and page interactions.
+      document.addEventListener("DOMContentLoaded", async () => {
+        // === NOVA AUTENTICAÇÃO COM VALIDAÇÃO DE ROLE ===
+        try {
+          await protectPage({
+            allowedRoles: ["admin_camara"],
+            requireAuth: true,
+            autoRedirect: true,
+          });
+        } catch (error) {
+          console.error("[AUTH] Falha na autenticação:", error);
+          return;
+        }
+
+        initLayout({
+          title: "Editar Pauta",
+          icon: "fa-file-lines",
+          navActive: "nav-cadastro",
+        });
+
+        // Obter ID da pauta da URL
+        const urlParams = new URLSearchParams(window.location.search);
+        pautaId = urlParams.get("id");
+
+        if (!pautaId) {
+          showToast("ID da pauta não encontrado na URL", "error");
+          showErrorState("ID da pauta não encontrado");
+          return;
+        }
+
+        // Carregar dados da pauta
+        await carregarPauta();
+
+        // Configurar eventos
+        configurarEventos();
+
+        // Configurar validações e contadores (do nova_pauta.html)
+        configurarValidacoes();
+
+        initStatusCustomSelect();
+      });
+
+      // Initialize the custom status selector used by the edit form.
+      function initStatusCustomSelect() {
+        if (typeof window.CustomSelect === "undefined") {
+          console.error("CustomSelect não está disponível");
+          return;
+        }
+
+        statusCustomSelect = new CustomSelect({
+          wrapperId: "statusPauta-custom-select",
+          placeholder: "Selecione...",
+          onSelect: () => {
+            limparErro("statusPauta");
+          },
+        });
+
+        if (statusCustomSelect) {
+          statusCustomSelect.setValue("Pendente");
+        }
+      }
+
+      // Configurar validações e contadores de caracteres (copiado do nova_pauta.html)
+      function configurarValidacoes() {
+        // Campos com contadores
+        const campos = [
+          { id: "nomePauta", max: 150 },
+          { id: "autorPauta", max: 100 },
+          { id: "descricaoPauta", max: 500 },
+        ];
+
+        campos.forEach((campo) => {
+          const input = document.getElementById(campo.id);
+          const counter = document.getElementById(`${campo.id}-count`);
+
+          if (input && counter) {
+            // Atualizar contador em tempo real
+            input.addEventListener("input", () => {
+              const count = input.value.length;
+              counter.textContent = count;
+
+              // Mudar cor quando perto do limite
+              if (count > campo.max * 0.9) {
+                counter.style.color = "var(--accent-orange)";
+              } else if (count >= campo.max) {
+                counter.style.color = "var(--accent-red)";
+              } else {
+                counter.style.color = "var(--secondary-text)";
+              }
+
+              // Validação em tempo real como nova_camara/nova_pauta:
+              // - se tem conteúdo: valida e mostra erro
+              // - se apagou tudo: some o erro
+              validateFieldLive(campo.id);
+            });
+
+            input.addEventListener("blur", () => {
+              if (submitAttempted) validateFieldLive(campo.id);
+            });
+          }
+        });
+
+        // Ao focar, limpa erro
+        ["autorPauta", "nomePauta", "descricaoPauta"].forEach((fieldId) => {
+          const el = document.getElementById(fieldId);
+          if (!el) return;
+          el.addEventListener("focus", () => limparErro(fieldId));
+        });
+
+        const statusTrigger = document.getElementById("statusPauta-trigger");
+        if (statusTrigger) {
+          statusTrigger.addEventListener("click", () =>
+            limparErro("statusPauta")
+          );
+        }
+      }
+
+      // Validate individual fields during user input without blocking empty draft states.
+      function validateFieldLive(fieldId) {
+        const el = document.getElementById(fieldId);
+        if (!el) return true;
+
+        const rawValue = (el.value ?? "").toString();
+        const value = rawValue.trim();
+
+        // Se usuário apagou tudo, não mantém erro “grudado”
+        if (!value) {
+          limparErro(fieldId);
+          return true;
+        }
+
+        if (fieldId === "autorPauta") {
+          if (value.length < 3) {
+            mostrarErro("autorPauta", "Autor deve ter pelo menos 3 caracteres");
+            return false;
+          }
+          if (value.length > 100) {
+            mostrarErro("autorPauta", "Autor não pode exceder 100 caracteres");
+            return false;
+          }
+          limparErro("autorPauta");
+          return true;
+        }
+
+        if (fieldId === "nomePauta") {
+          if (value.length < 5) {
+            mostrarErro("nomePauta", "Nome deve ter pelo menos 5 caracteres");
+            return false;
+          }
+          if (value.length > 150) {
+            mostrarErro("nomePauta", "Nome não pode exceder 150 caracteres");
+            return false;
+          }
+          limparErro("nomePauta");
+          return true;
+        }
+
+        if (fieldId === "descricaoPauta") {
+          if (value.length > 0 && value.length < 10) {
+            mostrarErro(
+              "descricaoPauta",
+              "Descrição deve ter pelo menos 10 caracteres"
+            );
+            return false;
+          }
+          if (value.length > 500) {
+            mostrarErro(
+              "descricaoPauta",
+              "Descrição não pode exceder 500 caracteres"
+            );
+            return false;
+          }
+          limparErro("descricaoPauta");
+          return true;
+        }
+
+        return true;
+      }
+
+      // Função para mostrar erro de validação (copiada do nova_pauta.html)
+      function mostrarErro(campoId, mensagem) {
+        const errorDiv = document.getElementById(`${campoId}-error`);
+        const campo = document.getElementById(campoId);
+
+        if (campo) {
+          if (
+            campo.tagName === "SELECT" ||
+            (campo.tagName === "INPUT" && campo.type === "hidden")
+          ) {
+            const wrapper = campo.closest(".custom-select-wrapper");
+            const trigger = wrapper?.querySelector(".custom-select-trigger");
+            (trigger || campo).classList.add("form-select-error");
+          } else {
+            campo.classList.add("form-input-error");
+          }
+        }
+
+        if (errorDiv) {
+          errorDiv.textContent = mensagem;
+          errorDiv.style.display = "flex";
+          return true;
+        }
+        return false;
+      }
+
+      // Função para limpar erro de validação (copiada do nova_pauta.html)
+      function limparErro(campoId) {
+        const errorDiv = document.getElementById(`${campoId}-error`);
+        const campo = document.getElementById(campoId);
+
+        if (campo) {
+          const wrapper = campo.closest?.(".custom-select-wrapper");
+          const trigger = wrapper?.querySelector?.(".custom-select-trigger");
+          (trigger || campo).classList.remove("form-input-error");
+          (trigger || campo).classList.remove("form-select-error");
+        }
+
+        if (errorDiv) {
+          errorDiv.style.display = "none";
+          errorDiv.textContent = "";
+        }
+      }
+
+      // Função para limpar todos os erros (copiada do nova_pauta.html)
+      function limparTodosErros() {
+        ["autorPauta", "nomePauta", "statusPauta", "descricaoPauta"].forEach(
+          limparErro
+        );
+      }
+
+      // Fetch the agenda item, verify edit permissions, and populate the form.
+      async function carregarPauta() {
+        try {
+          showLoadingState();
+
+          const token = localStorage.getItem("authToken");
+          if (!token) {
+            throw new Error("Token não encontrado");
+          }
+
+          console.log(`🔍 Carregando pauta ${pautaId}...`);
+
+          const response = await fetch(`/api/pautas/${pautaId}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || `Erro ${response.status}`);
+          }
+
+          pautaAtual = await response.json();
+          console.log("✅ Pauta carregada:", pautaAtual);
+
+          // Verificar se pode editar
+          await verificarPermissaoEdicao();
+
+          // Preencher formulário
+          preencherFormulario();
+          showForm();
+        } catch (error) {
+          console.error("❌ Erro ao carregar pauta:", error);
+          showErrorState(error.message);
+        }
+      }
+
+      // Enforce business rules that prevent editing expired or finalized voted items.
+      async function verificarPermissaoEdicao() {
+        // Verificar se a data da sessão já passou (Permitir até 23:59:59 do dia da sessão)
+        const agora = new Date();
+        const dataSessao = new Date(pautaAtual.sessoes?.data_sessao);
+
+        // Criar data limite: final do dia da sessão
+        const dataLimite = new Date(dataSessao);
+        dataLimite.setHours(23, 59, 59, 999);
+
+        if (agora > dataLimite) {
+          throw new Error(
+            `A data limite para edição (${dataLimite.toLocaleString(
+              "pt-BR"
+            )}) já expirou. Não é possível editar.`
+          );
+        }
+
+        // Verificar se pauta finalizada tem votos
+        if (
+          pautaAtual.status === "Finalizada" &&
+          pautaAtual.votos &&
+          pautaAtual.votos.length > 0
+        ) {
+          throw new Error(
+            `Pauta finalizada com ${pautaAtual.votos.length} voto(s) registrado(s). Não é possível editar.`
+          );
+        }
+      }
+
+      // Populate the form fields, counters, and attachment preview from API data.
+      function preencherFormulario() {
+        // Preencher campos
+        document.getElementById("nomePauta").value = pautaAtual.nome || "";
+        document.getElementById("autorPauta").value = pautaAtual.autor || "";
+        document.getElementById("statusPauta").value =
+          pautaAtual.status || "Pendente";
+        document.getElementById("descricaoPauta").value =
+          pautaAtual.descricao || "";
+
+        if (statusCustomSelect) {
+          statusCustomSelect.setValue(pautaAtual.status || "Pendente");
+        }
+
+        // Atualizar contadores de caracteres
+        document.getElementById("nomePauta-count").textContent = (
+          pautaAtual.nome || ""
+        ).length;
+        document.getElementById("autorPauta-count").textContent = (
+          pautaAtual.autor || ""
+        ).length;
+        document.getElementById("descricaoPauta-count").textContent = (
+          pautaAtual.descricao || ""
+        ).length;
+
+        // Exibir arquivo atual
+        if (pautaAtual.anexo_url) {
+          document.getElementById("arquivo-atual").style.display = "flex";
+          document.getElementById("sem-arquivo").style.display = "none";
+
+          const btnPreview = document.getElementById("btn-preview-atual");
+          btnPreview.onclick = () =>
+            window.open(pautaAtual.anexo_url, "_blank");
+        } else {
+          document.getElementById("arquivo-atual").style.display = "none";
+          document.getElementById("sem-arquivo").style.display = "block";
+        }
+      }
+
+      // Register upload validation, navigation, retry, and form submission handlers.
+      function configurarEventos() {
+        // Input de arquivo com validação
+        document
+          .getElementById("file-input")
+          .addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            const fileNameSpan = document.getElementById("file-name");
+
+            if (!file) {
+              fileNameSpan.textContent = "Nenhum arquivo escolhido";
+              return;
+            }
+
+            // Validar tamanho (máximo 10MB)
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            if (file.size > maxSize) {
+              showToast("Arquivo muito grande. Tamanho máximo: 10MB", "error");
+              e.target.value = "";
+              fileNameSpan.textContent = "Nenhum arquivo escolhido";
+              return;
+            }
+
+            // Validar tipo de arquivo
+            const allowedTypes = [".pdf", ".doc", ".docx"];
+            const fileExtension =
+              "." + file.name.split(".").pop().toLowerCase();
+            if (!allowedTypes.includes(fileExtension)) {
+              showToast(
+                "Tipo de arquivo não permitido. Use: PDF, DOC ou DOCX",
+                "error"
+              );
+              e.target.value = "";
+              fileNameSpan.textContent = "Nenhum arquivo escolhido";
+              return;
+            }
+
+            fileNameSpan.textContent = file.name;
+          });
+
+        // Botão cancelar com confirmação (igual nova_pauta.html)
+        document
+          .getElementById("btn-cancelar")
+          .addEventListener("click", () => {
+            if (
+              confirm(
+                "Deseja cancelar? As alterações não salvas serão perdidas."
+              )
+            ) {
+              navigateToPage("cadastro");
+            }
+          });
+
+        // Botão tentar novamente
+        document
+          .getElementById("btn-retry")
+          .addEventListener("click", carregarPauta);
+
+        // Formulário de edição
+        document
+          .getElementById("form-editar-pauta")
+          .addEventListener("submit", editarPauta);
+      }
+
+      // Validate and submit agenda item updates to the API.
+      async function editarPauta(e) {
+        e.preventDefault();
+
+        submitAttempted = true;
+
+        // Validações visuais seguindo padrão nova_pauta.html (ANTES de tudo)
+        const nome = document.getElementById("nomePauta").value.trim();
+        const autor = document.getElementById("autorPauta").value.trim();
+        const status = document.getElementById("statusPauta").value;
+        const descricao = document
+          .getElementById("descricaoPauta")
+          .value.trim();
+
+        // Limpar erros anteriores
+        limparTodosErros();
+
+        let hasErrors = false;
+
+        // Validações com form-field-error (igual nova_pauta.html)
+        if (!autor.trim()) {
+          mostrarErro("autorPauta", "Autor da pauta é obrigatório");
+          hasErrors = true;
+        } else if (autor.trim().length < 3) {
+          mostrarErro("autorPauta", "Autor deve ter pelo menos 3 caracteres");
+          hasErrors = true;
+        } else if (autor.trim().length > 100) {
+          mostrarErro("autorPauta", "Autor não pode exceder 100 caracteres");
+          hasErrors = true;
+        }
+
+        if (!nome.trim()) {
+          mostrarErro("nomePauta", "Nome da pauta é obrigatório");
+          hasErrors = true;
+        } else if (nome.trim().length < 5) {
+          mostrarErro("nomePauta", "Nome deve ter pelo menos 5 caracteres");
+          hasErrors = true;
+        } else if (nome.trim().length > 150) {
+          mostrarErro("nomePauta", "Nome não pode exceder 150 caracteres");
+          hasErrors = true;
+        }
+
+        if (!status) {
+          mostrarErro("statusPauta", "Selecione um status");
+          hasErrors = true;
+        }
+
+        if (!descricao.trim()) {
+          mostrarErro("descricaoPauta", "Descrição é obrigatória");
+          hasErrors = true;
+        } else if (descricao.trim().length < 10) {
+          mostrarErro(
+            "descricaoPauta",
+            "Descrição deve ter pelo menos 10 caracteres"
+          );
+          hasErrors = true;
+        } else if (descricao.trim().length > 500) {
+          mostrarErro(
+            "descricaoPauta",
+            "Descrição não pode exceder 500 caracteres"
+          );
+          hasErrors = true;
+        }
+
+        if (hasErrors) {
+          return;
+        }
+
+        const btnSalvar = document.getElementById("btn-salvar");
+        const originalHTML = btnSalvar.innerHTML;
+
+        try {
+          // Desabilitar botão
+          btnSalvar.disabled = true;
+          btnSalvar.innerHTML =
+            '<i class="fa fa-spinner fa-spin"></i> Salvando...';
+
+          const token = localStorage.getItem("authToken");
+          if (!token) {
+            throw new Error("Token não encontrado");
+          }
+
+          // Preparar dados do formulário
+          const formData = new FormData();
+          formData.append("nome", nome);
+          formData.append("autor", autor);
+          formData.append("status", status);
+          formData.append("descricao", descricao);
+
+          // Adicionar arquivo se foi selecionado
+          const fileInput = document.getElementById("file-input");
+          if (fileInput.files.length > 0) {
+            formData.append("arquivo", fileInput.files[0]);
+          }
+
+          console.log("📤 Enviando atualização da pauta...");
+
+          const response = await fetch(`/api/pautas/${pautaId}`, {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            // Tratamento de erros seguindo padrão nova_sessao.html
+            const errorMsg =
+              result.details || result.error || "Ocorreu um erro desconhecido.";
+            // Se 'details' for um array (do express-validator), pega a primeira mensagem
+            const finalMsg = Array.isArray(errorMsg)
+              ? errorMsg[0].message
+              : errorMsg;
+            throw new Error(finalMsg);
+          }
+
+          console.log("✅ Pauta atualizada:", result);
+          showToast(
+            result.message || "Pauta atualizada com sucesso!",
+            "success"
+          );
+
+          // Aguardar um pouco para mostrar o toast e depois voltar
+          setTimeout(() => {
+            navigateToPage("cadastro");
+          }, 1500);
+        } catch (error) {
+          console.error("❌ Erro ao editar pauta:", error);
+
+          // Tratar erros específicos
+          if (
+            error.message.includes("sessão já passou") ||
+            error.message.includes("após o término da sessão")
+          ) {
+            showToast(
+              "⏰ Esta sessão já ocorreu. Não é possível editar pautas de sessões passadas.",
+              "error"
+            );
+          } else if (error.message.includes("votos registrados")) {
+            showToast(
+              "🗳️ Esta pauta finalizada possui votos registrados e não pode ser editada.",
+              "error"
+            );
+          } else {
+            showToast(`Erro ao atualizar pauta: ${error.message}`, "error");
+          }
+        } finally {
+          // Restaurar botão
+          btnSalvar.disabled = false;
+          btnSalvar.innerHTML = originalHTML;
+        }
+      }
+
+      // Show only the loading panel while asynchronous work is in progress.
+      function showLoadingState() {
+        document.getElementById("loading-state").style.display = "block";
+        document.getElementById("form-editar-pauta").style.display = "none";
+        document.getElementById("error-state").style.display = "none";
+      }
+
+      // Show the editable form after agenda data is ready.
+      function showForm() {
+        document.getElementById("loading-state").style.display = "none";
+        document.getElementById("form-editar-pauta").style.display = "block";
+        document.getElementById("error-state").style.display = "none";
+      }
+
+      // Show a recoverable error panel with the relevant failure message.
+      function showErrorState(message) {
+        document.getElementById("loading-state").style.display = "none";
+        document.getElementById("form-editar-pauta").style.display = "none";
+        document.getElementById("error-state").style.display = "block";
+        document.getElementById("error-message").textContent = message;
+      }
+    </script>
+  </body>
+</html>
