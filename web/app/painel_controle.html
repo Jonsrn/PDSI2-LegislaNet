@@ -1,0 +1,2705 @@
+<!doctype html>
+<!--
+  Control Panel Page
+  Provides the chamber operator workflow for managing live agenda voting,
+  speaker sessions, real-time vote counts, and active speaking timers.
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Painel de Controle - Legisla Net</title>
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+    />
+
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/modals.css" />
+    <link rel="stylesheet" href="../css/forms.css" />
+    <link rel="stylesheet" href="../css/toast.css" />
+    <link rel="stylesheet" href="../css/carregamento.css" />
+
+    <style>
+      /* ESTILOS ESPECÍFICOS DO PAINEL DE CONTROLE */
+      .painel-section {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 24px;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 600px;
+        height: calc(100vh - 140px);
+      }
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+      .section-header h2 {
+        font-size: 1.25rem;
+      }
+
+      /* Toggle de Alternância */
+      .toggle-container {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 24px;
+      }
+
+      .toggle-btn {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        color: var(--secondary-text);
+        padding: 12px 32px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .toggle-btn:hover {
+        border-color: var(--accent-blue);
+        color: var(--accent-blue);
+      }
+
+      .toggle-btn.active {
+        background-color: var(--accent-blue);
+        color: white;
+        border-color: var(--accent-blue);
+      }
+
+      /* Seções de Conteúdo */
+      .pautas-list,
+      .oradores-list {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+
+      .pautas-list.hidden,
+      .oradores-list.hidden {
+        display: none;
+      }
+
+      .list-header,
+      .list-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+      }
+
+      .list-header {
+        color: var(--secondary-text);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .list-item {
+        font-size: 0.875rem;
+        border-bottom: 1px solid var(--border-color);
+        transition: background-color 0.2s;
+      }
+
+      .list-item:hover {
+        background-color: var(--hover-bg);
+      }
+
+      /* Colunas - Pautas */
+      .col-pauta-nome {
+        flex: 3;
+      }
+      .col-pauta-sessao {
+        flex: 2;
+      }
+      .col-pauta-status {
+        flex: 1.5;
+        text-align: center;
+      }
+      .col-pauta-acoes {
+        flex: 1.5;
+        text-align: right;
+      }
+
+      /* Colunas - Oradores */
+      .col-ordem {
+        flex: 0.5;
+        text-align: center;
+      }
+      .col-vereador {
+        flex: 3;
+      }
+      .col-sessao {
+        flex: 2.5;
+      }
+      .col-tempo {
+        flex: 1.5;
+        text-align: center;
+      }
+      .col-acoes {
+        flex: 1.5;
+        text-align: right;
+      }
+
+      /* Badge de Status */
+      .status-votacao {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 99px;
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        background-color: rgba(88, 166, 255, 0.2);
+        color: var(--accent-blue);
+        border: 1px solid rgba(88, 166, 255, 0.5);
+      }
+
+      /* Botões de ação */
+      .actions-cell {
+        display: flex;
+        gap: 0;
+        justify-content: flex-end;
+      }
+
+      .actions-cell .btn-action {
+        color: white;
+        padding: 6px 14px;
+        margin-left: 8px;
+        text-decoration: none;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .btn-iniciar {
+        background-color: var(--accent-green);
+        min-width: 160px;
+        justify-content: center;
+      }
+
+      .btn-iniciar:hover {
+        background-color: #249e48;
+        transform: translateY(-1px);
+      }
+
+      .btn-iniciar-fala {
+        background-color: var(--accent-orange);
+        min-width: 160px;
+        justify-content: center;
+      }
+
+      .btn-iniciar-fala:hover {
+        background-color: #e07c00;
+        transform: translateY(-1px);
+      }
+
+      .btn-encerrar {
+        background-color: var(--accent-red);
+        min-width: 160px;
+        justify-content: center;
+      }
+
+      .btn-encerrar:hover {
+        background-color: #c62828;
+        transform: translateY(-1px);
+      }
+
+      .actions-cell .btn-action:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .btn-locked {
+        background-color: var(--border-color);
+        min-width: 160px;
+        justify-content: center;
+      }
+
+      /* Estados do botão de fala (cores por estado) */
+      .btn-iniciar-fala.btn-fala-prepare {
+        background-color: var(--accent-blue);
+      }
+
+      .btn-iniciar-fala.btn-fala-prepare:hover {
+        background-color: var(--accent-blue-hover);
+      }
+
+      .btn-iniciar-fala.btn-fala-start {
+        background-color: var(--accent-green);
+      }
+
+      .btn-iniciar-fala.btn-fala-start:hover {
+        background-color: #249e48;
+      }
+
+      .btn-iniciar-fala.btn-fala-end {
+        background-color: var(--accent-red);
+      }
+
+      .btn-iniciar-fala.btn-fala-end:hover {
+        background-color: #c62828;
+      }
+
+      .btn-iniciar-fala.btn-fala-disabled {
+        background-color: var(--border-color);
+      }
+
+      /* Estado vazio */
+      .no-data {
+        border: none !important;
+      }
+
+      .no-data:hover {
+        background: transparent !important;
+      }
+
+      /* Customizações específicas para vereadores */
+      .vereador-container {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        gap: 12px;
+      }
+
+      .vereador-foto {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--border-color);
+        flex-shrink: 0;
+      }
+
+      .vereador-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .vereador-nome {
+        font-weight: 500;
+        font-size: 0.95rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .vereador-separador {
+        color: var(--secondary-text);
+        font-weight: normal;
+      }
+
+      .vereador-partido-container {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+
+      .vereador-partido {
+        font-size: 0.85rem;
+        color: var(--secondary-text);
+        font-weight: 500;
+      }
+
+      .partido-logo {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 1px solid var(--border-color);
+      }
+
+      /* RESPONSIVIDADE */
+      .cards-container {
+        display: none;
+        visibility: hidden;
+      }
+
+      @media (max-width: 768px) {
+        .pautas-list,
+        .oradores-list {
+          display: none;
+          visibility: hidden;
+        }
+
+        .cards-container {
+          display: grid;
+          visibility: visible;
+          grid-template-columns: 1fr;
+          gap: 12px;
+          flex-grow: 1;
+        }
+
+        .pauta-card,
+        .orador-card {
+          background-color: var(--hover-bg);
+          border: 1px solid var(--border-color);
+          border-radius: 8px;
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .pauta-card-header,
+        .orador-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 12px;
+        }
+
+        .pauta-card-header h3,
+        .orador-card-header h3 {
+          font-size: 1rem;
+          font-weight: 600;
+          margin: 0;
+          flex: 1;
+        }
+
+        .pauta-card-body,
+        .orador-card-body {
+          font-size: 0.875rem;
+          color: var(--secondary-text);
+        }
+
+        .pauta-card .actions-cell .btn-action,
+        .orador-card .actions-cell .btn-action {
+          padding: 4px 8px;
+          font-size: 0.7rem;
+          margin-left: 4px;
+        }
+
+        .toggle-container {
+          flex-direction: column;
+        }
+
+        .toggle-btn {
+          width: 100%;
+        }
+      }
+
+      /* Estados vazios e de erro */
+      .empty-state {
+        text-align: center;
+        padding: 64px 24px;
+        color: var(--secondary-text);
+      }
+
+      .empty-state i {
+        font-size: 2rem;
+        margin-bottom: 16px;
+        display: block;
+        opacity: 0.6;
+      }
+
+      .empty-state p {
+        margin: 0;
+        font-size: 1rem;
+      }
+
+      /* Container de Votação em Tempo Real */
+      .votacao-live-container {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        width: 340px;
+        background: var(--card-bg);
+        border: 2px solid var(--accent-blue);
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        z-index: 1000;
+        display: none;
+        animation: slideInFromBottom 0.3s ease-out;
+      }
+
+      @keyframes slideInFromBottom {
+        from {
+          transform: translateY(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .votacao-live-container.show {
+        display: block;
+      }
+
+      .votacao-live-header {
+        padding: 16px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(
+          135deg,
+          rgba(88, 166, 255, 0.1) 0%,
+          rgba(88, 166, 255, 0.05) 100%
+        );
+        border-radius: 12px 12px 0 0;
+      }
+
+      .votacao-live-header h3 {
+        margin: 0;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--accent-blue);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .votacao-live-header .pulse-icon {
+        width: 8px;
+        height: 8px;
+        background: var(--accent-blue);
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.5;
+          transform: scale(1.3);
+        }
+      }
+
+      .votacao-live-body {
+        padding: 20px;
+      }
+
+      .votacao-live-pauta {
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .votacao-live-pauta h4 {
+        margin: 0 0 4px 0;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .votacao-live-pauta p {
+        margin: 0;
+        font-size: 0.8rem;
+        color: var(--secondary-text);
+      }
+
+      .votos-stats {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .voto-stat {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+      }
+
+      .voto-stat.sim {
+        background: rgba(46, 160, 67, 0.15);
+        border: 1px solid rgba(46, 160, 67, 0.3);
+        color: #2ea043;
+      }
+
+      .voto-stat.nao {
+        background: rgba(218, 54, 51, 0.15);
+        border: 1px solid rgba(218, 54, 51, 0.3);
+        color: #da3633;
+      }
+
+      .voto-stat.abstencao {
+        background: rgba(240, 136, 51, 0.15);
+        border: 1px solid rgba(240, 136, 51, 0.3);
+        color: #f08833;
+      }
+
+      .voto-stat-label {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .voto-stat-count {
+        font-size: 1.4rem;
+        font-weight: 700;
+      }
+
+      @media (max-width: 768px) {
+        .votacao-live-container {
+          bottom: 12px;
+          right: 12px;
+          left: 12px;
+          width: auto;
+        }
+      }
+
+      /* Container de Fala (Oradores) */
+      .fala-live-container {
+        position: fixed;
+        bottom: 24px;
+        left: 24px;
+        width: 380px;
+        background: var(--card-bg);
+        border: 2px solid var(--accent-orange);
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        z-index: 1000;
+        display: none;
+        animation: slideInFromBottom 0.3s ease-out;
+      }
+
+      .fala-live-container.show {
+        display: block;
+      }
+
+      .fala-live-header {
+        padding: 16px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(
+          135deg,
+          rgba(240, 136, 51, 0.12) 0%,
+          rgba(240, 136, 51, 0.05) 100%
+        );
+        border-radius: 12px 12px 0 0;
+      }
+
+      .fala-live-header h3 {
+        margin: 0;
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--accent-orange);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .fala-live-header .pulse-icon {
+        width: 8px;
+        height: 8px;
+        background: var(--accent-orange);
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+      }
+
+      .fala-live-close {
+        background: transparent;
+        border: 0;
+        color: var(--secondary-text);
+        cursor: pointer;
+        font-size: 1.1rem;
+        padding: 6px 8px;
+        border-radius: 8px;
+      }
+
+      .fala-live-close:hover {
+        background: var(--hover-bg);
+        color: var(--text-primary);
+      }
+
+      .fala-live-body {
+        padding: 18px;
+      }
+
+      .fala-live-orador {
+        margin-bottom: 12px;
+      }
+
+      .fala-live-orador h4 {
+        margin: 0 0 4px 0;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+
+      .fala-live-orador p {
+        margin: 0;
+        font-size: 0.8rem;
+        color: var(--secondary-text);
+      }
+
+      .fala-live-status {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin: 12px 0;
+      }
+
+      .fala-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        font-weight: 800;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        font-size: 0.72rem;
+        border: 1px solid var(--border-color);
+        background: rgba(88, 166, 255, 0.12);
+        color: var(--accent-blue);
+      }
+
+      .fala-status-pill.is-waiting {
+        background: rgba(240, 136, 51, 0.12);
+        color: var(--accent-orange);
+      }
+
+      .fala-status-pill.is-live {
+        background: rgba(46, 160, 67, 0.14);
+        color: #2ea043;
+        border-color: rgba(46, 160, 67, 0.3);
+      }
+
+      .fala-status-pill.is-paused {
+        background: rgba(212, 175, 55, 0.14);
+        color: var(--accent-gold);
+      }
+
+      .fala-status-pill.is-timeup {
+        background: rgba(218, 54, 51, 0.14);
+        color: #da3633;
+        border-color: rgba(218, 54, 51, 0.3);
+      }
+
+      .fala-timer {
+        font-size: 2.2rem;
+        font-weight: 900;
+        letter-spacing: 1px;
+      }
+
+      .fala-progress {
+        height: 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+        margin: 10px 0 14px 0;
+      }
+
+      .fala-progress > div {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #2ea043, var(--accent-orange));
+        transition: width 0.25s linear;
+      }
+
+      .fala-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .fala-actions .btn-action {
+        width: 100%;
+        justify-content: center;
+        margin-left: 0;
+        gap: 10px;
+        color: #fff;
+        letter-spacing: 0.2px;
+      }
+
+      .fala-actions .btn-action i {
+        margin: 0;
+      }
+
+      .fala-actions .btn-danger {
+        color: #fff;
+      }
+
+      .fala-actions .btn-danger {
+        background: var(--accent-red);
+      }
+
+      .fala-actions .btn-danger:hover {
+        background: #c62828;
+      }
+
+      .fala-summary {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border-color);
+        color: var(--secondary-text);
+        font-size: 0.82rem;
+        line-height: 1.5;
+      }
+
+      .fala-summary strong {
+        color: var(--text-primary);
+      }
+
+      /* Modal: Adicionar tempo (input) */
+      #fala-add-tempo-modal .form-group {
+        margin: 0;
+      }
+
+      #fala-add-minutos-input {
+        font-size: 1.1rem;
+        padding: 12px 14px;
+        border-radius: 10px;
+      }
+
+      #fala-add-minutos-input:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+      }
+
+      /* Remove spinners do input number para ficar mais "premium" */
+      #fala-add-minutos-input::-webkit-outer-spin-button,
+      #fala-add-minutos-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+
+      #fala-add-minutos-input[type="number"] {
+        -moz-appearance: textfield;
+      }
+
+      @media (max-width: 768px) {
+        .fala-live-container {
+          bottom: 12px;
+          left: 12px;
+          right: 12px;
+          width: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Application shell with shared sidebar and header placeholders. -->
+    <div class="app-layout">
+      <div id="sidebar-placeholder"></div>
+
+      <main class="main-content" id="mainContent">
+        <div id="header-placeholder"></div>
+
+        <!-- Control panel workspace with agenda voting and speaker management views. -->
+        <section class="painel-section fade-in">
+          <div class="section-header">
+            <h2>Painel de Controle</h2>
+          </div>
+
+          <!-- View toggle between agenda voting and active speakers. -->
+          <!-- Toggle de Alternância -->
+          <div class="toggle-container">
+            <button class="toggle-btn active" id="btn-pautas">
+              <i class="fas fa-vote-yea"></i>
+              Pautas em Votação
+            </button>
+            <button class="toggle-btn" id="btn-oradores">
+              <i class="fas fa-microphone"></i>
+              Oradores
+            </button>
+          </div>
+
+          <!-- Desktop agenda voting list populated dynamically from API data. -->
+          <!-- Conteúdo de Pautas -->
+          <div class="pautas-list" id="pautas-section">
+            <div class="list-header">
+              <div class="col-pauta-nome">Pauta</div>
+              <div class="col-pauta-sessao">Sessão</div>
+              <div class="col-pauta-status">Status</div>
+              <div class="col-pauta-acoes">Ações</div>
+            </div>
+            <div id="pautas-list-content">
+              <!-- Pautas serão carregadas dinamicamente -->
+            </div>
+          </div>
+
+          <!-- Mobile agenda voting cards populated from the same dataset. -->
+          <div class="cards-container" id="pautas-cards-content">
+            <!-- Cards serão carregados dinamicamente -->
+          </div>
+
+          <!-- Desktop speaker control list populated dynamically from API data. -->
+          <!-- Conteúdo de Oradores -->
+          <div class="oradores-list hidden" id="oradores-section">
+            <div class="list-header">
+              <div class="col-ordem">#</div>
+              <div class="col-vereador">Vereador</div>
+              <div class="col-sessao">Sessão</div>
+              <div class="col-tempo">Tempo</div>
+              <div class="col-acoes">Ações</div>
+            </div>
+            <div id="oradores-list-content">
+              <!-- Oradores serão carregados dinamicamente -->
+            </div>
+          </div>
+
+          <!-- Mobile speaker control cards populated from the same dataset. -->
+          <div class="cards-container hidden" id="oradores-cards-content">
+            <!-- Cards serão carregados dinamicamente -->
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Live vote counter panel shown while an agenda item is being voted on. -->
+    <!-- Container de Votação em Tempo Real -->
+    <div class="votacao-live-container" id="votacao-live-container">
+      <div class="votacao-live-header">
+        <h3>
+          <span class="pulse-icon"></span>
+          Votação ao Vivo
+        </h3>
+      </div>
+      <div class="votacao-live-body">
+        <div class="votacao-live-pauta">
+          <h4 id="live-pauta-nome">-</h4>
+          <p id="live-pauta-sessao">-</p>
+        </div>
+        <div class="votos-stats">
+          <div class="voto-stat sim">
+            <span class="voto-stat-label">Sim</span>
+            <span class="voto-stat-count" id="live-votos-sim">0</span>
+          </div>
+          <div class="voto-stat nao">
+            <span class="voto-stat-label">Não</span>
+            <span class="voto-stat-count" id="live-votos-nao">0</span>
+          </div>
+          <div class="voto-stat abstencao">
+            <span class="voto-stat-label">Abstenção</span>
+            <span class="voto-stat-count" id="live-votos-abstencao">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live speaking control panel for the currently active speaker. -->
+    <!-- Container de Controle de Fala (Oradores) -->
+    <div class="fala-live-container" id="fala-live-container">
+      <div class="fala-live-header">
+        <h3>
+          <span class="pulse-icon"></span>
+          Fala Ativa
+        </h3>
+        <button class="fala-live-close" id="fala-live-close" title="Ocultar">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="fala-live-body">
+        <div class="fala-live-orador">
+          <h4 id="fala-live-orador-nome">-</h4>
+          <p id="fala-live-orador-meta">-</p>
+        </div>
+
+        <div class="fala-live-status">
+          <span class="fala-status-pill is-waiting" id="fala-live-status-pill">
+            <span id="fala-live-status-text">Preparada</span>
+          </span>
+          <div class="fala-timer" id="fala-live-timer">--:--</div>
+        </div>
+
+        <div class="fala-progress">
+          <div id="fala-live-progress-bar"></div>
+        </div>
+
+        <div class="fala-actions">
+          <button
+            class="btn btn-action btn-iniciar-fala btn-fala-start"
+            id="fala-btn-start"
+          >
+            <i class="fa-solid fa-play"></i> Iniciar
+          </button>
+          <button
+            class="btn btn-action btn-iniciar-fala btn-fala-start"
+            id="fala-btn-pause"
+          >
+            <i class="fa-solid fa-pause"></i> Pausar
+          </button>
+          <button
+            class="btn btn-action btn-iniciar-fala btn-fala-start"
+            id="fala-btn-resume"
+          >
+            <i class="fa-solid fa-forward"></i> Retomar
+          </button>
+          <button
+            class="btn btn-action btn-iniciar-fala btn-fala-prepare"
+            id="fala-btn-add"
+          >
+            <i class="fa-solid fa-plus"></i> Adicionar
+          </button>
+          <button
+            class="btn btn-action btn-iniciar-fala btn-fala-prepare"
+            id="fala-btn-restart"
+          >
+            <i class="fa-solid fa-rotate"></i> Recomeçar
+          </button>
+          <button class="btn btn-action btn-danger" id="fala-btn-end">
+            <i class="fa-solid fa-stop"></i> Encerrar
+          </button>
+        </div>
+
+        <div class="fala-summary" id="fala-live-summary">
+          <div>
+            <strong>Pausas:</strong> <span id="fala-sum-pausas">0</span>
+          </div>
+          <div>
+            <strong>Tempo adicionado:</strong> +<span id="fala-sum-add">0</span>
+            min
+          </div>
+          <div>
+            <strong>Recomeços:</strong> <span id="fala-sum-restart">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add speaking time modal used by the live speaker controls. -->
+    <!-- Modal: Adicionar tempo na fala -->
+    <div class="modal-overlay" id="fala-add-tempo-modal">
+      <div class="modal-container" style="max-width: 520px">
+        <div class="modal-header">
+          <div class="modal-title">Adicionar tempo</div>
+          <button
+            class="modal-close"
+            type="button"
+            onclick="closeModal('fala-add-tempo-modal')"
+            aria-label="Fechar"
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="confirm-text" style="margin-top: 0">
+            Informe quantos minutos adicionar (1 a 30).
+          </p>
+          <div class="form-group" style="margin-bottom: 0">
+            <label>Minutos</label>
+            <input
+              id="fala-add-minutos-input"
+              type="number"
+              min="1"
+              max="30"
+              step="1"
+              inputmode="numeric"
+              placeholder="Ex: 5"
+            />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-outline"
+            id="fala-add-cancel-btn"
+          >
+            <i class="fa-solid fa-times"></i>
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="fala-add-confirm-btn"
+          >
+            <i class="fa-solid fa-plus"></i>
+            Adicionar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="../js/mockMode.js?v=4"></script>
+    <script src="../js/global.js"></script>
+    <script src="../js/modals.js"></script>
+    <script src="../js/toast.js"></script>
+    <script src="../js/carregamento.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+      // Page-level state for the active control panel view.
+      // Variável para controlar a seção atual
+      let currentView = "pautas"; // 'pautas' ou 'oradores'
+
+      // Normalize configurable backend URLs before API requests are built.
+      function normalizeBaseUrl(url) {
+        return (url || "").trim().replace(/\/+$/, "");
+      }
+
+      // Resolve the tablet notification backend for local and proxied environments.
+      function getTabletBackendBaseUrl() {
+        // Permite configurar sem rebuild via window/localStorage.
+        // Ex.: localStorage.setItem('TABLET_BACKEND_URL', 'https://seu-dominio:3003')
+        const fromWindow = normalizeBaseUrl(window.TABLET_BACKEND_URL);
+        if (fromWindow) return fromWindow;
+
+        const fromStorage = normalizeBaseUrl(
+          localStorage.getItem("TABLET_BACKEND_URL"),
+        );
+        if (fromStorage) return fromStorage;
+
+        // Default: em dev local usa localhost; em produção usa proxy /tablet-api
+        const host = window.location.hostname;
+        if (host === "localhost" || host === "127.0.0.1") {
+          return "http://localhost:3003";
+        }
+
+        // Em produção, usa o mesmo host/protocolo via Nginx proxy
+        return `${window.location.protocol}//${window.location.host}/tablet-api`;
+      }
+
+      // Live voting socket and active agenda state.
+      // Variáveis para controle de votação ao vivo
+      let socket = null;
+      let votacaoAtivaId = null;
+      let votacaoAtivaCamaraId = null;
+
+      // Live speaking socket, timer, and active speaker state.
+      // Variáveis para controle de fala (oradores)
+      let falaSocket = null;
+      let falaAtiva = null; // payload atual
+      let falaTimerInterval = null;
+      let falaTimerAnchorMs = null;
+      let falaTimerAnchorRemaining = null;
+      let falaTimeUpBeeped = false;
+
+      // Register view toggle handlers for agenda voting and speaker controls.
+      // Toggle entre Pautas e Oradores
+      document
+        .getElementById("btn-pautas")
+        .addEventListener("click", function () {
+          if (currentView === "pautas") return;
+
+          currentView = "pautas";
+
+          // Atualizar botões
+          this.classList.add("active");
+          document.getElementById("btn-oradores").classList.remove("active");
+
+          // Mostrar/ocultar seções
+          document.getElementById("pautas-section").classList.remove("hidden");
+          document.getElementById("oradores-section").classList.add("hidden");
+
+          // Carregar pautas
+          loadPautasEmVotacao();
+        });
+
+      document
+        .getElementById("btn-oradores")
+        .addEventListener("click", function () {
+          if (currentView === "oradores") return;
+
+          currentView = "oradores";
+
+          // Atualizar botões
+          this.classList.add("active");
+          document.getElementById("btn-pautas").classList.remove("active");
+
+          // Mostrar/ocultar seções
+          document.getElementById("pautas-section").classList.add("hidden");
+          document
+            .getElementById("oradores-section")
+            .classList.remove("hidden");
+
+          // Carregar oradores
+          loadOradoresAtivos();
+        });
+
+      // Fetch agenda items currently in voting state and render list/card views.
+      // Carregar pautas em votação
+      async function loadPautasEmVotacao() {
+        const listContent = document.getElementById("pautas-list-content");
+        const cardsContent = document.getElementById("pautas-cards-content");
+
+        renderLoadingState(listContent, "Carregando pautas em votação...");
+        cardsContent.innerHTML = "";
+
+        try {
+          const token = localStorage.getItem("authToken");
+          const response = await fetch(
+            "/api/painel-controle/pautas-em-votacao",
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          );
+
+          if (!response.ok) {
+            throw new Error("Erro ao carregar pautas");
+          }
+
+          const responseData = await response.json();
+          const pautas = responseData.data || [];
+
+          if (pautas.length === 0) {
+            renderEmptyState(
+              listContent,
+              "Nenhuma pauta em votação no momento",
+              "fa-solid fa-vote-yea",
+            );
+            cardsContent.innerHTML = "";
+            return;
+          }
+
+          // Verificar votações ativas usando camaraId da primeira pauta
+          if (pautas[0]?.sessoes?.camara_id) {
+            await checkVotacoesAtivas(pautas[0].sessoes.camara_id);
+          }
+
+          // Limpar conteúdos anteriores
+          listContent.innerHTML = "";
+          cardsContent.innerHTML = "";
+
+          let html = "";
+          let cardsHtml = "";
+
+          const hasVotacaoAtiva = pautasIniciadas.size > 0;
+
+          pautas.forEach((pauta) => {
+            const dataSessao = new Date(pauta.sessoes.data_sessao);
+            const dataFormatada = dataSessao.toLocaleDateString("pt-BR");
+
+            // Verificar se a pauta foi iniciada pelo painel de controle
+            const pautaIniciada = pautasIniciadas.has(String(pauta.id));
+            console.log(
+              `🔎 [PAINEL] Renderizando pauta ${pauta.id}: iniciada=${pautaIniciada}, Set contém:`,
+              Array.from(pautasIniciadas),
+            );
+
+            const pautaTravada = hasVotacaoAtiva && !pautaIniciada;
+
+            const btnClass = pautaIniciada
+              ? "btn-encerrar"
+              : pautaTravada
+                ? "btn-locked"
+                : "btn-iniciar";
+            const btnIcon = pautaIniciada
+              ? "fa-stop"
+              : pautaTravada
+                ? "fa-lock"
+                : "fa-play";
+            const btnText = pautaIniciada
+              ? "Encerrar Votação"
+              : pautaTravada
+                ? "Votação em andamento"
+                : "Iniciar Votação";
+            const btnTextMobile = pautaIniciada
+              ? "Encerrar"
+              : pautaTravada
+                ? "Travado"
+                : "Iniciar";
+
+            // Lista (desktop)
+            html += `
+                        <div class="list-item" data-pauta-id="${pauta.id}">
+                            <div class="col-pauta-nome">
+                                <div>
+                                    <div style="font-weight: 500;">${
+                                      pauta.nome
+                                    }</div>
+                                    ${
+                                      pauta.descricao
+                                        ? `<div style="color: var(--secondary-text); font-size: 0.8rem;">${pauta.descricao.substring(
+                                            0,
+                                            60,
+                                          )}${
+                                            pauta.descricao.length > 60
+                                              ? "..."
+                                              : ""
+                                          }</div>`
+                                        : ""
+                                    }
+                                </div>
+                            </div>
+                            <div class="col-pauta-sessao">
+                                <div>
+                                    <div style="font-weight: 500;">${
+                                      pauta.sessoes.nome
+                                    }</div>
+                                    <div style="color: var(--secondary-text); font-size: 0.8rem;">${dataFormatada}</div>
+                                </div>
+                            </div>
+                            <div class="col-pauta-status">
+                                <span class="status-votacao">Em Votação</span>
+                            </div>
+                            <div class="col-pauta-acoes">
+                                <div class="actions-cell">
+                                    <button class="btn btn-action ${btnClass}" data-pauta-id="${
+                                      pauta.id
+                                    }" data-pauta-nome="${pauta.nome}">
+                                        <i class="fas ${btnIcon}"></i> ${btnText}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+            // Cards (mobile)
+            cardsHtml += `
+                        <div class="pauta-card" data-pauta-id="${pauta.id}">
+                            <div class="pauta-card-header">
+                                <h3>${pauta.nome}</h3>
+                                <span class="status-votacao">Em Votação</span>
+                            </div>
+                            <div class="pauta-card-body">
+                                ${
+                                  pauta.descricao
+                                    ? `<div style="margin-bottom: 8px;">${pauta.descricao}</div>`
+                                    : ""
+                                }
+                                <div>
+                                    <div style="font-weight: 500;">${
+                                      pauta.sessoes.nome
+                                    }</div>
+                                    <div style="color: var(--secondary-text); font-size: 0.8rem;">${dataFormatada}</div>
+                                </div>
+                            </div>
+                            <div class="actions-cell">
+                                <button class="btn btn-action ${btnClass}" data-pauta-id="${
+                                  pauta.id
+                                }" data-pauta-nome="${pauta.nome}">
+                                    <i class="fas ${btnIcon}"></i> ${btnTextMobile}
+                                </button>
+                            </div>
+                        </div>
+                    `;
+          });
+
+          listContent.innerHTML = html;
+          cardsContent.innerHTML = cardsHtml;
+        } catch (error) {
+          console.error("Erro ao carregar pautas:", error);
+          renderErrorState(listContent, "Erro ao carregar pautas em votação");
+          cardsContent.innerHTML = "";
+          showToast("Erro ao carregar pautas em votação", "error");
+        }
+      }
+
+      // Fetch active speakers and render controls based on live speaking state.
+      // Carregar oradores ativos
+      async function loadOradoresAtivos() {
+        console.log("🔍 [ORADORES] Iniciando carregamento de oradores...");
+        const listContent = document.getElementById("oradores-list-content");
+        const cardsContent = document.getElementById("oradores-cards-content");
+
+        console.log("🔍 [ORADORES] Elementos DOM encontrados:", {
+          listContent: !!listContent,
+          cardsContent: !!cardsContent,
+        });
+
+        renderLoadingState(listContent, "Carregando oradores...");
+        cardsContent.innerHTML = "";
+
+        try {
+          const token = localStorage.getItem("authToken");
+          console.log(
+            "🔍 [ORADORES] Token obtido:",
+            token ? "Sim (presente)" : "Não (ausente)",
+          );
+
+          console.log(
+            "🔍 [ORADORES] Fazendo requisição para /api/painel-controle/oradores...",
+          );
+          const response = await fetch("/api/painel-controle/oradores", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          console.log("🔍 [ORADORES] Resposta recebida:", {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok,
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error("❌ [ORADORES] Erro na resposta:", errorText);
+            throw new Error(`Erro ao carregar oradores: ${response.status}`);
+          }
+
+          const responseData = await response.json();
+          console.log("🔍 [ORADORES] Dados recebidos:", {
+            total: responseData.total,
+            quantidade: responseData.data?.length,
+            dados: responseData.data,
+          });
+
+          const oradores = responseData.data || [];
+
+          if (oradores.length === 0) {
+            renderEmptyState(
+              listContent,
+              "Nenhum orador cadastrado no momento",
+              "fa-solid fa-microphone",
+            );
+            cardsContent.innerHTML = "";
+            return;
+          }
+
+          // Limpar conteúdos anteriores
+          listContent.innerHTML = "";
+          cardsContent.innerHTML = "";
+
+          // Sincronizar estado de fala ao vivo (para estados do botão)
+          await checkFalaAtiva();
+
+          // Agrupar por sessão e ordenar
+          const oradoresPorSessao = oradores.reduce((acc, orador) => {
+            const sessaoId = orador.sessoes?.id;
+            if (!acc[sessaoId]) {
+              acc[sessaoId] = {
+                sessao: orador.sessoes,
+                oradores: [],
+              };
+            }
+            acc[sessaoId].oradores.push(orador);
+            return acc;
+          }, {});
+
+          let html = "";
+          let cardsHtml = "";
+
+          // Ordenar grupos por data da sessão (mais recente primeiro)
+          const gruposOrdenados = Object.values(oradoresPorSessao).sort(
+            (a, b) => {
+              return (
+                new Date(b.sessao.data_sessao) - new Date(a.sessao.data_sessao)
+              );
+            },
+          );
+
+          gruposOrdenados.forEach((grupo) => {
+            // Ordenar oradores por ordem
+            grupo.oradores.sort((a, b) => a.ordem - b.ordem);
+
+            grupo.oradores.forEach((orador) => {
+              const dataSessao = new Date(grupo.sessao.data_sessao);
+              const dataFormatada = dataSessao.toLocaleDateString("pt-BR");
+              const tempoTexto = orador.tempo_fala_minutos
+                ? `${orador.tempo_fala_minutos} min`
+                : "Não definido";
+              const partidoSigla = orador.vereadores?.partidos?.sigla || "S/P";
+
+              // Estado do botão (um único botão)
+              const falaAtivaBool = !!falaAoVivo;
+              const isOradorDaFala =
+                falaAtivaBool &&
+                String(falaAoVivo.oradorId) === String(orador.id);
+              const falaStatus = falaAtivaBool ? falaAoVivo.status : null;
+
+              let falaBtnText = "Iniciar Fala";
+              let falaBtnIcon = "fa-microphone";
+              let falaBtnAction = "prepare";
+              let falaBtnDisabled = false;
+              let falaBtnClass = "btn-fala-prepare";
+
+              if (falaAtivaBool && !isOradorDaFala) {
+                falaBtnText = "Em fala";
+                falaBtnIcon = "fa-lock";
+                falaBtnAction = "disabled";
+                falaBtnDisabled = true;
+                falaBtnClass = "btn-fala-disabled";
+              } else if (falaAtivaBool && isOradorDaFala) {
+                falaBtnText = "Abrir Controle";
+                falaBtnIcon = "fa-up-right-from-square";
+                falaBtnAction = "open";
+                falaBtnClass =
+                  falaStatus === "iniciada"
+                    ? "btn-fala-start"
+                    : falaStatus === "pausada"
+                      ? "btn-fala-start"
+                      : falaStatus === "tempo_esgotado"
+                        ? "btn-fala-end"
+                        : "btn-fala-prepare";
+              }
+
+              // Lista (desktop)
+              html += `
+                            <div class="list-item" data-orador-id="${
+                              orador.id
+                            }">
+                                <div class="col-ordem">${orador.ordem}º</div>
+                                <div class="col-vereador">
+                                    <div class="vereador-container">
+                                        ${
+                                          orador.vereadores?.foto_url
+                                            ? `<img src="${orador.vereadores.foto_url}" alt="${orador.vereadores.nome_parlamentar}" class="vereador-foto" onerror="this.style.display='none'">`
+                                            : '<div class="vereador-foto" style="background: var(--border-color); display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-user" style="color: var(--secondary-text); font-size: 16px;"></i></div>'
+                                        }
+                                        <div class="vereador-info">
+                                            <span class="vereador-nome">${
+                                              orador.vereadores
+                                                ?.nome_parlamentar
+                                            }</span>
+                                            ${
+                                              partidoSigla !== "S/P"
+                                                ? `<span class="vereador-separador">-</span>`
+                                                : ""
+                                            }
+                                            <div class="vereador-partido-container">
+                                                <span class="vereador-partido">${partidoSigla}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sessao">
+                                    <div>
+                                        <div style="font-weight: 500;">${
+                                          grupo.sessao.nome
+                                        }</div>
+                                        <div style="color: var(--secondary-text); font-size: 0.8rem;">${dataFormatada}</div>
+                                    </div>
+                                </div>
+                                <div class="col-tempo">${tempoTexto}</div>
+                                <div class="col-acoes">
+                                    <div class="actions-cell">
+                                        <button class="btn btn-action btn-iniciar-fala ${falaBtnClass}" data-orador-id="${
+                                          orador.id
+                                        }" data-orador-nome="${
+                                          orador.vereadores?.nome_parlamentar
+                                        }" data-fala-action="${falaBtnAction}" ${
+                                          falaBtnDisabled ? "disabled" : ""
+                                        }>
+                                            <i class="fas ${falaBtnIcon}"></i> ${falaBtnText}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+
+              // Cards (mobile)
+              cardsHtml += `
+                            <div class="orador-card" data-orador-id="${
+                              orador.id
+                            }">
+                                <div class="orador-card-header">
+                                    <h3>${
+                                      orador.vereadores?.nome_parlamentar
+                                    } (${partidoSigla})</h3>
+                                </div>
+                                <div class="orador-card-body">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                        <span><strong>Ordem:</strong> ${
+                                          orador.ordem
+                                        }º</span>
+                                        <span><strong>Tempo:</strong> ${tempoTexto}</span>
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 500;">${
+                                          grupo.sessao.nome
+                                        }</div>
+                                        <div style="color: var(--secondary-text); font-size: 0.8rem;">${dataFormatada}</div>
+                                    </div>
+                                </div>
+                                <div class="actions-cell">
+                                    <button class="btn btn-action btn-iniciar-fala ${falaBtnClass}" data-orador-id="${
+                                      orador.id
+                                    }" data-orador-nome="${
+                                      orador.vereadores?.nome_parlamentar
+                                    }" data-fala-action="${falaBtnAction}" ${
+                                      falaBtnDisabled ? "disabled" : ""
+                                    }>
+                                        <i class="fas ${falaBtnIcon}"></i> ${
+                                          falaBtnText === "Iniciar Fala"
+                                            ? "Iniciar"
+                                            : falaBtnText
+                                        }
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+            });
+          });
+
+          listContent.innerHTML = html;
+          cardsContent.innerHTML = cardsHtml;
+        } catch (error) {
+          console.error("Erro ao carregar oradores:", error);
+          renderErrorState(listContent, "Erro ao carregar oradores");
+          cardsContent.innerHTML = "";
+          showToast("Erro ao carregar oradores", "error");
+        }
+      }
+
+      // Track agenda items started from this panel to coordinate button states.
+      // Sistema de tracking de pautas iniciadas pelo painel de controle
+      const pautasIniciadas = new Set();
+
+      // Cached live speaking status used to render speaker action buttons.
+      // Estado atual de fala ao vivo (fallback leve via /status)
+      let falaAoVivo = null; // { oradorId, status, ... } | null
+
+      // Rehydrate active voting status from the server.
+      // Verificar votações ativas ao carregar
+      async function checkVotacoesAtivas(camaraId) {
+        try {
+          if (!camaraId) {
+            console.warn("⚠️ [PAINEL] camaraId não fornecido");
+            return;
+          }
+
+          const token = localStorage.getItem("authToken");
+          if (!token) {
+            console.warn("⚠️ [PAINEL] Token ausente para verificar votações");
+            return;
+          }
+
+          console.log(`🔍 [PAINEL] Buscando status para câmara ${camaraId}`);
+          const response = await fetch(
+            `/api/votacao-ao-vivo/status/${camaraId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          );
+
+          console.log(`📡 [PAINEL] Response status: ${response.status}`);
+
+          if (!response.ok) {
+            console.warn("⚠️ [PAINEL] API retornou erro");
+            return;
+          }
+
+          const data = await response.json();
+          console.log("📊 [PAINEL] Dados recebidos:", data);
+
+          // Sempre rehidratar do servidor (resiste a Ctrl+Shift+R)
+          pautasIniciadas.clear();
+
+          if (data.isLive && data.votacoes && data.votacoes.length > 0) {
+            console.log(
+              `✅ [PAINEL] ${data.votacoes.length} votação(ões) ativa(s) encontrada(s)`,
+            );
+
+            // Marcar pautas ativas no Set
+            data.votacoes.forEach((votacao) => {
+              if (votacao.pautaId) {
+                pautasIniciadas.add(String(votacao.pautaId));
+                console.log(
+                  `✅ [PAINEL] Pauta ${votacao.pautaId} marcada como ativa`,
+                );
+              }
+            });
+
+            console.log(
+              "📋 [PAINEL] pautasIniciadas após carregar:",
+              Array.from(pautasIniciadas),
+            );
+          } else {
+            console.log("📴 [PAINEL] Nenhuma votação ativa no momento");
+          }
+        } catch (error) {
+          console.error(
+            "❌ [PAINEL] Erro ao verificar votações ativas:",
+            error,
+          );
+        }
+      }
+
+      // Rehydrate active speaking status from the server.
+      // Verificar fala ativa ao carregar lista de oradores
+      async function checkFalaAtiva() {
+        try {
+          const token = localStorage.getItem("authToken");
+          if (!token) {
+            console.warn("⚠️ [PAINEL] Token ausente para verificar fala");
+            falaAoVivo = null;
+            return;
+          }
+
+          const response = await fetch(`/api/painel-controle/fala-ativa`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (!response.ok) {
+            falaAoVivo = null;
+            return;
+          }
+
+          const data = await response.json();
+          if (data && data.isLive && data.fala) {
+            falaAoVivo = data.fala;
+          } else {
+            falaAoVivo = null;
+          }
+        } catch (error) {
+          console.error("❌ [PAINEL] Erro ao verificar fala ativa:", error);
+          falaAoVivo = null;
+        }
+      }
+
+      // Format timer values for the live speaking panel.
+      function formatMMSS(totalSeconds) {
+        const s = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+        const mm = String(Math.floor(s / 60)).padStart(2, "0");
+        const ss = String(s % 60).padStart(2, "0");
+        return `${mm}:${ss}`;
+      }
+
+      // Start the local speaking countdown loop between server updates.
+      function startFalaTimerLoop() {
+        stopFalaTimerLoop();
+        falaTimeUpBeeped = false;
+
+        falaTimerInterval = setInterval(() => {
+          if (!falaAtiva) return;
+
+          const status = falaAtiva.status;
+          const totalBudgetSeconds =
+            Math.max(
+              0,
+              Math.trunc(Number(falaAtiva.tempoFalaMinutos || 0)) * 60,
+            ) +
+            Math.max(
+              0,
+              Math.trunc(Number(falaAtiva.tempoAdicionadoTotalMinutos || 0)) *
+                60,
+            );
+
+          let remaining =
+            falaAtiva.tempoRestanteSegundos != null
+              ? Math.max(0, Math.trunc(Number(falaAtiva.tempoRestanteSegundos)))
+              : 0;
+
+          if (
+            status === "iniciada" &&
+            falaTimerAnchorMs &&
+            falaTimerAnchorRemaining != null
+          ) {
+            const elapsed = Math.floor((Date.now() - falaTimerAnchorMs) / 1000);
+            remaining = Math.max(
+              0,
+              Math.trunc(falaTimerAnchorRemaining) - Math.max(0, elapsed),
+            );
+          }
+
+          document.getElementById("fala-live-timer").textContent =
+            formatMMSS(remaining);
+
+          const pct =
+            totalBudgetSeconds > 0 ? (remaining / totalBudgetSeconds) * 100 : 0;
+          document.getElementById("fala-live-progress-bar").style.width =
+            `${Math.max(0, Math.min(100, pct)).toFixed(2)}%`;
+
+          if (
+            remaining <= 0 &&
+            (status === "iniciada" || status === "tempo_esgotado")
+          ) {
+            if (!falaTimeUpBeeped) {
+              falaTimeUpBeeped = true;
+              // beep simples (mesmo mecanismo usado na TV é overkill aqui)
+              try {
+                const ctx = new (
+                  window.AudioContext || window.webkitAudioContext
+                )();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = "sine";
+                osc.frequency.value = 880;
+                gain.gain.value = 0.0001;
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                const now = ctx.currentTime;
+                gain.gain.setValueAtTime(0.0001, now);
+                gain.gain.exponentialRampToValueAtTime(0.18, now + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+                osc.start(now);
+                osc.stop(now + 0.4);
+                osc.onended = () => {
+                  try {
+                    ctx.close();
+                  } catch (_) {}
+                };
+              } catch (_) {}
+            }
+          }
+        }, 250);
+      }
+
+      // Stop the local speaking countdown loop.
+      function stopFalaTimerLoop() {
+        if (falaTimerInterval) {
+          clearInterval(falaTimerInterval);
+          falaTimerInterval = null;
+        }
+      }
+
+      // Update the live speaking status label and visual state.
+      function setFalaStatusUI(status) {
+        const pill = document.getElementById("fala-live-status-pill");
+        const text = document.getElementById("fala-live-status-text");
+
+        pill.className = "fala-status-pill";
+
+        if (status === "preparada") {
+          pill.classList.add("is-waiting");
+          text.textContent = "Preparada";
+        } else if (status === "iniciada") {
+          pill.classList.add("is-live");
+          text.textContent = "Em andamento";
+        } else if (status === "pausada") {
+          pill.classList.add("is-paused");
+          text.textContent = "Pausada";
+        } else if (status === "tempo_esgotado") {
+          pill.classList.add("is-timeup");
+          text.textContent = "Tempo esgotado";
+        } else {
+          pill.classList.add("is-waiting");
+          text.textContent = status || "-";
+        }
+      }
+
+      // Show the speaking control buttons that match the current status.
+      function updateFalaButtons(status) {
+        const btnStart = document.getElementById("fala-btn-start");
+        const btnPause = document.getElementById("fala-btn-pause");
+        const btnResume = document.getElementById("fala-btn-resume");
+        const btnAdd = document.getElementById("fala-btn-add");
+        const btnRestart = document.getElementById("fala-btn-restart");
+        const btnEnd = document.getElementById("fala-btn-end");
+
+        // Default: esconder todos e habilitar conforme status
+        btnStart.style.display = "none";
+        btnPause.style.display = "none";
+        btnResume.style.display = "none";
+        btnAdd.style.display = "none";
+        btnRestart.style.display = "none";
+        btnEnd.style.display = "inline-flex";
+
+        if (status === "preparada") {
+          btnStart.style.display = "inline-flex";
+          btnAdd.style.display = "inline-flex";
+          btnEnd.style.display = "inline-flex";
+        } else if (status === "iniciada") {
+          btnPause.style.display = "inline-flex";
+          btnAdd.style.display = "inline-flex";
+          btnRestart.style.display = "inline-flex";
+          btnEnd.style.display = "inline-flex";
+        } else if (status === "pausada") {
+          btnResume.style.display = "inline-flex";
+          btnAdd.style.display = "inline-flex";
+          btnRestart.style.display = "inline-flex";
+          btnEnd.style.display = "inline-flex";
+        } else if (status === "tempo_esgotado") {
+          btnAdd.style.display = "inline-flex";
+          btnRestart.style.display = "inline-flex";
+          btnEnd.style.display = "inline-flex";
+        }
+      }
+
+      // Render current speaker details, timer, progress, and summary metrics.
+      function renderFalaContainer() {
+        if (!falaAtiva) return;
+
+        document.getElementById("fala-live-orador-nome").textContent =
+          falaAtiva.oradorNome || "Orador";
+
+        const meta = [
+          falaAtiva.partidoSigla ? `Partido: ${falaAtiva.partidoSigla}` : null,
+        ]
+          .filter(Boolean)
+          .join(" • ");
+        document.getElementById("fala-live-orador-meta").textContent =
+          meta || " ";
+
+        setFalaStatusUI(falaAtiva.status);
+        updateFalaButtons(falaAtiva.status);
+
+        document.getElementById("fala-sum-pausas").textContent = String(
+          falaAtiva.totalPausas || 0,
+        );
+        document.getElementById("fala-sum-add").textContent = String(
+          falaAtiva.tempoAdicionadoTotalMinutos || 0,
+        );
+        document.getElementById("fala-sum-restart").textContent = String(
+          falaAtiva.recomecos || 0,
+        );
+
+        // Anchor do timer (para contagem local suave)
+        if (falaAtiva.tempoRestanteSegundos != null) {
+          falaTimerAnchorMs = Date.now();
+          falaTimerAnchorRemaining = Math.max(
+            0,
+            Math.trunc(Number(falaAtiva.tempoRestanteSegundos)),
+          );
+        }
+
+        startFalaTimerLoop();
+      }
+
+      // Initialize Socket.IO updates for the live speaking panel.
+      function inicializarSocketFala() {
+        if (falaSocket) return;
+
+        falaSocket = io("/", {
+          transports: ["websocket", "polling"],
+          reconnection: true,
+          reconnectionDelay: 1000,
+          reconnectionAttempts: 5,
+        });
+
+        falaSocket.on("connect", () => {
+          if (falaAtiva?.camaraId) {
+            falaSocket.emit("join-room", `painel-camara-${falaAtiva.camaraId}`);
+          }
+        });
+
+        falaSocket.on("fala-ao-vivo-update", (data) => {
+          if (!data || !falaAtiva) return;
+          if (
+            String(data.historicoFalaId) !== String(falaAtiva.historicoFalaId)
+          )
+            return;
+          falaAtiva = data;
+          renderFalaContainer();
+        });
+      }
+
+      // Open and synchronize the live speaking panel with the provided payload.
+      function abrirContainerFala(payload) {
+        if (!payload) return;
+
+        falaAtiva = payload;
+        document.getElementById("fala-live-container").classList.add("show");
+
+        inicializarSocketFala();
+        if (falaSocket && payload.camaraId) {
+          falaSocket.emit("join-room", `painel-camara-${payload.camaraId}`);
+        }
+
+        renderFalaContainer();
+      }
+
+      // Hide the live speaking panel without ending the active speaking session.
+      function ocultarContainerFala() {
+        document.getElementById("fala-live-container").classList.remove("show");
+        stopFalaTimerLoop();
+      }
+
+      // Fetch the current active speaking session for page restoration.
+      async function fetchFalaAtivaPainel() {
+        const token = localStorage.getItem("authToken");
+        if (!token) return null;
+
+        const resp = await fetch("/api/painel-controle/fala-ativa", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!resp.ok) return null;
+        const data = await resp.json();
+        if (data && data.isLive && data.fala) return data.fala;
+        return null;
+      }
+
+      // Reopen the speaking panel after reload when a session is still active.
+      async function verificarFalaAtivaAoCarregar() {
+        try {
+          const fala = await fetchFalaAtivaPainel();
+          if (fala) {
+            abrirContainerFala(fala);
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      // Start live voting for a selected agenda item.
+      // Iniciar votação
+      async function iniciarVotacao(pautaId, pautaNome) {
+        // Verificar se já existe uma votação ativa
+        if (pautasIniciadas.size > 0) {
+          const pautaAtivaId = Array.from(pautasIniciadas)[0];
+
+          // Buscar nome da pauta ativa
+          const listItems = document.querySelectorAll(".list-item, .card");
+          let nomePautaAtiva = "outra pauta";
+
+          listItems.forEach((item) => {
+            if (item.dataset.pautaId === pautaAtivaId) {
+              const titleElement = item.querySelector(
+                ".col-pauta-nome div, .card-title",
+              );
+              if (titleElement) {
+                nomePautaAtiva = titleElement.textContent.trim();
+              }
+            }
+          });
+
+          showToast(
+            `Já há votação em andamento: "${nomePautaAtiva}"`,
+            "warning",
+          );
+          return;
+        }
+
+        try {
+          const token = localStorage.getItem("authToken");
+          const response = await fetch(
+            `/api/painel-controle/iniciar-votacao/${pautaId}`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            },
+          );
+
+          if (!response.ok) {
+            throw new Error("Erro ao iniciar votação");
+          }
+
+          const result = await response.json();
+          showToast(
+            result.message || "Votação iniciada com sucesso!",
+            "success",
+          );
+
+          // Marcar pauta como iniciada
+          pautasIniciadas.add(String(pautaId));
+
+          // Abrir container de votação ao vivo
+          await abrirContainerVotacao(pautaId, pautaNome, result.data);
+
+          // Recarregar lista de pautas
+          loadPautasEmVotacao();
+        } catch (error) {
+          console.error("Erro ao iniciar votação:", error);
+          showToast(error.message || "Erro ao iniciar votação", "error");
+        }
+      }
+
+      // End live voting, notify tablets, and refresh agenda controls.
+      // Encerrar votação
+      async function encerrarVotacao(pautaId, pautaNome) {
+        try {
+          const token = localStorage.getItem("authToken");
+
+          // Reutilizar a rota existente de atualização de status
+          const response = await fetch(`/api/pautas/${pautaId}/status`, {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              status: "Finalizada",
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Erro ao encerrar votação");
+          }
+
+          const result = await response.json();
+          const resultado = result.data?.resultado_votacao || "Calculado";
+          showToast(`Votação encerrada! Resultado: ${resultado}`, "success");
+
+          // Notificar tablets para voltar ao dashboard
+          const camaraId = result.data?.sessoes?.camara_id;
+          if (camaraId) {
+            try {
+              const tabletBackendBaseUrl = getTabletBackendBaseUrl();
+              await fetch(
+                `${tabletBackendBaseUrl}/api/notify/encerrar-votacao`,
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    camaraId: camaraId,
+                    pautaId: pautaId,
+                    pautaNome: pautaNome,
+                    resultado: resultado,
+                  }),
+                },
+              );
+              console.log(
+                "✅ Tablets notificados sobre encerramento da votação",
+              );
+            } catch (notifyError) {
+              console.error("⚠️ Erro ao notificar tablets:", notifyError);
+              // Não bloquear o fluxo se a notificação falhar
+            }
+          }
+
+          // Remover da lista de pautas iniciadas
+          pautasIniciadas.delete(String(pautaId));
+
+          // Fechar container de votação ao vivo
+          fecharContainerVotacao();
+
+          // Recarregar lista de pautas
+          loadPautasEmVotacao();
+        } catch (error) {
+          console.error("Erro ao encerrar votação:", error);
+          showToast(error.message || "Erro ao encerrar votação", "error");
+        }
+      }
+
+      // Prepare a speaker session or reopen an already active one.
+      // Iniciar fala
+      async function iniciarFala(oradorId, oradorNome) {
+        try {
+          const token = localStorage.getItem("authToken");
+          const response = await fetch(
+            `/api/painel-controle/iniciar-fala/${oradorId}`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            },
+          );
+
+          const result = await response.json().catch(() => ({}));
+
+          if (response.ok) {
+            showToast(
+              result.message || "Fala preparada com sucesso!",
+              "success",
+            );
+            if (result.fala) {
+              abrirContainerFala(result.fala);
+            }
+            loadOradoresAtivos();
+            return;
+          }
+
+          // 409: já existe fala ativa -> abrir controle da fala ativa
+          if (response.status === 409 && result && result.fala) {
+            showToast(result.message || "Já existe uma fala ativa.", "warning");
+            abrirContainerFala(result.fala);
+            loadOradoresAtivos();
+            return;
+          }
+
+          throw new Error(result.error || "Erro ao iniciar fala");
+        } catch (error) {
+          console.error("Erro ao iniciar fala:", error);
+          showToast(error.message || "Erro ao iniciar fala", "error");
+        }
+      }
+
+      // Start the countdown for a prepared speaking session.
+      // Start contagem da fala (2º estado)
+      async function iniciarFalaStart(oradorId, oradorNome) {
+        try {
+          if (!falaAtiva?.historicoFalaId) {
+            showToast("Nenhuma fala selecionada", "warning");
+            return;
+          }
+
+          const token = localStorage.getItem("authToken");
+          const response = await fetch(
+            `/api/painel-controle/fala/${falaAtiva.historicoFalaId}/iniciar`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            },
+          );
+
+          if (!response.ok) {
+            throw new Error("Erro ao iniciar contagem da fala");
+          }
+
+          const result = await response.json();
+          showToast(
+            result.message || "Contagem da fala iniciada com sucesso!",
+            "success",
+          );
+
+          if (result.fala) {
+            abrirContainerFala(result.fala);
+          }
+
+          loadOradoresAtivos();
+        } catch (error) {
+          console.error("Erro ao iniciar contagem da fala:", error);
+          showToast(
+            error.message || "Erro ao iniciar contagem da fala",
+            "error",
+          );
+        }
+      }
+
+      // ========== FUNÇÕES DE VOTAÇÃO AO VIVO ==========
+
+      // Initialize Socket.IO updates for live vote counting.
+      // Inicializar Socket.IO
+      function inicializarSocket() {
+        if (socket) {
+          console.log("⚠️ [PAINEL] Socket já existe, reutilizando");
+          return;
+        }
+
+        console.log("🔌 [PAINEL] Inicializando novo socket...");
+        socket = io("/", {
+          transports: ["websocket", "polling"],
+          reconnection: true,
+          reconnectionDelay: 1000,
+          reconnectionAttempts: 5,
+        });
+
+        socket.on("connect", () => {
+          console.log("✅ [PAINEL] Socket.IO conectado | ID:", socket.id);
+
+          // Se já tinha uma sala ativa, re-entrar
+          if (votacaoAtivaCamaraId) {
+            const room = `painel-camara-${votacaoAtivaCamaraId}`;
+            console.log(
+              `🔄 [PAINEL] Re-entrando na sala após reconexão: ${room}`,
+            );
+            socket.emit("join-room", room);
+          }
+
+          // Iniciar polling de segurança (5s)
+          if (!window.__painelPolling) {
+            window.__painelPolling = setInterval(async () => {
+              try {
+                // Tenta pegar id da variável global ou do localStorage
+                let cId = votacaoAtivaCamaraId;
+                if (!cId) {
+                  const userStr = localStorage.getItem("userProfile");
+                  if (userStr) {
+                    const user = JSON.parse(userStr);
+                    cId = user.camara_id || (user.camara && user.camara.id);
+                  }
+                }
+
+                if (cId) {
+                  // 1. Checar Votações
+                  await checkVotacoesAtivas(cId);
+                  // 2. Checar Fala
+                  await checkFalaAtiva();
+                }
+              } catch (e) {
+                console.error("Erro no polling do painel:", e);
+              }
+            }, 5000);
+            console.log("⏱️ Polling do Painel iniciado (5s)");
+          }
+        });
+
+        socket.on("disconnect", () => {
+          console.log("❌ [PAINEL] Socket.IO desconectado");
+
+          if (window.__painelPolling) {
+            clearInterval(window.__painelPolling);
+            window.__painelPolling = null;
+            console.log("🛑 Polling do Painel parado");
+          }
+        });
+
+        socket.on("connect_error", (error) => {
+          console.error("❌ [PAINEL] Erro de conexão Socket.IO:", error);
+        });
+
+        socket.on("room-joined", (data) => {
+          console.log("✅ [PAINEL] Confirmação de entrada na sala:", data);
+        });
+
+        // Registrar listener de votação apenas UMA VEZ
+        socket.on("votacao-ao-vivo-update", (data) => {
+          console.log(
+            "📡 [PAINEL] Evento votacao-ao-vivo-update recebido:",
+            data,
+          );
+
+          if (
+            votacaoAtivaId &&
+            String(data.pautaId) === String(votacaoAtivaId)
+          ) {
+            console.log(
+              "✅ [PAINEL] Pauta corresponde, atualizando contadores",
+            );
+            atualizarContadoresVotos(data.totals);
+          } else {
+            console.log("⚠️ [PAINEL] Pauta não corresponde:", {
+              recebida: data.pautaId,
+              esperada: votacaoAtivaId,
+            });
+          }
+        });
+
+        console.log("✅ [PAINEL] Socket inicializado com listeners");
+      }
+
+      // Open the live vote counter and join its Socket.IO room.
+      // Abrir container de votação ao vivo
+      async function abrirContainerVotacao(pautaId, pautaNome, pautaData) {
+        console.log(
+          "📊 [PAINEL] Abrindo container de votação para pauta:",
+          pautaId,
+        );
+
+        votacaoAtivaId = String(pautaId);
+        votacaoAtivaCamaraId = pautaData?.sessoes?.camara_id || null;
+
+        // Atualizar informações da pauta no container
+        document.getElementById("live-pauta-nome").textContent = pautaNome;
+        document.getElementById("live-pauta-sessao").textContent =
+          pautaData?.sessoes?.nome || "Sessão";
+
+        // Buscar votos iniciais
+        await carregarVotosIniciais(pautaId);
+
+        // Mostrar container
+        document.getElementById("votacao-live-container").classList.add("show");
+
+        // Inicializar Socket.IO e entrar na sala
+        inicializarSocket();
+        entrarNaSalaVotacao(pautaId, votacaoAtivaCamaraId);
+      }
+
+      // Close the live vote counter and reset local voting state.
+      // Fechar container de votação ao vivo
+      function fecharContainerVotacao() {
+        console.log("🔒 [PAINEL] Fechando container de votação");
+
+        // Sair da sala Socket.IO
+        if (socket && votacaoAtivaCamaraId) {
+          socket.emit("leave-room", `painel-camara-${votacaoAtivaCamaraId}`);
+          // Não remover o listener global para que funcione na próxima abertura
+          // socket.off("votacao-ao-vivo-update");
+        }
+
+        // Ocultar container
+        document
+          .getElementById("votacao-live-container")
+          .classList.remove("show");
+
+        // Resetar variáveis
+        votacaoAtivaId = null;
+        votacaoAtivaCamaraId = null;
+
+        // Resetar contadores
+        document.getElementById("live-votos-sim").textContent = "0";
+        document.getElementById("live-votos-nao").textContent = "0";
+        document.getElementById("live-votos-abstencao").textContent = "0";
+      }
+
+      // Join the chamber room used for live voting updates.
+      // Entrar na sala de votação via Socket.IO
+      function entrarNaSalaVotacao(pautaId, camaraId) {
+        if (!socket || !camaraId) {
+          console.error("❌ [PAINEL] Socket ou camaraId não disponível");
+          return;
+        }
+
+        const room = `painel-camara-${camaraId}`;
+        console.log(`🚪 [PAINEL] Solicitando entrada na sala: ${room}`);
+
+        socket.emit("join-room", room);
+      }
+
+      // Load initial vote totals before real-time updates arrive.
+      // Carregar votos iniciais da pauta
+      async function carregarVotosIniciais(pautaId) {
+        try {
+          const token = localStorage.getItem("authToken");
+          const response = await fetch(`/api/votos/pauta/${pautaId}/totals`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (!response.ok) {
+            console.warn(
+              "⚠️ [PAINEL] Não foi possível carregar votos iniciais",
+            );
+            return;
+          }
+
+          const data = await response.json();
+          console.log("📊 [PAINEL] Votos iniciais carregados:", data);
+
+          atualizarContadoresVotos({
+            sim: data.sim || 0,
+            nao: data.nao || 0,
+            abstencao: data.abstencao || 0,
+          });
+        } catch (error) {
+          console.error("❌ [PAINEL] Erro ao carregar votos iniciais:", error);
+        }
+      }
+
+      // Update live vote totals in the counter panel.
+      // Atualizar contadores de votos no container
+      function atualizarContadoresVotos(totals) {
+        const sim = totals?.sim || 0;
+        const nao = totals?.nao || 0;
+        const abstencao = totals?.abstencao || 0;
+
+        console.log(
+          `📊 [PAINEL] Atualizando contadores: SIM=${sim}, NÃO=${nao}, ABSTENÇÃO=${abstencao}`,
+        );
+
+        // Atualizar com animação
+        animarContador("live-votos-sim", sim);
+        animarContador("live-votos-nao", nao);
+        animarContador("live-votos-abstencao", abstencao);
+      }
+
+      // Animate vote counter changes for visual feedback.
+      // Animar mudança de contador
+      function animarContador(elementId, novoValor) {
+        const elemento = document.getElementById(elementId);
+        const valorAtual = parseInt(elemento.textContent) || 0;
+
+        if (valorAtual === novoValor) return;
+
+        // Efeito de pulso
+        elemento.style.transform = "scale(1.3)";
+        elemento.style.transition = "transform 0.2s ease";
+
+        setTimeout(() => {
+          elemento.textContent = novoValor;
+          elemento.style.transform = "scale(1)";
+        }, 100);
+      }
+
+      // End the active speaking session and refresh speaker controls.
+      // Encerrar fala (3º estado)
+      async function encerrarFala(oradorId, oradorNome) {
+        try {
+          if (!falaAtiva?.historicoFalaId) {
+            showToast("Nenhuma fala selecionada", "warning");
+            return;
+          }
+
+          const token = localStorage.getItem("authToken");
+          const response = await fetch(
+            `/api/painel-controle/fala/${falaAtiva.historicoFalaId}/encerrar`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            },
+          );
+
+          if (!response.ok) {
+            throw new Error("Erro ao encerrar fala");
+          }
+
+          const result = await response.json();
+          showToast(result.message || "Fala encerrada com sucesso!", "success");
+
+          falaAtiva = null;
+          ocultarContainerFala();
+
+          loadOradoresAtivos();
+        } catch (error) {
+          console.error("Erro ao encerrar fala:", error);
+          showToast(error.message || "Erro ao encerrar fala", "error");
+        }
+      }
+
+      // Initialize layout, live controls, delegated actions, and initial data.
+      // Inicialização
+      document.addEventListener("DOMContentLoaded", () => {
+        initLayout({
+          title: "Painel de Controle",
+          icon: "fa-sliders-h",
+          navActive: "nav-painel-controle",
+        });
+
+        // Botão de ocultar container de fala
+        document
+          .getElementById("fala-live-close")
+          .addEventListener("click", () => {
+            ocultarContainerFala();
+          });
+
+        // Botões do container de fala
+        document
+          .getElementById("fala-btn-start")
+          .addEventListener("click", async () => {
+            await iniciarFalaStart(null, null);
+          });
+
+        document
+          .getElementById("fala-btn-pause")
+          .addEventListener("click", async () => {
+            try {
+              if (!falaAtiva?.historicoFalaId) return;
+              const token = localStorage.getItem("authToken");
+              const resp = await fetch(
+                `/api/painel-controle/fala/${falaAtiva.historicoFalaId}/pausar`,
+                {
+                  method: "POST",
+                  headers: { Authorization: `Bearer ${token}` },
+                },
+              );
+              const data = await resp.json().catch(() => ({}));
+              if (!resp.ok) throw new Error(data.error || "Erro ao pausar");
+              if (data.fala) abrirContainerFala(data.fala);
+            } catch (e) {
+              showToast(e.message || "Erro ao pausar", "error");
+            }
+          });
+
+        document
+          .getElementById("fala-btn-resume")
+          .addEventListener("click", async () => {
+            try {
+              if (!falaAtiva?.historicoFalaId) return;
+              const token = localStorage.getItem("authToken");
+              const resp = await fetch(
+                `/api/painel-controle/fala/${falaAtiva.historicoFalaId}/retomar`,
+                {
+                  method: "POST",
+                  headers: { Authorization: `Bearer ${token}` },
+                },
+              );
+              const data = await resp.json().catch(() => ({}));
+              if (!resp.ok) throw new Error(data.error || "Erro ao retomar");
+              if (data.fala) abrirContainerFala(data.fala);
+            } catch (e) {
+              showToast(e.message || "Erro ao retomar", "error");
+            }
+          });
+
+        document
+          .getElementById("fala-btn-add")
+          .addEventListener("click", async () => {
+            if (!falaAtiva?.historicoFalaId) return;
+            const input = document.getElementById("fala-add-minutos-input");
+            if (input) {
+              input.value = "5";
+              setTimeout(() => {
+                try {
+                  input.focus();
+                  input.select();
+                } catch (_) {}
+              }, 50);
+            }
+            openModal("fala-add-tempo-modal");
+          });
+
+        // Modal adicionar tempo - botões
+        document
+          .getElementById("fala-add-cancel-btn")
+          .addEventListener("click", () => {
+            closeModal("fala-add-tempo-modal");
+          });
+
+        // Validate and submit additional speaking time.
+        async function confirmarAdicionarTempo() {
+          try {
+            if (!falaAtiva?.historicoFalaId) return;
+            const input = document.getElementById("fala-add-minutos-input");
+            const minutos = Number(input?.value);
+            if (!Number.isFinite(minutos) || minutos < 1 || minutos > 30) {
+              showToast("Minutos inválidos (1 a 30)", "warning");
+              return;
+            }
+
+            const token = localStorage.getItem("authToken");
+            const resp = await fetch(
+              `/api/painel-controle/fala/${falaAtiva.historicoFalaId}/adicionar-tempo`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ minutos }),
+              },
+            );
+
+            const data = await resp.json().catch(() => ({}));
+            if (!resp.ok)
+              throw new Error(data.error || "Erro ao adicionar tempo");
+
+            closeModal("fala-add-tempo-modal");
+            showToast(data.message || "Tempo adicionado", "success");
+            if (data.fala) abrirContainerFala(data.fala);
+          } catch (e) {
+            showToast(e.message || "Erro ao adicionar tempo", "error");
+          }
+        }
+
+        document
+          .getElementById("fala-add-confirm-btn")
+          .addEventListener("click", confirmarAdicionarTempo);
+
+        // Enter no input confirma
+        const addInput = document.getElementById("fala-add-minutos-input");
+        if (addInput) {
+          addInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              confirmarAdicionarTempo();
+            }
+          });
+        }
+
+        document
+          .getElementById("fala-btn-restart")
+          .addEventListener("click", async () => {
+            try {
+              if (!falaAtiva?.historicoFalaId) return;
+              const token = localStorage.getItem("authToken");
+              const resp = await fetch(
+                `/api/painel-controle/fala/${falaAtiva.historicoFalaId}/recomecar`,
+                {
+                  method: "POST",
+                  headers: { Authorization: `Bearer ${token}` },
+                },
+              );
+              const data = await resp.json().catch(() => ({}));
+              if (!resp.ok) throw new Error(data.error || "Erro ao recomeçar");
+              showToast(data.message || "Fala recomeçada", "success");
+              if (data.fala) abrirContainerFala(data.fala);
+            } catch (e) {
+              showToast(e.message || "Erro ao recomeçar", "error");
+            }
+          });
+
+        document
+          .getElementById("fala-btn-end")
+          .addEventListener("click", async () => {
+            await encerrarFala(null, null);
+          });
+
+        // Event delegation para botões
+        document.addEventListener("click", (e) => {
+          const btnIniciar = e.target.closest(".btn-iniciar");
+          if (btnIniciar) {
+            const pautaId = btnIniciar.dataset.pautaId;
+            const pautaNome = btnIniciar.dataset.pautaNome;
+            if (pautaId && pautaNome) {
+              iniciarVotacao(pautaId, pautaNome);
+            }
+          }
+
+          const btnEncerrar = e.target.closest(".btn-encerrar");
+          if (btnEncerrar) {
+            const pautaId = btnEncerrar.dataset.pautaId;
+            const pautaNome = btnEncerrar.dataset.pautaNome;
+            if (pautaId && pautaNome) {
+              encerrarVotacao(pautaId, pautaNome);
+            }
+          }
+
+          const btnIniciarFala = e.target.closest(".btn-iniciar-fala");
+          if (btnIniciarFala) {
+            const oradorId = btnIniciarFala.dataset.oradorId;
+            const oradorNome = btnIniciarFala.dataset.oradorNome;
+            const falaAction = btnIniciarFala.dataset.falaAction || "prepare";
+
+            if (!oradorId || !oradorNome) return;
+
+            if (falaAction === "prepare") {
+              iniciarFala(oradorId, oradorNome);
+            } else if (falaAction === "open") {
+              if (
+                falaAoVivo &&
+                String(falaAoVivo.oradorId) === String(oradorId)
+              ) {
+                abrirContainerFala(falaAoVivo);
+              } else {
+                iniciarFala(oradorId, oradorNome);
+              }
+            }
+          }
+        });
+
+        // Carregar pautas em votação (view inicial) e verificar votação ativa
+        loadPautasEmVotacao().then(() => {
+          verificarVotacaoAtivaAoCarregar();
+        });
+
+        // Verificar se há fala ativa ao carregar (reabrir container)
+        verificarFalaAtivaAoCarregar();
+      });
+
+      // Reopen the live vote counter after reload when voting is still active.
+      // Verificar se há votação ativa ao carregar página
+      async function verificarVotacaoAtivaAoCarregar() {
+        // Aguardar pautasIniciadas ser populado
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        if (pautasIniciadas.size > 0) {
+          const pautaIdAtiva = Array.from(pautasIniciadas)[0];
+
+          try {
+            const token = localStorage.getItem("authToken");
+            const response = await fetch(`/api/pautas/${pautaIdAtiva}`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+
+            if (response.ok) {
+              const result = await response.json();
+              const pauta = result.data || result;
+
+              console.log(
+                "🔄 [PAINEL] Reabrindo container de votação após reload:",
+                pautaIdAtiva,
+              );
+              await abrirContainerVotacao(pautaIdAtiva, pauta.nome, pauta);
+            }
+          } catch (error) {
+            console.error("❌ [PAINEL] Erro ao reabrir container:", error);
+          }
+        }
+      }
+    </script>
+  </body>
+</html>
