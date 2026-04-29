@@ -1,0 +1,4288 @@
+<!doctype html>
+<!--
+  Public Transparency Portal Page
+  Displays the selected chamber's public portal with livestream status,
+  live voting information, upcoming sessions, recent votes, councilors,
+  and transparency resources for citizens.
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title id="pageTitle">Portal da Transparência - Legisla Net</title>
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+    />
+
+    <link rel="stylesheet" href="../css/portal.css" />
+    <link rel="stylesheet" href="../css/btn-voltar.css" />
+    <link rel="stylesheet" href="../css/animations.css" />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/carregamento.css" />
+
+    <style>
+      /* ESTILOS ESPECÍFICOS DO PORTAL PÚBLICO */
+
+      /* --- Live Session Section --- */
+      #live-session {
+        background: var(--background-dark);
+      }
+      .live-indicator {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+      .live-dot {
+        width: 12px;
+        height: 12px;
+        background-color: var(--accent-red);
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+        transition: all 0.3s ease;
+      }
+
+      .live-dot.ended {
+        background-color: #666;
+        animation: none;
+      }
+      .live-grid-container {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 32px;
+        align-items: flex-start;
+      }
+      .video-placeholder {
+        width: 100%;
+        aspect-ratio: 16/9;
+        background-color: #000;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 16px;
+        color: var(--secondary-text);
+      }
+      .video-placeholder i {
+        font-size: 4rem;
+        color: var(--border-color);
+      }
+
+      .livestream-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+        color: white;
+        padding: 20px;
+      }
+
+      .livestream-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+        line-height: 1.3;
+      }
+
+      .livestream-meta {
+        display: flex;
+        gap: 16px;
+        font-size: 0.9rem;
+        opacity: 0.9;
+      }
+
+      .livestream-meta span {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .session-info {
+        background-color: var(--background-light);
+        padding: 32px;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+      }
+      .session-meta {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        margin-bottom: 24px;
+      }
+      .meta-item h4 {
+        color: var(--accent-blue);
+        margin-bottom: 6px;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .meta-item p {
+        font-size: 1rem;
+        font-weight: 600;
+      }
+      .voting-display {
+        background-color: var(--background-dark);
+        padding: 10px;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        min-height: 320px;
+      }
+      .vote-counts {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+      .vote-count {
+        text-align: center;
+        padding: 16px 8px;
+        border-radius: 10px;
+      }
+      .vote-count.favor {
+        background-color: rgba(46, 160, 67, 0.2);
+        border: 1px solid rgba(46, 160, 67, 0.5);
+      }
+      .vote-count.against {
+        background-color: rgba(248, 81, 73, 0.2);
+        border: 1px solid rgba(248, 81, 73, 0.5);
+      }
+      .vote-count.abstention {
+        background-color: rgba(212, 175, 55, 0.2);
+        border: 1px solid rgba(212, 175, 55, 0.5);
+      }
+      .vote-count .number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        display: block;
+        line-height: 1;
+      }
+      .vote-count span:not(.number) {
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--secondary-text);
+      }
+      .vote-count.favor span:not(.number) {
+        color: var(--accent-green);
+      }
+      .vote-count.against span:not(.number) {
+        color: var(--accent-red);
+      }
+      .vote-count.abstention span:not(.number) {
+        color: var(--accent-gold);
+      }
+
+      /* --- Próximas Sessões Section --- */
+      /* Grid estático para até 4 sessões */
+      .sessoes-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 24px;
+        justify-content: center;
+      }
+
+      /* Carrossel para mais de 4 sessões */
+      .sessoes-carousel-wrapper {
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+        border-radius: 8px;
+        display: flex;
+        justify-content: center;
+      }
+
+      .sessoes-carousel {
+        display: flex;
+        transition: transform 0.5s ease-in-out;
+        will-change: transform;
+      }
+
+      .sessao-card {
+        background-color: var(--card-bg);
+        padding: 24px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        min-height: 180px;
+        position: relative;
+        overflow: hidden;
+        justify-content: space-between;
+        width: 320px;
+        margin-right: 24px;
+        text-align: left;
+      }
+
+      .sessao-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--accent-blue);
+      }
+
+      /* Container para cabeçalho do card */
+      .sessao-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start; /* Alinhar no topo */
+        margin-bottom: 8px;
+        min-height: 28px; /* Altura mínima para o badge */
+      }
+
+      .sessao-date {
+        color: var(--accent-gold);
+        font-weight: 600;
+        margin-bottom: 0;
+        flex: 1;
+        margin-right: 12px; /* Espaço entre data e badge */
+        line-height: 1.3;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+      }
+
+      .sessao-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 16px;
+        color: var(--primary-text);
+        min-height: 2.5em;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        transition: color 0.2s ease;
+      }
+
+      /* Badge de tipo da sessão */
+      .tipo-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 99px;
+        font-weight: 600;
+        font-size: 0.7rem;
+        text-align: center;
+        white-space: nowrap;
+        text-transform: uppercase;
+        border: 1px solid;
+        flex-shrink: 0; /* Não permitir que o badge encolha */
+        align-self: flex-start; /* Alinhar no topo */
+      }
+
+      .tipo-badge.ordinaria {
+        background-color: rgba(46, 160, 67, 0.2);
+        color: #71e67f;
+        border-color: rgba(46, 160, 67, 0.5);
+      }
+
+      .tipo-badge.extraordinaria {
+        background-color: rgba(255, 159, 10, 0.2);
+        color: #ff9f0a;
+        border-color: rgba(255, 159, 10, 0.5);
+      }
+
+      .tipo-badge.solene {
+        background-color: rgba(138, 43, 226, 0.2);
+        color: #9d4edd;
+        border-color: rgba(138, 43, 226, 0.5);
+      }
+
+      /* Seção de pautas */
+      .sessao-pautas-title {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--secondary-text);
+        margin-bottom: 8px;
+      }
+
+      .sessao-pautas-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        max-height: 80px;
+        overflow: hidden;
+      }
+
+      .sessao-pautas-item {
+        color: var(--secondary-text);
+        font-size: 0.875rem;
+        padding: 4px 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .sessao-pautas-item + .sessao-pautas-item {
+        border-top: 1px solid var(--border-color);
+        margin-top: 8px;
+        padding-top: 8px;
+      }
+
+      /* Controles do carrossel */
+      .carousel-controls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 2rem;
+      }
+
+      .carousel-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        color: var(--primary-text);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+      }
+
+      .carousel-btn:hover:not(.disabled) {
+        background-color: var(--accent-blue);
+        color: white;
+        border-color: var(--accent-blue);
+      }
+
+      .carousel-btn.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .carousel-indicators {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .carousel-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: var(--border-color);
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      .carousel-dot.active {
+        background-color: var(--accent-blue);
+      }
+
+      /* --- Vereadores Section --- */
+      .vereadores-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 24px;
+        justify-content: center;
+        padding: 0 20px;
+      }
+
+      .vereadores-grid-static {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 24px;
+        flex-wrap: wrap;
+        padding: 0 20px;
+      }
+
+      .vereadores-carousel-wrapper {
+        width: 100%;
+        overflow: hidden;
+        position: relative;
+        -webkit-mask-image: linear-gradient(
+          to right,
+          transparent,
+          black 5%,
+          black 95%,
+          transparent
+        );
+        mask-image: linear-gradient(
+          to right,
+          transparent,
+          black 5%,
+          black 95%,
+          transparent
+        );
+      }
+
+      .vereadores-carousel {
+        display: flex;
+        transition: transform 0.5s ease-in-out;
+        will-change: transform;
+      }
+
+      .vereador-card {
+        width: 280px;
+        margin-right: 24px;
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 24px;
+        text-align: center;
+        flex-shrink: 0;
+      }
+
+      .vereador-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        margin: 0 auto 16px;
+        border: 3px solid var(--accent-blue);
+        object-fit: cover;
+      }
+
+      .vereador-name {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--primary-text);
+      }
+
+      .vereador-party {
+        color: var(--secondary-text);
+        margin-bottom: 16px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .partido-logo {
+        width: 30px;
+        height: 30px;
+        object-fit: contain;
+        background-color: #fff;
+        border-radius: 4px;
+        padding: 2px;
+        border: 1px solid var(--border-color);
+        flex-shrink: 0;
+      }
+
+      .vereador-cargo {
+        text-align: left;
+        line-height: 1.2;
+      }
+
+      /* Estilo específico para botão desabilitado com badge */
+      .btn.btn-outline:disabled {
+        opacity: 0.7;
+        cursor: not-allowed !important;
+        border-color: var(--border-color);
+        color: var(--secondary-text);
+      }
+
+      .btn.btn-outline:disabled:hover {
+        transform: none;
+        border-color: var(--border-color);
+      }
+
+      /* Flag "Em breve" */
+      .coming-soon-flag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: rgba(255, 159, 10, 0.1);
+        color: #ff9f0a;
+        border: 1px solid rgba(255, 159, 10, 0.3);
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      /* Offline Badge */
+      .offline-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(128, 128, 128, 0.1);
+        color: var(--secondary-text);
+        border: 1px solid rgba(128, 128, 128, 0.3);
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      .offline-badge i {
+        opacity: 0.6;
+      }
+
+      /* Votação Ao Vivo Badge */
+      .live-voting-badge {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 14px;
+        background: linear-gradient(
+          135deg,
+          rgba(248, 81, 73, 0.2) 0%,
+          rgba(240, 136, 51, 0.2) 100%
+        );
+        border: 1px solid rgba(248, 81, 73, 0.4);
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--accent-red);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        animation: fadeIn 0.3s ease;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      .live-voting-dot {
+        width: 8px;
+        height: 8px;
+        background-color: var(--accent-red);
+        border-radius: 50%;
+        animation: pulseLive 2s infinite;
+        box-shadow: 0 0 8px rgba(248, 81, 73, 0.6);
+        flex-shrink: 0;
+      }
+
+      @keyframes pulseLive {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.3);
+          opacity: 0.7;
+        }
+      }
+
+      .vereadores-online-count {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: var(--primary-text);
+        font-weight: 600;
+        padding-left: 10px;
+        border-left: 1px solid rgba(255, 255, 255, 0.3);
+        white-space: nowrap;
+      }
+
+      .vereadores-online-count i {
+        color: var(--accent-orange);
+        font-size: 0.85rem;
+      }
+
+      .voting-header {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 16px;
+        text-align: center;
+      }
+
+      .voting-title-wrapper {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .voting-title {
+        margin: 0;
+        font-size: 1.15rem;
+        line-height: 1.4;
+        word-wrap: break-word;
+      }
+
+      .voting-badges-wrapper {
+        display: flex;
+        gap: 8px;
+        justify-content: right;
+        align-items: flex-start;
+      }
+
+      .vereador-stats {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      .vereador-stats .stat-item {
+        text-align: center;
+      }
+
+      .vereador-stats .number {
+        display: block;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--accent-blue);
+      }
+
+      .vereador-stats .label {
+        font-size: 0.8rem;
+        color: var(--secondary-text);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      /* Controles do carrossel de vereadores */
+      .vereadores-carousel-controls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 2rem;
+      }
+
+      .vereadores-carousel-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        color: var(--primary-text);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+      }
+
+      .vereadores-carousel-btn:hover {
+        background-color: var(--accent-blue);
+        color: white;
+        border-color: var(--accent-blue);
+      }
+
+      .vereadores-info {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        font-size: 0.9rem;
+        color: var(--secondary-text);
+      }
+
+      /* Mensagens de erro */
+      .error-message {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: var(--secondary-text);
+        background-color: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        border-radius: 8px;
+        margin: 2rem 0;
+      }
+
+      .error-message i {
+        font-size: 3rem;
+        color: rgba(239, 68, 68, 0.7);
+        margin-bottom: 1rem;
+      }
+
+      .error-message p {
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        color: var(--primary-text);
+      }
+
+      .error-message small {
+        font-size: 0.9rem;
+        color: var(--secondary-text);
+      }
+
+      /* Estado vazio - seguindo padrão do painel de votação */
+      .empty-state {
+        text-align: center;
+        padding: 48px;
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        margin: 2rem 0;
+      }
+
+      .empty-state i {
+        font-size: 3rem;
+        color: var(--secondary-text);
+        margin-bottom: 16px;
+        display: block;
+      }
+
+      .empty-state h3 {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--primary-text);
+        margin-bottom: 8px;
+      }
+
+      .empty-state p {
+        color: var(--secondary-text);
+        font-size: 1rem;
+        line-height: 1.5;
+        margin-bottom: 0;
+      }
+
+      /* --- Votes Section --- */
+      .votes-container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .votes-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px 24px;
+        margin-bottom: 32px;
+      }
+
+      .votes-footer {
+        text-align: center;
+      }
+
+      .vote-card {
+        background-color: var(--background-light);
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        min-height: 140px;
+        transition: all 0.2s ease;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .vote-card.clickable-card {
+        cursor: pointer;
+      }
+
+      .vote-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--accent-blue);
+        box-shadow: 0 4px 12px rgba(88, 166, 255, 0.1);
+      }
+
+      .vote-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 8px;
+        min-height: 28px; /* Altura mínima para o badge */
+      }
+
+      .vote-title {
+        flex: 1;
+        margin-right: 12px; /* Espaço entre título e badge */
+        font-size: 1rem;
+        font-weight: 600;
+        line-height: 1.3;
+        color: var(--primary-text);
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+      }
+
+      .vote-badge-container {
+        flex-shrink: 0;
+        align-self: flex-start;
+      }
+
+      .vote-info {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        justify-content: space-between;
+        min-height: 80px;
+      }
+
+      .vote-arrow {
+        position: absolute;
+        bottom: 16px;
+        right: 16px;
+        color: var(--secondary-text);
+        font-size: 1.2rem;
+      }
+
+      .vote-card:hover .result-badge {
+        transform: scale(1.05);
+      }
+
+      .vote-card:hover .vote-arrow i {
+        color: var(--accent-blue);
+        transform: translateX(4px);
+      }
+
+      .vote-arrow i {
+        transition: all 0.2s ease;
+      }
+
+      .vote-description {
+        color: var(--secondary-text);
+        font-size: 0.85rem;
+        line-height: 1.4;
+        margin: 12px 0;
+        font-style: italic;
+        flex: 1;
+        min-height: 40px; /* Altura mínima para consistência */
+        display: -webkit-box;
+        -webkit-line-clamp: 2; /* Limitar a 2 linhas */
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .vote-author {
+        color: var(--secondary-text);
+        font-size: 0.8rem;
+        margin: 0;
+        font-weight: 500;
+        flex-shrink: 0;
+        padding-bottom: 32px; /* Espaço para a seta */
+      }
+      .vote-result {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .result-badge {
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        white-space: nowrap;
+        flex-shrink: 0; /* Não permitir que o badge encolha */
+        align-self: flex-start; /* Alinhar no topo */
+      }
+      .result-badge.approved {
+        background-color: rgba(46, 160, 67, 0.2);
+        color: var(--accent-green);
+      }
+      .result-badge.rejected {
+        background-color: rgba(248, 81, 73, 0.2);
+        color: var(--accent-red);
+      }
+      .result-badge.pending {
+        background-color: rgba(212, 175, 55, 0.2);
+        color: var(--accent-gold);
+      }
+      .result-badge.not-voted {
+        background-color: rgba(108, 117, 125, 0.2);
+        color: #6c757d;
+      }
+
+      /* --- Members Carousel --- */
+      .carousel-wrapper {
+        width: 100%;
+        overflow: hidden;
+        -webkit-mask-image: linear-gradient(
+          to right,
+          transparent,
+          black 10%,
+          black 90%,
+          transparent
+        );
+        mask-image: linear-gradient(
+          to right,
+          transparent,
+          black 10%,
+          black 90%,
+          transparent
+        );
+      }
+      .carousel-wrapper:hover .members-carousel {
+        animation-play-state: paused;
+      }
+      .members-carousel {
+        display: flex;
+        width: calc(304px * 6);
+        animation: scroll-members 30s linear infinite;
+      }
+      @keyframes scroll-members {
+        0% {
+          transform: translateX(0);
+        }
+        100% {
+          transform: translateX(calc(-304px * 3));
+        }
+      }
+      .member-card {
+        width: 280px;
+        flex-shrink: 0;
+        margin: 0 12px;
+        background-color: var(--background-light);
+        padding: 24px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        text-align: center;
+        transition: transform 0.2s;
+      }
+      .member-card:hover {
+        transform: translateY(-2px);
+      }
+      .member-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        margin: 0 auto 16px;
+        border: 3px solid var(--accent-blue);
+      }
+      .member-name {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .member-party {
+        color: var(--accent-gold);
+        margin-bottom: 12px;
+      }
+      .member-stats {
+        display: flex;
+        justify-content: space-between;
+        text-align: center;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border-color);
+      }
+      .stat-item .number {
+        font-weight: 700;
+        color: var(--accent-blue);
+        display: block;
+      }
+      .stat-item .label {
+        font-size: 0.8rem;
+        color: var(--secondary-text);
+      }
+
+      /* --- Livestream Section --- */
+      .livestream-container {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+
+      .livestream-player-wrapper {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .livestream-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border-color);
+        background: linear-gradient(
+          135deg,
+          var(--card-bg) 0%,
+          var(--hover-bg) 100%
+        );
+      }
+
+      .livestream-status {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .status-badge.live {
+        background: linear-gradient(45deg, #ff4444, #ff6666);
+        color: white;
+        animation: pulse 2s infinite;
+      }
+
+      .status-badge.ended {
+        background: linear-gradient(45deg, #666, #888);
+        color: white;
+      }
+
+      .status-badge i {
+        font-size: 0.75rem;
+        animation: inherit;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.7;
+        }
+      }
+
+      .viewer-count {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 8px;
+        background-color: var(--hover-bg);
+        border-radius: 12px;
+        font-size: 0.875rem;
+        color: var(--secondary-text);
+      }
+
+      .livestream-header h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--primary-text);
+        margin: 0;
+        line-height: 1.3;
+      }
+
+      .livestream-player {
+        position: relative;
+        width: 100%;
+        height: 0;
+        padding-bottom: 56.25%; /* 16:9 aspect ratio */
+        background-color: #000;
+      }
+
+      .youtube-embed {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      .youtube-embed iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+      }
+
+      .livestream-info {
+        padding: 16px 24px;
+        background-color: var(--hover-bg);
+      }
+
+      .livestream-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.9rem;
+        color: var(--secondary-text);
+      }
+
+      .start-time,
+      .duration {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .start-time::before {
+        content: "⏰";
+      }
+
+      .duration::before {
+        content: "⏱️";
+      }
+
+      /* Estados específicos para live vs gravado */
+      .livestream-section.live .livestream-player-wrapper {
+        border: 2px solid #ff4444;
+        box-shadow: 0 0 20px rgba(255, 68, 68, 0.3);
+      }
+
+      .livestream-section.ended .livestream-player-wrapper {
+        border: 2px solid var(--border-color);
+      }
+
+      .livestream-section.live #livestream-title {
+        color: #ff4444;
+      }
+
+      .livestream-section.ended #livestream-title {
+        color: var(--secondary-text);
+      }
+
+      /* Badge do portal público */
+      .portal-badge {
+        background-color: var(--accent-red);
+        color: #ffffff;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 4px 8px;
+        border-radius: 12px;
+        letter-spacing: 0.5px;
+        animation: pulse 2s infinite;
+        white-space: nowrap;
+        text-transform: uppercase;
+      }
+
+      .portal-badge.ended {
+        background-color: var(--secondary-text);
+        animation: none;
+      }
+
+      /* Responsividade */
+      @media (max-width: 768px) {
+        .livestream-header {
+          padding: 16px 20px;
+        }
+
+        .livestream-header h3 {
+          font-size: 1.25rem;
+        }
+
+        .livestream-info {
+          padding: 12px 20px;
+        }
+
+        .livestream-meta {
+          flex-direction: column;
+          gap: 8px;
+          align-items: flex-start;
+        }
+      }
+
+      /* --- Transparency Section --- */
+      #transparency {
+        background-color: var(--background-light);
+      }
+      .docs-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+      }
+      .doc-card {
+        background-color: var(--background-dark);
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transition: transform 0.2s;
+      }
+      .doc-card:hover {
+        transform: translateY(-2px);
+      }
+      .doc-icon {
+        font-size: 2rem;
+        color: var(--accent-blue);
+      }
+      .doc-info h4 {
+        margin-bottom: 4px;
+      }
+      .doc-info .date {
+        color: var(--secondary-text);
+        font-size: 0.9rem;
+      }
+
+      /* Melhorias no hero para câmara específica */
+      .hero-camara-title {
+        font-size: 1.2rem;
+        color: var(--accent-blue);
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      /* --- Responsividade --- */
+      @media (max-width: 1024px) {
+        .live-grid-container {
+          grid-template-columns: 1fr;
+          gap: 24px;
+        }
+
+        .session-info {
+          padding: 24px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .hero h1 {
+          font-size: 2.5rem;
+        }
+
+        .hero p {
+          font-size: 1.1rem;
+        }
+
+        .section-header h2 {
+          font-size: 2rem;
+        }
+
+        /* Layout da Live Session em coluna no mobile */
+        .live-grid-container {
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+
+        .vote-counts {
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+
+        /* Grid de votações recentes - 1 coluna no mobile */
+        .votes-grid {
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
+
+        /* Carrossel de vereadores mais rápido no mobile */
+        .members-carousel {
+          animation: scroll-members 15s linear infinite;
+        }
+
+        /* Ocultar título do vídeo sobreposto no mobile */
+        .livestream-overlay {
+          display: none !important;
+        }
+
+        /* Badge offline/online mais compacto no mobile */
+        .offline-badge,
+        .live-voting-badge {
+          padding: 4px 8px;
+          font-size: 0.65rem;
+          gap: 4px;
+        }
+
+        .offline-badge i,
+        .live-voting-badge i {
+          font-size: 0.6rem;
+        }
+
+        .live-voting-dot {
+          width: 6px;
+          height: 6px;
+        }
+
+        /* Melhorar layout do header de votação no mobile */
+        .voting-header {
+          gap: 8px;
+        }
+
+        .voting-badges-wrapper {
+          justify-content: center;
+        }
+
+        .vereadores-online-count {
+          font-size: 0.65rem;
+          padding-left: 6px;
+        }
+
+        .session-info {
+          padding: 20px;
+        }
+
+        .session-meta {
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
+
+        /* Ocultar menu de navegação em mobile */
+        .nav-menu {
+          display: none !important;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .hero h1 {
+          font-size: 2rem;
+        }
+
+        .hero p {
+          font-size: 1rem;
+        }
+
+        .hero-camara-title {
+          font-size: 1rem;
+        }
+
+        .section-header h2 {
+          font-size: 1.75rem;
+        }
+
+        .live-indicator h2 {
+          font-size: 1.25rem;
+        }
+
+        .session-info {
+          padding: 16px;
+        }
+
+        .voting-display {
+          padding: 12px;
+        }
+
+        .vote-count {
+          padding: 12px 6px;
+        }
+
+        /* Ocultar camara-info-nav em telas muito pequenas */
+        .camara-info-nav {
+          display: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Dynamic portal navigation loaded by the shared layout system. -->
+    <!-- Navbar carregado dinamicamente -->
+    <div id="navbar-placeholder"></div>
+
+    <!-- Chamber hero area populated with the selected chamber identity. -->
+    <header class="hero hero-live-border">
+      <div class="container hero-content">
+        <div class="hero-camara-title" id="heroSubtitle"></div>
+        <h1 id="heroTitle">Carregando informações da câmara...</h1>
+        <p id="heroDescription">
+          Acompanhe sessões ao vivo, consulte votações e projetos. Participe da
+          vida legislativa da sua cidade.
+        </p>
+      </div>
+    </header>
+
+    <main>
+      <!-- Livestream and active voting overview for the selected chamber. -->
+      <section id="live-session" class="section fade-in">
+        <div class="container">
+          <div class="section-header fade-in">
+            <div class="live-indicator">
+              <div class="live-dot" id="live-dot"></div>
+              <h2 class="status-live" id="session-status-title">
+                SESSÃO AO VIVO
+              </h2>
+            </div>
+            <p>Acompanhe a sessão ordinária em tempo real</p>
+          </div>
+
+          <div class="live-grid-container fade-in">
+            <!-- Livestream player area with placeholder, YouTube player, and overlay metadata. -->
+            <div class="video-placeholder" id="video-container">
+              <!-- Placeholder inicial -->
+              <div id="video-placeholder-content">
+                <i class="fas fa-play-circle"></i>
+                <p>Carregando transmissão...</p>
+              </div>
+
+              <!-- Player YouTube (oculto inicialmente) -->
+              <div
+                id="youtube-player"
+                style="display: none; width: 100%; height: 100%"
+              ></div>
+
+              <!-- Informações da livestream -->
+              <div
+                id="livestream-info"
+                class="livestream-overlay"
+                style="display: none"
+              >
+                <div class="livestream-title" id="livestream-video-title"></div>
+                <div class="livestream-meta">
+                  <span
+                    id="livestream-viewer-count"
+                    style="display: none"
+                  ></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Session metadata and live vote counters. -->
+            <div class="session-info">
+              <div class="session-meta" id="session-meta-container">
+                <!-- Será preenchido dinamicamente -->
+              </div>
+
+              <div class="voting-display" id="voting-display-container">
+                <!-- Será preenchido dinamicamente -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Upcoming sessions loaded from the public chamber API. -->
+      <section id="proximas-sessoes" class="section fade-in">
+        <div class="container">
+          <div class="section-header fade-in">
+            <h2>Próximas Sessões</h2>
+            <p>Agenda das próximas reuniões da câmara municipal</p>
+          </div>
+
+          <div id="sessoes-container" class="fade-in">
+            <!-- Sessões serão carregadas dinamicamente -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Recent finalized votes with links to public voting details. -->
+      <section id="votes" class="section fade-in">
+        <div class="container">
+          <div class="section-header fade-in">
+            <h2>Votações Recentes</h2>
+            <p>Resultado das últimas votações realizadas</p>
+          </div>
+
+          <div class="votes-container fade-in">
+            <div id="votacoes-grid" class="votes-grid">
+              <!-- Pautas serão carregadas dinamicamente -->
+            </div>
+
+            <div class="votes-footer">
+              <button id="ver-todas-pautas" class="btn btn-outline" disabled>
+                Ver Todas as Pautas
+                <span class="coming-soon-flag"
+                  ><i class="fas fa-clock"></i>Em breve</span
+                >
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Public councilor roster for the selected chamber. -->
+      <section id="members" class="section fade-in">
+        <div class="container">
+          <div class="section-header fade-in">
+            <h2>Nossos Vereadores</h2>
+            <p>Conheça os representantes eleitos da nossa cidade</p>
+          </div>
+        </div>
+
+        <div id="vereadores-container" class="fade-in">
+          <!-- Vereadores serão carregados dinamicamente -->
+        </div>
+      </section>
+
+      <!-- Static transparency resources preview for future public documents. -->
+      <section id="transparency" class="section fade-in">
+        <div class="container">
+          <div class="section-header fade-in">
+            <h2>
+              Portal da Transparência
+              <span class="coming-soon-flag"
+                ><i class="fas fa-clock"></i>Em breve</span
+              >
+            </h2>
+            <p>Acesse documentos, atas e relatórios públicos</p>
+          </div>
+
+          <div class="docs-grid fade-in">
+            <div class="doc-card">
+              <i class="fas fa-file-alt doc-icon"></i>
+              <div class="doc-info">
+                <h4>Ata da Sessão Ordinária</h4>
+                <p class="date">15 de Agosto, 2025</p>
+              </div>
+            </div>
+            <div class="doc-card">
+              <i class="fas fa-chart-bar doc-icon"></i>
+              <div class="doc-info">
+                <h4>Relatório Financeiro</h4>
+                <p class="date">Julho 2025</p>
+              </div>
+            </div>
+            <div class="doc-card">
+              <i class="fas fa-gavel doc-icon"></i>
+              <div class="doc-info">
+                <h4>Projetos em Tramitação</h4>
+                <p class="date">Atualizado hoje</p>
+              </div>
+            </div>
+            <div class="doc-card">
+              <i class="fas fa-users doc-icon"></i>
+              <div class="doc-info">
+                <h4>Registro de Presenças</h4>
+                <p class="date">Agosto 2025</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Dynamic portal footer loaded by the shared layout system. -->
+    <!-- Footer carregado dinamicamente -->
+    <div id="footer-placeholder"></div>
+
+    <!-- External media and realtime clients used by the public portal. -->
+    <!-- YouTube Player API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <!-- Socket.IO Client -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="../js/mockMode.js?v=4"></script>
+    <script src="../js/global.js"></script>
+    <script src="../js/carregamento.js"></script>
+    <script>
+      // Global media player reference shared by livestream helpers.
+      // Variáveis globais
+      let youtubePlayer = null;
+
+      // Central livestream state used to avoid stale player and socket transitions.
+      // ═══════════════════════════════════════════════════════════════════════════
+      // ESTADO CENTRALIZADO DE LIVESTREAM (SPA)
+      // Fonte única da verdade - NÃO usar closures para estado
+      // ═══════════════════════════════════════════════════════════════════════════
+
+      const livestreamState = {
+        // Status atual: "offline" | "live" | "vod" | "transitioning"
+        status: "offline",
+
+        // ID do vídeo atualmente carregado
+        currentVideoId: null,
+
+        // ID da câmara atual
+        camaraId: null,
+
+        // Dados completos da livestream atual
+        currentData: null,
+
+        // Flag para evitar múltiplas transições simultâneas
+        isTransitioning: false,
+
+        // Timestamp da última atualização
+        lastUpdated: null,
+
+        // Referência ao timeout de fallback (para poder cancelar)
+        fallbackTimeout: null,
+      };
+
+      /**
+       * Updates the centralized livestream state.
+       *
+       * Atualiza o estado da livestream de forma centralizada
+       * @param {Partial<typeof livestreamState>} newState - Novos valores
+       */
+      function updateLivestreamState(newState) {
+        Object.assign(livestreamState, newState, { lastUpdated: Date.now() });
+        console.log("📺 [STATE] Atualizado:", {
+          status: livestreamState.status,
+          videoId: livestreamState.currentVideoId,
+          isTransitioning: livestreamState.isTransitioning,
+        });
+      }
+
+      /**
+       * Clears the pending livestream fallback timeout.
+       *
+       * Cancela qualquer timeout de fallback pendente
+       */
+      function cancelFallbackTimeout() {
+        if (livestreamState.fallbackTimeout) {
+          clearTimeout(livestreamState.fallbackTimeout);
+          livestreamState.fallbackTimeout = null;
+          console.log("📺 [STATE] Fallback timeout cancelado");
+        }
+      }
+
+      /**
+       * Schedules a fallback action when livestream transition events fail.
+       *
+       * Agenda um timeout de fallback (apenas para casos de falha real)
+       * @param {Function} callback - Função a executar se timeout estourar
+       * @param {number} delay - Tempo em ms (padrão: 30000)
+       */
+      function scheduleFallbackTimeout(callback, delay = 30000) {
+        cancelFallbackTimeout();
+        livestreamState.fallbackTimeout = setTimeout(() => {
+          console.warn(
+            "📺 [STATE] Fallback timeout acionado após",
+            delay,
+            "ms",
+          );
+          callback();
+        }, delay);
+      }
+      let socket = null;
+      let currentCamaraId = null;
+      let socketVotacaoAoVivo = null; // Socket para votação ao vivo (porta 3000)
+      let votacaoAoVivoAtiva = null; // Dados da votação ativa
+
+      // Estado global da stream (SPA)
+      let streamState = {
+        isLive: false,
+        videoId: null,
+        pendingReloadTimeout: null,
+        transitionedToVOD: false,
+      };
+
+      // YouTube API ready hook required by the iframe API.
+      // Função chamada quando a API do YouTube estiver pronta (deve ser global)
+      window.onYouTubeIframeAPIReady = function () {
+        console.log("📺 YouTube API carregada e pronta");
+      };
+
+      // Cancels a pending reload while SPA livestream transitions are active.
+      // Função para cancelar reload pendente (SPA)
+      function cancelPendingReload() {
+        if (streamState.pendingReloadTimeout) {
+          clearTimeout(streamState.pendingReloadTimeout);
+          streamState.pendingReloadTimeout = null;
+          console.log("📺 Reload cancelado - transição SPA em andamento");
+        }
+      }
+
+      // Switches the livestream UI from live playback to VOD playback.
+      // Função para transição suave para VOD (SPA)
+      function transitionToVODState(vodData) {
+        cancelPendingReload();
+
+        streamState.isLive = false;
+        streamState.transitionedToVOD = true;
+
+        // Atualizar UI sem reload
+        const sessionTitle = document.getElementById("session-status-title");
+        const liveDot = document.getElementById("live-dot");
+        const viewerCount = document.getElementById("livestream-viewer-count");
+
+        sessionTitle.textContent = "ÚLTIMA SESSÃO";
+        sessionTitle.classList.remove("status-live"); // Remove estilo vermehlo pulsante
+        liveDot.className = "live-dot ended";
+        viewerCount.style.display = "none";
+
+        // Se o player existe, usar loadVideoById ao invés de destruir/recriar
+        if (youtubePlayer && youtubePlayer.loadVideoById) {
+          console.log("📺 Transição VOD: carregando vídeo sem destruir player");
+          youtubePlayer.loadVideoById({
+            videoId: vodData.youtube_video_id,
+            startSeconds: 0,
+          });
+        } else {
+          // Fallback se player não existir ou API não estiver pronta
+          displayLivestream(vodData, false);
+        }
+      }
+
+      /**
+       * Renders the livestream player and live/VOD status.
+       *
+       * Exibe a livestream no portal público
+       * REFATORADO: Usa estado centralizado e player persistente
+       *
+       * @param {Object} livestreamData - Dados da livestream
+       * @param {boolean} isLive - Se está ao vivo
+       * @param {Object} options - Opções adicionais
+       * @param {boolean} options.isTransition - Se é uma transição SPA (não recriar player)
+       */
+      function displayLivestream(livestreamData, isLive, options = {}) {
+        const { isTransition = false } = options;
+
+        console.log("📺 [DISPLAY] Iniciando:", {
+          videoId: livestreamData?.youtube_video_id,
+          isLive,
+          isTransition,
+          currentState: livestreamState.status,
+        });
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // PROTEÇÃO ANTI-ZOMBIE CORRIGIDA: Verificar se é o MESMO vídeo
+        // ═══════════════════════════════════════════════════════════════════════
+        if (livestreamState.status === "vod" && isLive && !isTransition) {
+          const currentVideoId = livestreamState.currentVideoId;
+          const newVideoId = livestreamData?.youtube_video_id;
+
+          // Só bloquear se for o MESMO vídeo que acabou de terminar
+          if (currentVideoId && newVideoId && currentVideoId === newVideoId) {
+            console.warn(
+              "📺 [DISPLAY] Bloqueado: tentativa de reativar o MESMO vídeo após VOD",
+            );
+            return;
+          }
+
+          // Se for vídeo diferente, é uma nova live - permitir
+          console.log(
+            "📺 [DISPLAY] Vídeo diferente detectado - permitindo nova live",
+          );
+          // Reset do estado para permitir nova live
+          updateLivestreamState({
+            status: "offline",
+            isTransitioning: false,
+          });
+          // Continua processamento normal...
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // PROTEÇÃO DURANTE TRANSIÇÃO: Só processar se for chamada de transição
+        // ═══════════════════════════════════════════════════════════════════════
+        if (livestreamState.isTransitioning && !isTransition) {
+          console.log(
+            "📺 [DISPLAY] Ignorando - transição em andamento, aguardando livestream-stopped",
+          );
+          return;
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // ELEMENTOS DO DOM
+        // ═══════════════════════════════════════════════════════════════════════
+        const sessionTitle = document.getElementById("session-status-title");
+        const liveDot = document.getElementById("live-dot");
+        const placeholderContent = document.getElementById(
+          "video-placeholder-content",
+        );
+        const playerContainer = document.getElementById("youtube-player");
+        const livestreamInfo = document.getElementById("livestream-info");
+        const videoTitle = document.getElementById("livestream-video-title");
+        const viewerCount = document.getElementById("livestream-viewer-count");
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // ATUALIZAR ESTADO CENTRALIZADO
+        // ═══════════════════════════════════════════════════════════════════════
+        updateLivestreamState({
+          status: isLive ? "live" : "vod",
+          currentVideoId: livestreamData.youtube_video_id,
+          currentData: livestreamData,
+          isTransitioning: false,
+        });
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // ATUALIZAR UI (TÍTULOS E INDICADORES)
+        // ═══════════════════════════════════════════════════════════════════════
+        if (isLive) {
+          sessionTitle.textContent = "SESSÃO AO VIVO";
+          sessionTitle.classList.add("status-live");
+          liveDot.className = "live-dot";
+
+          if (livestreamData.concurrent_viewers) {
+            viewerCount.style.display = "inline-flex";
+            viewerCount.innerHTML = `<i class="fas fa-eye"></i> ${livestreamData.concurrent_viewers} assistindo`;
+          } else {
+            viewerCount.style.display = "none";
+          }
+        } else {
+          sessionTitle.textContent = "ÚLTIMA SESSÃO";
+          sessionTitle.classList.remove("status-live");
+          liveDot.className = "live-dot ended";
+          viewerCount.style.display = "none";
+        }
+
+        // Ocultar placeholder e exibir player
+        placeholderContent.style.display = "none";
+        playerContainer.style.display = "block";
+        livestreamInfo.style.display = "block";
+
+        // Configurar título do vídeo
+        videoTitle.textContent = livestreamData.title;
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // LÓGICA DO PLAYER (PERSISTENTE)
+        // ═══════════════════════════════════════════════════════════════════════
+        const newVideoId = livestreamData.youtube_video_id;
+
+        // CASO 1: Player existe e é o mesmo vídeo
+        if (
+          youtubePlayer &&
+          typeof youtubePlayer.getVideoData === "function" &&
+          youtubePlayer.getVideoData()?.video_id === newVideoId
+        ) {
+          console.log("📺 [DISPLAY] Mesmo vídeo - apenas atualizando estado");
+
+          // Se era live e agora é VOD, rebobinar para início
+          if (!isLive && isTransition) {
+            console.log(
+              "📺 [DISPLAY] Transição live→VOD: rebobinando para início",
+            );
+            youtubePlayer.seekTo(0);
+            youtubePlayer.pauseVideo();
+          } else if (isLive && youtubePlayer.getPlayerState() !== 1) {
+            youtubePlayer.playVideo();
+          }
+          return;
+        }
+
+        // CASO 2: Player existe mas vídeo é diferente - usar loadVideoById
+        if (
+          youtubePlayer &&
+          typeof youtubePlayer.loadVideoById === "function"
+        ) {
+          console.log("📺 [DISPLAY] Vídeo diferente - usando loadVideoById");
+
+          youtubePlayer.loadVideoById({
+            videoId: newVideoId,
+            startSeconds: 0,
+          });
+
+          if (!isLive) {
+            // Para VOD, pausar após carregar
+            setTimeout(() => {
+              if (
+                youtubePlayer &&
+                typeof youtubePlayer.pauseVideo === "function"
+              ) {
+                youtubePlayer.pauseVideo();
+              }
+            }, 500);
+          }
+          return;
+        }
+
+        // CASO 3: Player não existe - criar novo
+        console.log("📺 [DISPLAY] Criando novo player");
+
+        // Limpar container
+        playerContainer.innerHTML = "";
+
+        // Aguardar API do YouTube
+        const initPlayer = () => {
+          if (typeof YT !== "undefined" && YT.Player) {
+            createYouTubePlayer(playerContainer, newVideoId, isLive);
+          } else {
+            setTimeout(initPlayer, 100);
+          }
+        };
+
+        initPlayer();
+      }
+
+      /**
+       * Creates the YouTube iframe player instance.
+       *
+       * Cria uma nova instância do player YouTube
+       * REFATORADO: Usa estado centralizado nos event handlers
+       *
+       * @param {HTMLElement} container - Container do player
+       * @param {string} videoId - ID do vídeo
+       * @param {boolean} isLive - Se está ao vivo
+       */
+      function createYouTubePlayer(container, videoId, isLive) {
+        console.log("📺 [PLAYER] Criando player para:", videoId);
+
+        youtubePlayer = new YT.Player(container, {
+          height: "100%",
+          width: "100%",
+          videoId: videoId,
+          playerVars: {
+            autoplay: isLive ? 1 : 0,
+            mute: isLive ? 1 : 0,
+            controls: 1,
+            showinfo: 0,
+            rel: 0,
+            modestbranding: 1,
+            playsinline: 1,
+          },
+          events: {
+            onReady: function (event) {
+              console.log("📺 [PLAYER] Pronto");
+              if (livestreamState.status === "live") {
+                event.target.playVideo();
+              }
+            },
+
+            onStateChange: function (event) {
+              console.log(
+                "📺 [PLAYER] Estado:",
+                event.data,
+                "| livestreamState:",
+                livestreamState.status,
+              );
+
+              // ═══════════════════════════════════════════════════════════════
+              // USAR ESTADO CENTRALIZADO, NÃO CLOSURE!
+              // ═══════════════════════════════════════════════════════════════
+
+              // State 0 = ended
+              if (event.data === 0) {
+                // Só processar fim se REALMENTE estava ao vivo
+                if (
+                  livestreamState.status === "live" &&
+                  !livestreamState.isTransitioning
+                ) {
+                  console.log(
+                    "📺 [PLAYER] Live terminou (detectado pelo player)",
+                  );
+                  handleLiveEnded();
+                } else {
+                  console.log(
+                    "📺 [PLAYER] VOD terminou (comportamento normal)",
+                  );
+                }
+              }
+
+              // States -1 (unstarted) ou 5 (cued) durante live = tentar novamente
+              if (
+                (event.data === -1 || event.data === 5) &&
+                livestreamState.status === "live"
+              ) {
+                console.log("📺 [PLAYER] Tentando reproduzir live...");
+                setTimeout(() => {
+                  if (
+                    youtubePlayer &&
+                    typeof youtubePlayer.playVideo === "function"
+                  ) {
+                    youtubePlayer.playVideo();
+                  }
+                }, 1000);
+              }
+            },
+
+            onError: function (event) {
+              console.error("📺 [PLAYER] Erro:", event.data);
+
+              // Erros 150, 101, 100 = vídeo indisponível
+              if ([150, 101, 100].includes(event.data)) {
+                if (
+                  livestreamState.status === "live" &&
+                  !livestreamState.isTransitioning
+                ) {
+                  console.log(
+                    "📺 [PLAYER] Vídeo indisponível durante live - provável encerramento",
+                  );
+                  handleLiveEnded();
+                } else {
+                  console.log(
+                    "📺 [PLAYER] Vídeo indisponível - usando fallback",
+                  );
+                  createFallbackPlayer(
+                    livestreamState.currentData,
+                    false,
+                    container,
+                  );
+                }
+              }
+            },
+          },
+        });
+      }
+
+      /**
+       * Handles the SPA transition from a live stream to its VOD state.
+       *
+       * Executa transição suave de Live para VOD (SPA)
+       * @param {Object} eventData - Dados do evento livestream-stopped
+       */
+      function transitionToVOD(eventData) {
+        console.log("📺 [SPA] Iniciando transição live→VOD");
+
+        const { vodData, videoId } = eventData;
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // 1. ATUALIZAR UI IMEDIATAMENTE (feedback visual)
+        // ═══════════════════════════════════════════════════════════════════════
+        const sessionTitle = document.getElementById("session-status-title");
+        const liveDot = document.getElementById("live-dot");
+        const viewerCount = document.getElementById("livestream-viewer-count");
+
+        sessionTitle.textContent = "ÚLTIMA SESSÃO";
+        sessionTitle.classList.remove("status-live");
+        liveDot.className = "live-dot ended";
+        viewerCount.style.display = "none";
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // 2. ATUALIZAR ESTADO CENTRALIZADO
+        // ═══════════════════════════════════════════════════════════════════════
+        updateLivestreamState({
+          status: "vod",
+          currentVideoId: videoId,
+          currentData: vodData,
+          isTransitioning: false,
+        });
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // 3. TRANSICIONAR PLAYER (SEM DESTRUIR)
+        // ═══════════════════════════════════════════════════════════════════════
+        if (youtubePlayer) {
+          // Verificar se é o mesmo vídeo
+          const currentVideoData = youtubePlayer.getVideoData?.();
+
+          if (currentVideoData?.video_id === videoId) {
+            // Mesmo vídeo: apenas rebobinar e pausar
+            console.log("📺 [SPA] Mesmo vídeo - rebobinando para início");
+            youtubePlayer.seekTo(0);
+            youtubePlayer.pauseVideo();
+          } else if (vodData?.youtube_video_id) {
+            // Vídeo diferente: carregar novo
+            console.log(
+              "📺 [SPA] Vídeo diferente - carregando:",
+              vodData.youtube_video_id,
+            );
+            youtubePlayer.loadVideoById({
+              videoId: vodData.youtube_video_id,
+              startSeconds: 0,
+            });
+            setTimeout(() => youtubePlayer.pauseVideo?.(), 500);
+          }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // 4. ATUALIZAR TÍTULO DO VÍDEO
+        // ═══════════════════════════════════════════════════════════════════════
+        const videoTitle = document.getElementById("livestream-video-title");
+        if (videoTitle && vodData?.title) {
+          videoTitle.textContent = vodData.title;
+        }
+
+        console.log(
+          "📺 [SPA] ✅ Transição concluída com sucesso - Estado:",
+          livestreamState.status,
+        );
+      }
+
+      /**
+       * Handles livestream end detection from the YouTube player.
+       *
+       * Handler para quando o player detecta fim da live
+       * REFATORADO: Não dá mais reload, apenas notifica backend
+       */
+      function handleLiveEnded() {
+        // Evitar múltiplas execuções
+        if (
+          livestreamState.isTransitioning ||
+          livestreamState.status !== "live"
+        ) {
+          console.log("📺 [ENDED] Ignorando - já em transição ou não é live");
+          return;
+        }
+
+        console.log("📺 [ENDED] Live terminou - notificando backend");
+
+        // Marcar como em transição
+        updateLivestreamState({ isTransitioning: true });
+
+        // Feedback visual imediato - ATUALIZAR UI COMPLETAMENTE
+        const sessionTitle = document.getElementById("session-status-title");
+        const liveDot = document.getElementById("live-dot");
+        const viewerCount = document.getElementById("livestream-viewer-count");
+
+        if (sessionTitle) {
+          sessionTitle.textContent = "ENCERRANDO...";
+          sessionTitle.classList.remove("status-live");
+        }
+        if (liveDot) {
+          liveDot.className = "live-dot ended";
+        }
+        if (viewerCount) {
+          viewerCount.style.display = "none";
+        }
+
+        // Notificar backend
+        if (socket && socket.connected) {
+          socket.emit("livestream-ended", {
+            videoId: livestreamState.currentVideoId,
+            camaraId: currentCamaraId,
+          });
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // FALLBACK INTELIGENTE (só se backend falhar)
+        // Timeout de 30 segundos - NÃO dá reload, apenas mostra erro
+        // ═══════════════════════════════════════════════════════════════════════
+        scheduleFallbackTimeout(() => {
+          console.warn("📺 [FALLBACK] Backend não respondeu em 30s");
+
+          // Tentar reconectar socket
+          if (socket && !socket.connected) {
+            console.log("📺 [FALLBACK] Tentando reconectar socket...");
+            socket.connect();
+          }
+
+          // Mostrar estado de erro (ainda sem reload)
+          const sessionTitle = document.getElementById("session-status-title");
+          if (sessionTitle && livestreamState.isTransitioning) {
+            sessionTitle.textContent = "ÚLTIMA SESSÃO";
+            updateLivestreamState({
+              status: "vod",
+              isTransitioning: false,
+            });
+          }
+        }, 30000);
+      }
+
+      // Creates a plain iframe player when the YouTube API player is unavailable.
+      // Função fallback para criar iframe tradicional (global)
+      function createFallbackPlayer(livestreamData, isLive, container) {
+        console.log("📺 Criando player fallback (iframe)");
+
+        const iframe = document.createElement("iframe");
+        iframe.width = "100%";
+        iframe.height = "100%";
+        iframe.frameBorder = "0";
+        iframe.allowFullscreen = true;
+
+        const embedUrl = isLive
+          ? `https://www.youtube.com/embed/${livestreamData.youtube_video_id}?autoplay=1&mute=1&controls=1&rel=0&modestbranding=1&playsinline=1`
+          : `https://www.youtube.com/embed/${livestreamData.youtube_video_id}?controls=1&rel=0&modestbranding=1&playsinline=1`;
+
+        iframe.src = embedUrl;
+        container.innerHTML = "";
+        container.appendChild(iframe);
+      }
+
+      // Initializes the main portal WebSocket for livestream and recent-vote events.
+      // Inicializar WebSocket
+      function initializeWebSocket() {
+        if (!currentCamaraId) return;
+
+        console.log("🔌 Inicializando WebSocket...");
+
+        // Conectar ao servidor global (mesma porta da aplicação)
+        socket = io();
+
+        socket.on("connect", () => {
+          console.log("🔌 WebSocket conectado:", socket.id);
+
+          // Entrar na sala da câmara (livestreams)
+          socket.emit("join-camara", currentCamaraId);
+          console.log(`📡 Entrou na sala da câmara: ${currentCamaraId}`);
+
+          // Entrar na sala do portal da câmara (votações recentes)
+          socket.emit("join-portal-camara", currentCamaraId);
+          console.log(`🏡 Entrou no portal da câmara: ${currentCamaraId}`);
+        });
+
+        socket.on("disconnect", () => {
+          console.log("🔌 WebSocket desconectado");
+        });
+
+        socket.on("reconnect", () => {
+          console.log("🔄 WebSocket reconectado");
+          if (currentCamaraId) {
+            socket.emit("join-camara", currentCamaraId);
+            socket.emit("join-portal-camara", currentCamaraId);
+          }
+        });
+
+        // Escutar atualizações de livestream
+        socket.on("livestream-updated", (eventData) => {
+          console.log("📺 Atualização de livestream recebida:", eventData);
+
+          // ═══════════════════════════════════════════════════════════════════
+          // PROTEÇÃO 1: Ignorar durante transição (evita race condition)
+          // ═══════════════════════════════════════════════════════════════════
+          if (livestreamState.isTransitioning) {
+            console.log("📺 [UPDATED] Ignorando - transição em andamento");
+            return;
+          }
+
+          // ═══════════════════════════════════════════════════════════════════
+          // PROTEÇÃO 2: Ignorar se já estamos em VOD e evento confirma fim
+          // (evita processamento duplicado do MESMO vídeo)
+          // ═══════════════════════════════════════════════════════════════════
+          if (livestreamState.status === "vod" && !eventData.isLive) {
+            console.log(
+              "📺 [UPDATED] Ignorando - já em modo VOD (confirmação)",
+            );
+            return;
+          }
+
+          // ═══════════════════════════════════════════════════════════════════
+          // PROTEÇÃO 3 CORRIGIDA: Anti-zombie INTELIGENTE
+          // Bloquear apenas webhooks atrasados do MESMO vídeo que acabou de terminar
+          // Permitir webhooks de NOVOS vídeos (nova live)
+          // ═══════════════════════════════════════════════════════════════════
+          if (livestreamState.status === "vod" && eventData.isLive) {
+            const currentVideoId = livestreamState.currentVideoId;
+            const newVideoId = eventData.livestreamData?.youtube_video_id;
+
+            // Se é o MESMO vídeo que acabou de terminar → provável webhook atrasado
+            if (currentVideoId && newVideoId && currentVideoId === newVideoId) {
+              console.warn(
+                "📺 [UPDATED] Bloqueado: webhook atrasado para o MESMO vídeo que acabou",
+              );
+              return;
+            }
+
+            // Se é um vídeo DIFERENTE → é uma NOVA live! Resetar estado e permitir
+            console.log(
+              "📺 [UPDATED] Nova live detectada (vídeo diferente)! Resetando estado VOD → offline",
+            );
+            updateLivestreamState({
+              status: "offline",
+              isTransitioning: false,
+            });
+            // Continua para processar a nova live normalmente...
+          }
+
+          // Verificar se é da câmara atual
+          if (eventData.camaraId == currentCamaraId) {
+            // Atualizar livestream na interface
+            displayLivestream(eventData.livestreamData, eventData.isLive);
+          }
+        });
+
+        // Escutar fim de livestream (SPA Transition)
+        socket.on("livestream-stopped", (eventData) => {
+          console.log(
+            "📺 [SPA] Evento livestream-stopped recebido:",
+            eventData,
+          );
+
+          // Verificar ID da câmara (com coerção para garantir match entre string e number)
+          if (eventData.camaraId != currentCamaraId) {
+            console.warn(
+              `⚠️ Evento ignorado: ID recebido ${eventData.camaraId} != Atual ${currentCamaraId}`,
+            );
+            return;
+          }
+
+          // 1. Cancelar qualquer fallback pendente (evita reload acidental)
+          cancelFallbackTimeout();
+
+          // 2. Marcar transição (bloqueia handlers antigos)
+          updateLivestreamState({ isTransitioning: true });
+
+          // 3. Executar transição
+          transitionToVOD(eventData);
+        });
+
+        // Escutar pauta finalizada (votações recentes)
+        socket.on("pauta-finalizada", (eventData) => {
+          console.log("🗳️ Pauta finalizada recebida:", eventData);
+
+          // Verificar se é da câmara atual
+          if (eventData.camaraId === currentCamaraId) {
+            console.log(
+              "🔄 Atualizando votações recentes com nova pauta finalizada",
+            );
+
+            // Tentar chamar addPautaToVotacoesRecentes com pequenas tentativas
+            const tryAddPauta = (attempt = 0) => {
+              try {
+                if (typeof addPautaToVotacoesRecentes === "function") {
+                  addPautaToVotacoesRecentes(eventData.pauta);
+                  return;
+                }
+
+                if (attempt < 3) {
+                  // aguardar um pouco e tentar novamente (cuidado com race de carregamento de scripts)
+                  setTimeout(() => tryAddPauta(attempt + 1), 250);
+                  return;
+                }
+
+                // Último recurso: tentar inserir a pauta diretamente no DOM (fallback sem dependências)
+                console.warn(
+                  "addPautaToVotacoesRecentes não definida após tentativas — inserindo pauta diretamente no DOM",
+                );
+                try {
+                  const container = document.getElementById("votacoes-grid");
+                  if (container) {
+                    const pauta = eventData.pauta || {};
+
+                    const statusText = (p) => {
+                      if (!p) return "Pendente";
+                      switch (p) {
+                        case "Aprovada":
+                          return "APROVADA";
+                        case "Reprovada":
+                          return "REPROVADA";
+                        case "Não Votada":
+                          return "NÃO VOTADA";
+                        default:
+                          return p || "Pendente";
+                      }
+                    };
+
+                    const statusClass = (p) => {
+                      if (!p) return "pending";
+                      switch (p) {
+                        case "Aprovada":
+                          return "approved";
+                        case "Reprovada":
+                          return "rejected";
+                        default:
+                          return "pending";
+                      }
+                    };
+
+                    const descricaoLimitada =
+                      pauta.descricao && pauta.descricao.length > 100
+                        ? pauta.descricao.substring(0, 100) + "..."
+                        : pauta.descricao || "Descrição não informada";
+
+                    const cardHTML = `
+                                        <div class="vote-card clickable-card" data-pauta-id="${
+                                          pauta.id
+                                        }">
+                                            <div class="vote-card-header">
+                                                <div class="vote-title">${
+                                                  pauta.nome || "Sem título"
+                                                }</div>
+                                                <div class="vote-badge-container">
+                                                    <div class="result-badge ${statusClass(
+                                                      pauta.resultado_votacao,
+                                                    )}">${statusText(
+                                                      pauta.resultado_votacao,
+                                                    )}</div>
+                                                </div>
+                                            </div>
+                                            <div class="vote-info">
+                                                <p class="vote-description">${descricaoLimitada}</p>
+                                                <p class="vote-author">Autor: ${
+                                                  pauta.autor ||
+                                                  "Autor não informado"
+                                                }</p>
+                                            </div>
+                                            <div class="vote-arrow">
+                                                <i class="fas fa-arrow-right"></i>
+                                            </div>
+                                        </div>
+                                    `;
+
+                    // Inserir no início
+                    container.insertAdjacentHTML("afterbegin", cardHTML);
+
+                    // Manter limite: 6 no mobile, 9 no desktop
+                    const isMobile = window.innerWidth <= 768;
+                    const limite = isMobile ? 6 : 9;
+                    const allCards = container.querySelectorAll(".vote-card");
+                    if (allCards.length > limite) {
+                      allCards[allCards.length - 1].remove();
+                    }
+
+                    // Reconfigurar event listeners se a função existir
+                    if (typeof addVotacaoClickListeners === "function") {
+                      addVotacaoClickListeners();
+                    }
+                  } else {
+                    console.warn(
+                      "Container de votações não encontrado para inserir pauta diretamente",
+                    );
+                  }
+                } catch (domErr) {
+                  console.error(
+                    "Erro ao inserir pauta diretamente no DOM:",
+                    domErr,
+                  );
+                }
+              } catch (err) {
+                console.error("Erro ao processar pauta-finalizada:", err);
+                // Só chamar loadVotacoesRecentes se ela existir para evitar ReferenceError
+                if (
+                  typeof loadVotacoesRecentes === "function" &&
+                  currentCamaraId
+                ) {
+                  loadVotacoesRecentes(currentCamaraId);
+                }
+              }
+            };
+
+            tryAddPauta();
+          }
+        });
+
+        socket.on("connect_error", (error) => {
+          console.error("🔌 Erro de conexão WebSocket:", error);
+        });
+      }
+
+      // Synchronizes active public voting state via HTTP as a realtime fallback.
+      // Fallback: sincronizar status de votação ao vivo via HTTP
+      async function syncVotacaoAoVivoStatus() {
+        try {
+          if (!currentCamaraId) return;
+
+          const resp = await fetch(
+            `/api/votacao-ao-vivo/status/${encodeURIComponent(currentCamaraId)}`,
+          );
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+          const data = await resp.json();
+
+          if (
+            data &&
+            data.isLive &&
+            Array.isArray(data.votacoes) &&
+            data.votacoes.length > 0
+          ) {
+            const v = data.votacoes[0] || {};
+            votacaoAoVivoAtiva = {
+              pautaId: v.pautaId,
+              pautaNome: v.pautaNome,
+              pautaDescricao: v.pautaDescricao || "",
+              sessaoNome: v.sessaoNome || "",
+              sessaoTipo: v.sessaoTipo || "",
+              sessaoDataHora: v.sessaoDataHora || null,
+              vereadoresOnline: v.vereadoresOnline || 0,
+              timestamp: v.timestamp,
+            };
+          } else {
+            votacaoAoVivoAtiva = null;
+          }
+
+          updateVotacaoAoVivoUI();
+        } catch (error) {
+          console.warn(
+            "⚠️ [VOTACAO_AO_VIVO] Falha ao sincronizar status:",
+            error?.message || error,
+          );
+        }
+      }
+
+      // Initializes the realtime channel that announces live voting status.
+      // Inicializar WebSocket para Votação Ao Vivo (porta 3000)
+      function initializeVotacaoAoVivoWebSocket() {
+        if (typeof io === "undefined") {
+          console.warn("⚠️ Socket.IO não disponível para votação ao vivo");
+          return;
+        }
+
+        try {
+          console.log(
+            "🔌 [VOTACAO_AO_VIVO] Conectando ao servidor global (porta 3000)...",
+          );
+
+          socketVotacaoAoVivo = io(undefined, {
+            transports: ["websocket", "polling"],
+            timeout: 3000,
+            reconnection: true,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 3000,
+            maxReconnectionAttempts: 10,
+          });
+
+          socketVotacaoAoVivo.on("connect", () => {
+            console.log("✅ [VOTACAO_AO_VIVO] Conectado ao servidor global");
+
+            // Sincronizar status para evitar ficar fora de sync se perdeu evento
+            syncVotacaoAoVivoStatus();
+
+            // Reforço: garante atualização mesmo se perder evento de encerramento
+            if (!window.__portalVotacaoSyncInterval) {
+              window.__portalVotacaoSyncInterval = setInterval(
+                syncVotacaoAoVivoStatus,
+                5000,
+              );
+              console.log("⏱️ Polling de segurança iniciado (5s)");
+            }
+          });
+
+          socketVotacaoAoVivo.on("disconnect", () => {
+            console.log("❌ [VOTACAO_AO_VIVO] Desconectado do servidor global");
+            votacaoAoVivoAtiva = null;
+            updateVotacaoAoVivoUI();
+
+            if (window.__portalVotacaoSyncInterval) {
+              clearInterval(window.__portalVotacaoSyncInterval);
+              window.__portalVotacaoSyncInterval = null;
+              console.log("🛑 Polling de segurança parado");
+            }
+          });
+
+          socketVotacaoAoVivo.on("connect_error", (error) => {
+            console.error(
+              "❌ [VOTACAO_AO_VIVO] Erro de conexão:",
+              error.message,
+            );
+          });
+
+          // Evento principal: atualização de votação ao vivo
+          socketVotacaoAoVivo.on("votacao-ao-vivo-update", (data) => {
+            console.log("📡 [VOTACAO_AO_VIVO] Evento recebido:", data);
+
+            // Verificar se é da câmara atual
+            if (
+              data.camaraId &&
+              data.camaraId.toString() === currentCamaraId?.toString()
+            ) {
+              console.log(
+                `✅ [VOTACAO_AO_VIVO] Votação ${data.status} - ${data.vereadoresOnline} vereadores online`,
+              );
+
+              if (data.isLive) {
+                votacaoAoVivoAtiva = {
+                  pautaId: data.pautaId,
+                  pautaNome: data.pautaNome,
+                  pautaDescricao: data.pautaDescricao || "",
+                  sessaoNome: data.sessaoNome || "",
+                  sessaoTipo: data.sessaoTipo || "",
+                  sessaoDataHora: data.sessaoDataHora || null,
+                  vereadoresOnline: data.vereadoresOnline,
+                  timestamp: data.timestamp,
+                };
+              } else {
+                // Votação encerrada
+                votacaoAoVivoAtiva = null;
+              }
+
+              updateVotacaoAoVivoUI();
+            }
+          });
+
+          console.log("✅ [VOTACAO_AO_VIVO] WebSocket inicializado");
+        } catch (error) {
+          console.error(
+            "❌ [VOTACAO_AO_VIVO] Erro ao inicializar WebSocket:",
+            error,
+          );
+        }
+      }
+
+      // Renders the live voting panel in online or offline mode.
+      // Atualizar UI de votação ao vivo
+      function updateVotacaoAoVivoUI() {
+        const votingDisplay = document.querySelector(".voting-display");
+        if (!votingDisplay) {
+          console.warn(
+            "⚠️ [VOTACAO_AO_VIVO] Container .voting-display não encontrado",
+          );
+          return;
+        }
+
+        if (votacaoAoVivoAtiva) {
+          // MODO AO VIVO - substituir placeholders por dados reais
+
+          // Limitar descrição a 200 caracteres
+          let descricaoTexto = votacaoAoVivoAtiva.pautaDescricao || "";
+          if (descricaoTexto.length > 200) {
+            descricaoTexto = descricaoTexto.substring(0, 200) + "...";
+          }
+          const descricaoHtml = descricaoTexto
+            ? `<p style="margin: 12px 0 20px 0; color: var(--secondary-text); font-size: 0.9rem; line-height: 1.5; text-align: center;">${descricaoTexto}</p>`
+            : "";
+
+          votingDisplay.innerHTML = `
+                    <div style="display: flex; flex-direction: column; min-height: 450px;">
+                        <div style="flex: 1;">
+                            <div class="voting-header">
+                                <div class="voting-badges-wrapper">
+                                    <span class="live-voting-badge">
+                                        <div class="live-voting-dot"></div>
+                                        <span>AO VIVO</span>
+                                        <span class="vereadores-online-count">
+                                            <i class="fas fa-users"></i>
+                                            <span>${votacaoAoVivoAtiva.vereadoresOnline}</span>
+                                        </span>
+                                    </span>
+                                </div>
+                                <div class="voting-title-wrapper">
+                                    <h4 class="voting-title" style="margin-top: 15px;">${votacaoAoVivoAtiva.pautaNome}</h4>
+                                </div>
+                            </div>
+                            ${descricaoHtml}
+                        </div>
+                        <div style="margin-top: auto; padding-bottom: 30px;">
+                            <div id="vote-counts-container" class="vote-counts">
+                                <div class="vote-count favor"><span class="number">0</span><span>A Favor</span></div>
+                                <div class="vote-count against"><span class="number">0</span><span>Contra</span></div>
+                                <div class="vote-count abstention"><span class="number">0</span><span>Abstenção</span></div>
+                            </div>
+                            <p style="text-align: center; color: var(--secondary-text); font-size: 0.9rem; margin-top: 16px;">
+                                <span class="status-live">●</span> Votação em andamento
+                            </p>
+                        </div>
+                    </div>
+                `;
+
+          console.log(
+            `✅ [VOTACAO_AO_VIVO] UI atualizada - ${votacaoAoVivoAtiva.vereadoresOnline} vereadores online`,
+          );
+
+          // Iniciar conexão com WebSocket de votos para atualização em tempo real
+          connectToVotacaoWebSocket(votacaoAoVivoAtiva.pautaId);
+        } else {
+          // MODO OFFLINE - mostrar estado padrão
+          votingDisplay.innerHTML = `
+                    <div class="voting-header">
+                        <div class="voting-badges-wrapper">
+                            <span class="offline-badge">
+                                <i class="fas fa-circle"></i>
+                                <span>OFFLINE</span>
+                            </span>
+                        </div>
+                        <div class="voting-title-wrapper">
+                            <h4 class="voting-title">Votação em Tempo Real</h4>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; gap: 16px;">
+                        <i class="fas fa-vote-yea" style="font-size: 3.5rem; color: var(--border-color); opacity: 0.5;"></i>
+                        <p style="color: var(--secondary-text); font-size: 1rem; text-align: center; margin: 0;">
+                            Nenhuma votação ativa no momento
+                        </p>
+                        <p style="color: var(--secondary-text); font-size: 0.85rem; text-align: center; margin: 0; opacity: 0.7;">
+                            Os votos serão exibidos aqui quando uma sessão estiver em andamento
+                        </p>
+                    </div>
+                `;
+
+          console.log("📴 [VOTACAO_AO_VIVO] Modo offline");
+        }
+
+        // Atualizar informações da sessão
+        updateSessionMeta(votacaoAoVivoAtiva);
+      }
+
+      // Renders metadata for the current or next chamber session.
+      // Atualizar meta informações da sessão
+      async function updateSessionMeta(votacaoData) {
+        const sessionMetaContainer = document.getElementById(
+          "session-meta-container",
+        );
+        if (!sessionMetaContainer) return;
+
+        if (votacaoData && votacaoData.sessaoNome) {
+          // Votação em andamento - usar data da sessão do WebSocket se disponível
+          if (votacaoData.sessaoDataHora) {
+            // Usar data que veio do WebSocket
+            const sessaoDataHora = new Date(votacaoData.sessaoDataHora);
+            const dataFormatada = sessaoDataHora.toLocaleDateString("pt-BR", {
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+            });
+            const horaFormatada = sessaoDataHora.toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+
+            sessionMetaContainer.innerHTML = `
+                        <div class="meta-item">
+                            <h4>Data/Hora</h4>
+                            <p>${dataFormatada} - ${horaFormatada}</p>
+                        </div>
+                        <div class="meta-item">
+                            <h4>Tipo de Sessão</h4>
+                            <p>${votacaoData.sessaoTipo || "Sessão"} - ${
+                              votacaoData.sessaoNome
+                            }</p>
+                        </div>
+                    `;
+          } else {
+            // Fallback: buscar data da sessão via API
+            try {
+              const response = await fetch(
+                `/api/camaras/${currentCamaraId}/sessoes-futuras`,
+              );
+              if (response.ok) {
+                const result = await response.json();
+                const sessoesFuturas = Array.isArray(result)
+                  ? result
+                  : result.data || [];
+
+                const hoje = new Date();
+                const hojeStr = hoje.toISOString().split("T")[0];
+
+                const sessaoHoje = sessoesFuturas.find((sessao) => {
+                  const sessaoData = new Date(sessao.data_hora_inicio);
+                  const sessaoStr = sessaoData.toISOString().split("T")[0];
+                  return sessaoStr === hojeStr;
+                });
+
+                if (sessaoHoje) {
+                  const sessaoDataHora = new Date(sessaoHoje.data_hora_inicio);
+                  const dataFormatada = sessaoDataHora.toLocaleDateString(
+                    "pt-BR",
+                    {
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric",
+                    },
+                  );
+                  const horaFormatada = sessaoDataHora.toLocaleTimeString(
+                    "pt-BR",
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    },
+                  );
+
+                  sessionMetaContainer.innerHTML = `
+                                    <div class="meta-item">
+                                        <h4>Data/Hora</h4>
+                                        <p>${dataFormatada} - ${horaFormatada}</p>
+                                    </div>
+                                    <div class="meta-item">
+                                        <h4>Tipo de Sessão</h4>
+                                        <p>${
+                                          votacaoData.sessaoTipo || "Sessão"
+                                        } - ${votacaoData.sessaoNome}</p>
+                                    </div>
+                                `;
+                } else {
+                  // Fallback: usar data atual
+                  const agora = new Date();
+                  const dataFormatada = agora.toLocaleDateString("pt-BR", {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric",
+                  });
+                  const horaFormatada = agora.toLocaleTimeString("pt-BR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+
+                  sessionMetaContainer.innerHTML = `
+                                    <div class="meta-item">
+                                        <h4>Data/Hora</h4>
+                                        <p>${dataFormatada} - ${horaFormatada}</p>
+                                    </div>
+                                    <div class="meta-item">
+                                        <h4>Tipo de Sessão</h4>
+                                        <p>${
+                                          votacaoData.sessaoTipo || "Sessão"
+                                        } - ${votacaoData.sessaoNome}</p>
+                                    </div>
+                                `;
+                }
+              } else {
+                // Fallback se API falhar: usar data atual
+                const agora = new Date();
+                const dataFormatada = agora.toLocaleDateString("pt-BR", {
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                });
+                const horaFormatada = agora.toLocaleTimeString("pt-BR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+
+                sessionMetaContainer.innerHTML = `
+                                <div class="meta-item">
+                                    <h4>Data/Hora</h4>
+                                    <p>${dataFormatada} - ${horaFormatada}</p>
+                                </div>
+                                <div class="meta-item">
+                                    <h4>Tipo de Sessão</h4>
+                                    <p>${
+                                      votacaoData.sessaoTipo || "Sessão"
+                                    } - ${votacaoData.sessaoNome}</p>
+                                </div>
+                            `;
+              }
+            } catch (error) {
+              console.error("Erro ao buscar data da sessão:", error);
+              // Fallback em caso de erro: usar data atual
+              const agora = new Date();
+              const dataFormatada = agora.toLocaleDateString("pt-BR", {
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+              });
+              const horaFormatada = agora.toLocaleTimeString("pt-BR", {
+                hour: "2-digit",
+                minute: "2-digit",
+              });
+
+              sessionMetaContainer.innerHTML = `
+                            <div class="meta-item">
+                                <h4>Data/Hora</h4>
+                                <p>${dataFormatada} - ${horaFormatada}</p>
+                            </div>
+                            <div class="meta-item">
+                                <h4>Tipo de Sessão</h4>
+                                <p>${votacaoData.sessaoTipo || "Sessão"} - ${
+                                  votacaoData.sessaoNome
+                                }</p>
+                            </div>
+                        `;
+            }
+          }
+        } else {
+          // Offline - verificar se existe sessão agendada para hoje
+          try {
+            const response = await fetch(
+              `/api/camaras/${currentCamaraId}/sessoes-futuras`,
+            );
+            if (response.ok) {
+              const result = await response.json();
+              // A API pode retornar { data: [...] } ou um array direto
+              const sessoesFuturas = Array.isArray(result)
+                ? result
+                : result.data || [];
+
+              // Verificar se tem sessão hoje
+              const hoje = new Date();
+              const hojeStr = hoje.toISOString().split("T")[0]; // YYYY-MM-DD
+
+              const sessaoHoje = sessoesFuturas.find((sessao) => {
+                const sessaoData = new Date(sessao.data_hora_inicio);
+                const sessaoStr = sessaoData.toISOString().split("T")[0];
+                return sessaoStr === hojeStr;
+              });
+
+              if (sessaoHoje) {
+                // Sessão agendada para hoje - mostrar informações da sessão
+                const sessaoDataHora = new Date(sessaoHoje.data_hora_inicio);
+                const sessaoDataFormatada = sessaoDataHora.toLocaleDateString(
+                  "pt-BR",
+                  {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric",
+                  },
+                );
+                const sessaoHoraFormatada = sessaoDataHora.toLocaleTimeString(
+                  "pt-BR",
+                  {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  },
+                );
+
+                sessionMetaContainer.innerHTML = `
+                                <div class="meta-item">
+                                    <h4>Data/Hora</h4>
+                                    <p>${sessaoDataFormatada} - ${sessaoHoraFormatada}</p>
+                                </div>
+                                <div class="meta-item">
+                                    <h4>Tipo de Sessão</h4>
+                                    <p>${sessaoHoje.tipo || "Sessão"} - ${
+                                      sessaoHoje.nome
+                                    }</p>
+                                </div>
+                            `;
+              } else {
+                // Nenhuma sessão hoje - mostrar aguardando
+                sessionMetaContainer.innerHTML = `
+                                <div class="meta-item">
+                                    <h4>Data/Hora</h4>
+                                    <p>Aguardando...</p>
+                                </div>
+                                <div class="meta-item">
+                                    <h4>Tipo de Sessão</h4>
+                                    <p>Aguardando próxima sessão</p>
+                                </div>
+                            `;
+              }
+            } else {
+              // Fallback se API falhar - mostrar aguardando
+              sessionMetaContainer.innerHTML = `
+                            <div class="meta-item">
+                                <h4>Data/Hora</h4>
+                                <p>Aguardando...</p>
+                            </div>
+                            <div class="meta-item">
+                                <h4>Tipo de Sessão</h4>
+                                <p>Aguardando próxima sessão</p>
+                            </div>
+                        `;
+            }
+          } catch (error) {
+            console.error("Erro ao buscar sessões futuras:", error);
+            // Fallback em caso de erro - mostrar aguardando
+            sessionMetaContainer.innerHTML = `
+                        <div class="meta-item">
+                            <h4>Data/Hora</h4>
+                            <p>Aguardando...</p>
+                        </div>
+                        <div class="meta-item">
+                            <h4>Tipo de Sessão</h4>
+                            <p>Aguardando próxima sessão</p>
+                        </div>
+                    `;
+          }
+        }
+      }
+
+      // Joins the vote room and subscribes to realtime vote counter updates.
+      // Conectar ao WebSocket de votos para atualizar contadores em tempo real
+      function connectToVotacaoWebSocket(pautaId) {
+        if (!socket) {
+          console.warn(
+            "⚠️ [VOTACAO_AO_VIVO] Socket principal não disponível, tentando novamente em 1s",
+          );
+          setTimeout(() => connectToVotacaoWebSocket(pautaId), 1000);
+          return;
+        }
+
+        if (!socket.connected) {
+          console.warn(
+            "⚠️ [VOTACAO_AO_VIVO] Socket não conectado, aguardando conexão...",
+          );
+          socket.once("connect", () => {
+            console.log(
+              "✅ [VOTACAO_AO_VIVO] Socket conectado, entrando na sala da pauta",
+            );
+            connectToVotacaoWebSocket(pautaId);
+          });
+          return;
+        }
+
+        console.log(
+          `🔌 [VOTACAO_AO_VIVO] Conectando à sala da pauta ${pautaId} para receber votos`,
+        );
+
+        // Entrar na sala da pauta específica no servidor global
+        socket.emit("join-room", `pauta_public_${pautaId}`);
+
+        // Confirmar entrada na sala
+        socket.once("room-joined", (data) => {
+          console.log("✅ [VOTACAO_AO_VIVO] Entrada na sala confirmada:", data);
+        });
+
+        // Escutar atualizações de votos - evento correto do tablet backend
+        socket.off("voto-notification-public"); // Remover listener anterior se existir
+        socket.on("voto-notification-public", (notification) => {
+          console.log(
+            "🗳️ [VOTACAO_AO_VIVO] Voto recebido via WebSocket:",
+            notification,
+          );
+
+          if (
+            notification.pautaId &&
+            notification.pautaId.toString() === pautaId.toString()
+          ) {
+            updateVoteCounters(notification);
+          }
+        });
+
+        // Escutar estatísticas públicas (fallback)
+        socket.off("pauta-stats-update-public");
+        socket.on("pauta-stats-update-public", (data) => {
+          console.log("📊 [VOTACAO_AO_VIVO] Estatísticas recebidas:", data);
+          if (data.pautaId === pautaId && data.estatisticas) {
+            updateVoteCountersUI(
+              data.estatisticas.sim || 0,
+              data.estatisticas.nao || 0,
+              data.estatisticas.abstencao || 0,
+            );
+          }
+        });
+
+        // Buscar votos atuais
+        fetchVotosAtuais(pautaId);
+
+        console.log(
+          "✅ [VOTACAO_AO_VIVO] Listeners configurados, aguardando confirmação da sala",
+        );
+      }
+
+      // Fetches current public votes for the active pauta.
+      // Buscar votos atuais da pauta
+      async function fetchVotosAtuais(pautaId) {
+        try {
+          const response = await fetch(`/api/votos/pauta/${pautaId}/publico`);
+          if (!response.ok) throw new Error("Erro ao buscar votos");
+
+          const data = await response.json();
+          const votos = data.votos || [];
+
+          // Calcular totais
+          const favor = votos.filter((v) => v.voto === "SIM").length;
+          const contra = votos.filter((v) => v.voto === "NÃO").length;
+          const abstencao = votos.filter((v) => v.voto === "ABSTENÇÃO").length;
+
+          // Atualizar UI
+          updateVoteCountersUI(favor, contra, abstencao);
+        } catch (error) {
+          console.error("❌ [VOTACAO_AO_VIVO] Erro ao buscar votos:", error);
+        }
+      }
+
+      // Updates the visible vote counter values.
+      // Atualizar contadores de votos na UI
+      function updateVoteCountersUI(favor, contra, abstencao) {
+        const voteNumbers = document.querySelectorAll(
+          "#vote-counts-container .vote-count .number",
+        );
+        if (voteNumbers.length >= 3) {
+          voteNumbers[0].textContent = favor;
+          voteNumbers[1].textContent = contra;
+          voteNumbers[2].textContent = abstencao;
+        }
+      }
+
+      // Applies incremental vote notifications to the live counter UI.
+      // Atualizar contadores quando voto é registrado
+      function updateVoteCounters(notification) {
+        console.log(
+          "🔄 [VOTACAO_AO_VIVO] Atualizando contadores com notificação:",
+          notification,
+        );
+
+        const voteNumbers = document.querySelectorAll(
+          "#vote-counts-container .vote-count .number",
+        );
+        if (voteNumbers.length < 3) {
+          console.warn("⚠️ [VOTACAO_AO_VIVO] Contadores não encontrados na UI");
+          return;
+        }
+
+        // Se for atualização de voto, recarregar todos os votos
+        if (notification.isUpdate) {
+          console.log(
+            "🔄 [VOTACAO_AO_VIVO] Voto atualizado, recarregando contadores completos",
+          );
+          fetchVotosAtuais(notification.pautaId);
+          return;
+        }
+
+        // Incrementar o contador apropriado para novo voto
+        const voto = notification.voto;
+        console.log("➕ [VOTACAO_AO_VIVO] Incrementando contador para:", voto);
+
+        if (voto === "SIM") {
+          const current = parseInt(voteNumbers[0].textContent) || 0;
+          voteNumbers[0].textContent = current + 1;
+          console.log(`✅ [VOTACAO_AO_VIVO] SIM: ${current} → ${current + 1}`);
+        } else if (voto === "NÃO") {
+          const current = parseInt(voteNumbers[1].textContent) || 0;
+          voteNumbers[1].textContent = current + 1;
+          console.log(`✅ [VOTACAO_AO_VIVO] NÃO: ${current} → ${current + 1}`);
+        } else if (voto === "ABSTENÇÃO") {
+          const current = parseInt(voteNumbers[2].textContent) || 0;
+          voteNumbers[2].textContent = current + 1;
+          console.log(
+            `✅ [VOTACAO_AO_VIVO] ABSTENÇÃO: ${current} → ${current + 1}`,
+          );
+        } else {
+          console.warn("⚠️ [VOTACAO_AO_VIVO] Tipo de voto desconhecido:", voto);
+        }
+      }
+
+      // Restores active voting state when the portal loads.
+      // Verificar se há votação ativa ao carregar a página
+      async function checkVotacaoAtivaAoCarregar(camaraId) {
+        try {
+          console.log(
+            `🔍 [VOTACAO_AO_VIVO] Verificando votações ativas para câmara ${camaraId}`,
+          );
+
+          const response = await fetch(
+            `/api/votacao-ao-vivo/status/${camaraId}`,
+          );
+          if (!response.ok) {
+            console.log(
+              "📴 [VOTACAO_AO_VIVO] Nenhuma votação ativa encontrada",
+            );
+            return;
+          }
+
+          const data = await response.json();
+
+          if (data.isLive && data.votacoes && data.votacoes.length > 0) {
+            // Restaurar estado da votação ativa
+            const votacao = data.votacoes[0]; // Pegar primeira votação ativa
+
+            console.log(
+              `✅ [VOTACAO_AO_VIVO] Votação ativa encontrada:`,
+              votacao,
+            );
+
+            votacaoAoVivoAtiva = {
+              pautaId: votacao.pautaId,
+              pautaNome: votacao.pautaNome,
+              pautaDescricao: votacao.pautaDescricao || "",
+              sessaoNome: votacao.sessaoNome || "",
+              sessaoTipo: votacao.sessaoTipo || "",
+              sessaoDataHora: votacao.sessaoDataHora || null,
+              vereadoresOnline: votacao.vereadoresOnline || 0,
+              timestamp: votacao.timestamp,
+            };
+
+            console.log(
+              "🔄 [VOTACAO_AO_VIVO] Estado restaurado ao carregar página",
+            );
+          } else {
+            console.log(
+              "📴 [VOTACAO_AO_VIVO] Nenhuma votação ativa no momento",
+            );
+          }
+        } catch (error) {
+          console.error(
+            "❌ [VOTACAO_AO_VIVO] Erro ao verificar votação ativa:",
+            error,
+          );
+        }
+      }
+
+      // Configures page-specific controls inside the shared portal navbar.
+      // Função para configurar elementos específicos do navbar para esta página
+      function setupPortalPublicoNavbar() {
+        // Adicionar botão voltar no lado esquerdo
+        const backButtonContainer = document.getElementById("nav-back-button");
+        if (backButtonContainer) {
+          backButtonContainer.innerHTML = `
+                    <a href="selecionar_camara.html" class="btn-voltar-header">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Voltar</span>
+                    </a>
+                `;
+        }
+
+        // Adicionar menu de navegação e botão trocar câmara no lado direito
+        const navRightContainer = document.getElementById("nav-right-content");
+        if (navRightContainer) {
+          navRightContainer.innerHTML = `
+                    <ul class="nav-menu">
+                        <li><a href="#agenda">Agenda</a></li>
+                        <li><a href="#votes">Votações</a></li>
+                        <li><a href="#members">Vereadores</a></li>
+                    </ul>
+                    <a href="selecionar_camara.html" class="btn btn-outline btn-trocar-camara">
+                        <i class="fas fa-exchange-alt"></i>
+                        <span>Trocar Câmara</span>
+                    </a>
+                `;
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Page bootstrap: load layout, resolve chamber context, and start data modules.
+        // Carregar componentes modularizados (navbar e footer)
+        await initLayout({});
+
+        // Configurar navbar específico desta página
+        setupPortalPublicoNavbar();
+
+        // Inicializar animações unificadas
+        initUnifiedAnimations();
+
+        // Verificar se há câmara selecionada
+        await initializePortal();
+
+        // Configurar botão "Ver Todas as Pautas"
+        setupVerTodasPautasButton();
+
+        // Loads all public portal data for the selected chamber.
+        // Função para inicializar o portal
+        async function initializePortal() {
+          try {
+            // Obter câmara selecionada da URL ou localStorage
+            const selectedCamara = getCamaraFromUrl() || getCamaraFromStorage();
+
+            if (!selectedCamara) {
+              console.warn("⚠️ Nenhuma câmara selecionada, redirecionando...");
+              window.location.href = "selecionar_camara.html";
+              return;
+            }
+
+            console.log("🏛️ Carregando portal para:", selectedCamara);
+
+            // Carregar informações da câmara
+            await loadCamaraInfo(selectedCamara.id, selectedCamara.nome);
+
+            // Carregar próximas sessões
+            await loadProximasSessoes(selectedCamara.id);
+
+            // Carregar vereadores
+            await loadVereadores(selectedCamara.id);
+
+            // Carregar votações recentes
+            await loadVotacoesRecentes(selectedCamara.id);
+
+            // Carregar livestream inicial
+            await loadLivestream();
+
+            // Inicializar votação ao vivo WebSocket
+            initializeVotacaoAoVivoWebSocket();
+
+            // DESABILITADO: checkVotacaoAtivaAoCarregar requer autenticação
+            // Portal público não deve acessar endpoints protegidos
+            // await checkVotacaoAtivaAoCarregar(selectedCamara.id);
+
+            // Inicializar UI de votação ao vivo
+            updateVotacaoAoVivoUI();
+
+            // Nota: Polling desabilitado - usando WebSocket para atualizações em tempo real
+          } catch (error) {
+            console.error("❌ Erro ao inicializar portal:", error);
+            // Em caso de erro, usar informações do localStorage se disponível
+            const fallbackCamara = getCamaraFromStorage();
+            if (fallbackCamara) {
+              await loadCamaraInfo(fallbackCamara.id, fallbackCamara.nome);
+              await loadProximasSessoes(fallbackCamara.id);
+              await loadVereadores(fallbackCamara.id);
+              await loadVotacoesRecentes(fallbackCamara.id);
+              await loadLivestream();
+              initializeVotacaoAoVivoWebSocket();
+              updateVotacaoAoVivoUI();
+              startLivestreamPolling();
+            } else {
+              showError("Erro ao carregar informações da câmara.");
+            }
+          }
+        }
+
+        // Reads the selected chamber from the URL query string.
+        // Função para obter câmara da URL
+        function getCamaraFromUrl() {
+          const urlParams = new URLSearchParams(window.location.search);
+          const camaraId = urlParams.get("camara");
+
+          if (camaraId) {
+            const camaraNome = localStorage.getItem("selectedCamaraNome");
+            return { id: camaraId, nome: camaraNome || "Câmara Municipal" };
+          }
+          return null;
+        }
+
+        // Reads the selected chamber fallback from localStorage.
+        // Função para obter câmara do localStorage
+        function getCamaraFromStorage() {
+          const camaraId = localStorage.getItem("selectedCamaraId");
+          const camaraNome = localStorage.getItem("selectedCamaraNome");
+
+          if (camaraId && camaraNome) {
+            return { id: camaraId, nome: camaraNome };
+          }
+          return null;
+        }
+
+        // Loads chamber metadata and starts the main realtime channel.
+        // Função para carregar informações da câmara
+        async function loadCamaraInfo(camaraId, camaraNome) {
+          try {
+            console.log("📊 Carregando dados da câmara:", camaraId);
+
+            // Definir câmara atual e inicializar WebSocket
+            currentCamaraId = camaraId;
+            initializeWebSocket();
+
+            // Atualizar UI com nome da câmara
+            updateCamaraUI(camaraNome);
+
+            // Tentar carregar dados dinâmicos da API
+            const response = await fetch(`/api/camaras/${camaraId}/info`);
+
+            if (response.ok) {
+              const data = await response.json();
+              updateCamaraData(data);
+            } else {
+              console.warn("⚠️ API não disponível, usando dados mockados");
+              updateCamaraDataMock(camaraNome);
+            }
+          } catch (error) {
+            console.warn(
+              "⚠️ Erro ao carregar dados da API, usando mockados:",
+              error,
+            );
+            updateCamaraDataMock(camaraNome);
+          }
+        }
+
+        // Applies the chamber name to the document title and hero area.
+        // Função para atualizar UI com nome da câmara
+        function updateCamaraUI(camaraNome) {
+          // Atualizar título da página
+          const pageTitle = document.getElementById("pageTitle");
+          if (pageTitle) {
+            pageTitle.textContent = `${camaraNome} - Portal da Transparência`;
+          }
+
+          // Atualizar hero section
+          const heroTitle = document.getElementById("heroTitle");
+          if (heroTitle) {
+            heroTitle.textContent = `${camaraNome}, Aberta para Você`;
+          }
+
+          console.log("✅ UI atualizada com:", camaraNome);
+        }
+
+        // Applies detailed chamber data returned by the public API.
+        // Função para atualizar com dados reais da API
+        function updateCamaraData(data) {
+          console.log("📊 Dados da câmara recebidos:", data);
+
+          // Aqui você implementará a atualização com dados reais
+          // Por exemplo: sessões ativas, vereadores, etc.
+
+          // Para agora, apenas log dos dados
+          if (data.info) {
+            const info = data.info;
+            // Atualizar descrição do hero com dados reais
+            if (info.municipio && info.estado) {
+              const heroDesc = document.getElementById("heroDescription");
+              if (heroDesc) {
+                heroDesc.textContent = `Acompanhe as atividades da câmara municipal de ${info.municipio}, ${info.estado}. Sessões ao vivo, votações e total transparência.`;
+              }
+            }
+          }
+        }
+
+        // Applies fallback chamber text when the public API is unavailable.
+        // Função para dados mockados (fallback)
+        function updateCamaraDataMock(camaraNome) {
+          console.log("🎭 Usando dados mockados para:", camaraNome);
+
+          // Extrair nome da cidade do nome da câmara
+          const cidade = camaraNome
+            .replace(/Câmara Municipal de?/gi, "")
+            .trim();
+
+          if (cidade && cidade !== camaraNome) {
+            const heroDesc = document.getElementById("heroDescription");
+            if (heroDesc) {
+              heroDesc.textContent = `Acompanhe as atividades da câmara municipal de ${cidade}. Sessões ao vivo, votações e total transparência.`;
+            }
+          }
+        }
+
+        // Loads upcoming sessions for the selected chamber.
+        // Função para carregar próximas sessões
+        async function loadProximasSessoes(camaraId) {
+          console.log("📅 Carregando próximas sessões da câmara:", camaraId);
+          const container = document.getElementById("sessoes-container");
+
+          // Mostrar loading usando o módulo carregamento.js
+          renderLoadingState(container, "Carregando próximas sessões...");
+
+          try {
+            // Buscar sessões futuras da API real
+            const response = await fetch(
+              `/api/camaras/${camaraId}/sessoes-futuras`,
+            );
+
+            if (!response.ok) {
+              throw new Error(
+                `Erro ${response.status}: ${response.statusText}`,
+              );
+            }
+
+            const data = await response.json();
+            const sessoes = data.sessoes || [];
+
+            renderProximasSessoes(sessoes);
+            console.log(
+              "✅ Próximas sessões carregadas da API:",
+              sessoes.length,
+            );
+          } catch (error) {
+            console.error(
+              "❌ Erro ao carregar próximas sessões da API:",
+              error,
+            );
+            console.log("⚠️ Nenhuma sessão futura encontrada");
+
+            // Mostrar mensagem de "sem sessões" em vez de dados demo
+            renderProximasSessoes([]);
+          }
+        }
+
+        // Chooses the best session layout based on result count.
+        // Função para renderizar próximas sessões
+        function renderProximasSessoes(sessoes) {
+          const container = document.getElementById("sessoes-container");
+
+          if (!sessoes || sessoes.length === 0) {
+            container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-times"></i>
+                            <h3>Nenhuma sessão agendada</h3>
+                            <p>Não há sessões programadas no momento. Novas sessões aparecerão aqui quando forem agendadas.</p>
+                        </div>
+                    `;
+            return;
+          }
+
+          // Se 4 ou menos sessões, usar grid estático
+          if (sessoes.length <= 4) {
+            renderSessoesGrid(sessoes, container);
+          } else {
+            // Mais de 4 sessões, usar carrossel infinito
+            renderSessoesCarousel(sessoes, container);
+          }
+        }
+
+        // Renders upcoming sessions in a static responsive grid.
+        // Renderizar como grid estático
+        function renderSessoesGrid(sessoes, container) {
+          const html = `
+                    <div class="sessoes-grid">
+                        ${sessoes
+                          .map((sessao) => createSessaoCard(sessao))
+                          .join("")}
+                    </div>
+                `;
+          container.innerHTML = html;
+        }
+
+        // Renders upcoming sessions in an infinite carousel.
+        // Renderizar como carrossel infinito
+        function renderSessoesCarousel(sessoes, container) {
+          // Duplicar sessões para carrossel infinito
+          const extendedSessoes = [...sessoes, ...sessoes];
+
+          const html = `
+                    <div class="sessoes-carousel-wrapper">
+                        <div class="sessoes-carousel" id="sessoes-carousel">
+                            ${extendedSessoes
+                              .map((sessao) => createSessaoCard(sessao))
+                              .join("")}
+                        </div>
+                    </div>
+                    <div class="carousel-controls">
+                        <button class="carousel-btn" id="carousel-prev">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <div class="carousel-indicators" id="carousel-indicators">
+                            ${sessoes
+                              .map(
+                                (_, index) =>
+                                  `<div class="carousel-dot ${
+                                    index === 0 ? "active" : ""
+                                  }" data-index="${index}"></div>`,
+                              )
+                              .join("")}
+                        </div>
+                        <button class="carousel-btn" id="carousel-next">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                `;
+
+          container.innerHTML = html;
+          initSessoesCarousel(sessoes.length);
+        }
+
+        // Builds a single upcoming session card.
+        // Criar HTML para card de sessão
+        function createSessaoCard(sessao) {
+          const dataDaSessao = new Date(sessao.data_sessao);
+          const dataFormatada = dataDaSessao.toLocaleDateString("pt-BR", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+
+          // Gerar classe do tipo baseado no tipo da sessão
+          const tipoClass = sessao.tipo
+            ? sessao.tipo.toLowerCase().replace("ã", "a").replace(/\s+/g, "")
+            : "ordinaria";
+
+          return `
+                    <div class="sessao-card">
+                        <div>
+                            <div class="sessao-card-header">
+                                <div class="sessao-date">${dataFormatada}</div>
+                                <div class="tipo-badge ${tipoClass}">${
+                                  sessao.tipo || "Ordinária"
+                                }</div>
+                            </div>
+                            <h3 class="sessao-title">${sessao.nome}</h3>
+                        </div>
+                    </div>
+                `;
+        }
+
+        // Wires carousel navigation and autoplay for upcoming sessions.
+        // Inicializar carrossel de sessões
+        function initSessoesCarousel(totalSessoes) {
+          const carousel = document.getElementById("sessoes-carousel");
+          const prevBtn = document.getElementById("carousel-prev");
+          const nextBtn = document.getElementById("carousel-next");
+          const indicators = document.querySelectorAll(".carousel-dot");
+
+          let currentIndex = 0;
+          let isMoving = false;
+          const cardWidth = 344; // 320px + 24px margin
+
+          function moveCarousel(index) {
+            if (isMoving) return;
+            isMoving = true;
+
+            const translateX = -index * cardWidth;
+            carousel.style.transform = `translateX(${translateX}px)`;
+
+            // Atualizar indicadores
+            indicators.forEach((dot, i) => {
+              dot.classList.toggle("active", i === index);
+            });
+
+            setTimeout(() => {
+              // Reset infinito
+              if (index >= totalSessoes) {
+                carousel.style.transition = "none";
+                carousel.style.transform = "translateX(0px)";
+                currentIndex = 0;
+                indicators.forEach((dot, i) => {
+                  dot.classList.toggle("active", i === 0);
+                });
+
+                setTimeout(() => {
+                  carousel.style.transition = "transform 0.5s ease-in-out";
+                  isMoving = false;
+                }, 50);
+              } else {
+                currentIndex = index;
+                isMoving = false;
+              }
+            }, 500);
+          }
+
+          // Event listeners
+          nextBtn.addEventListener("click", () => {
+            moveCarousel(currentIndex + 1);
+          });
+
+          prevBtn.addEventListener("click", () => {
+            const newIndex =
+              currentIndex === 0 ? totalSessoes - 1 : currentIndex - 1;
+            moveCarousel(newIndex);
+          });
+
+          // Indicadores
+          indicators.forEach((dot, index) => {
+            dot.addEventListener("click", () => {
+              moveCarousel(index);
+            });
+          });
+
+          // Auto-play (opcional)
+          setInterval(() => {
+            if (!isMoving) {
+              moveCarousel(currentIndex + 1);
+            }
+          }, 5000);
+        }
+
+        // Loads public councilor data for the selected chamber.
+        // Função para carregar vereadores
+        async function loadVereadores(camaraId) {
+          console.log("👥 Carregando vereadores da câmara:", camaraId);
+          const container = document.getElementById("vereadores-container");
+
+          // Mostrar loading usando o módulo carregamento.js
+          renderLoadingState(container, "Carregando vereadores...");
+
+          try {
+            // Buscar vereadores da API real
+            const response = await fetch(`/api/camaras/${camaraId}/vereadores`);
+
+            if (!response.ok) {
+              throw new Error(
+                `Erro ${response.status}: ${response.statusText}`,
+              );
+            }
+
+            const data = await response.json();
+            const vereadores = data.vereadores || [];
+
+            renderVereadores(vereadores);
+            console.log("✅ Vereadores carregados da API:", vereadores.length);
+          } catch (error) {
+            console.error("❌ Erro ao carregar vereadores da API:", error);
+            console.log("⚠️ Usando dados de demonstração para desenvolvimento");
+
+            // Fallback com dados de demonstração
+            const mockVereadores = [
+              {
+                id: "demo-1",
+                nome: "Vereador Demo",
+                foto_url:
+                  "https://via.placeholder.com/150/E5E7EB/6B7280?text=DEMO",
+                cargo: "Vereador",
+                partido: {
+                  nome: "Partido Demo",
+                  sigla: "DEMO",
+                  logo_url:
+                    "https://via.placeholder.com/24x24/6B7280/FFFFFF?text=D",
+                },
+              },
+            ];
+
+            renderVereadores(mockVereadores);
+            console.log(
+              "🎭 Vereadores carregados (demo):",
+              mockVereadores.length,
+            );
+          }
+        }
+
+        // Chooses grid or carousel layout for the councilor roster.
+        // Função para renderizar vereadores
+        function renderVereadores(vereadores) {
+          const container = document.getElementById("vereadores-container");
+
+          if (!vereadores || vereadores.length === 0) {
+            container.innerHTML = `
+                        <div class="container">
+                            <div class="empty-state">
+                                <i class="fas fa-users"></i>
+                                <h3>Nenhum vereador cadastrado</h3>
+                                <p>Não há vereadores cadastrados no sistema. As informações aparecerão aqui quando estiverem disponíveis.</p>
+                            </div>
+                        </div>
+                    `;
+            return;
+          }
+
+          // Calcular quantos vereadores cabem na tela
+          // FIX: Limitar a largura considerada para 1200px (container padrão)
+          // Isso evita que em telas QHD/4K o sistema ache que cabem 10 vereadores e mostre o grid estático que quebra
+          const effectiveWidth = Math.min(window.innerWidth, 1200);
+          const containerWidth = effectiveWidth - 40; // Descontar padding lateral
+          const cardWidth = 304; // 280px + 24px margin
+          const maxVisibleCards = Math.floor(containerWidth / cardWidth);
+
+          // Se todos os vereadores cabem na tela, usar grid estático
+          if (vereadores.length <= maxVisibleCards) {
+            renderVereadoresGrid(vereadores, container);
+          } else {
+            // Não cabem todos, usar carrossel
+            renderVereadoresCarousel(vereadores, container);
+          }
+        }
+
+        // Renders councilors in a centered static grid.
+        // Renderizar como grid estático para poucos vereadores
+        function renderVereadoresGrid(vereadores, container) {
+          const html = `
+                    <div class="container">
+                        <div class="vereadores-grid-static">
+                            ${vereadores
+                              .map((vereador) =>
+                                createVereadorCardStatic(vereador),
+                              )
+                              .join("")}
+                        </div>
+                        <div class="vereadores-info" style="justify-content: center; margin-top: 2rem; display: flex;">
+                            <span>${vereadores.length} vereadores</span>
+                        </div>
+                    </div>
+                `;
+          container.innerHTML = html;
+        }
+
+        // Renders councilors in a continuous carousel.
+        // Renderizar carrossel infinito de vereadores
+        function renderVereadoresCarousel(vereadores, container) {
+          // Duplicar vereadores para carrossel infinito suave
+          const extendedVereadores = [...vereadores, ...vereadores];
+
+          const html = `
+                    <div class="vereadores-carousel-wrapper">
+                        <div class="vereadores-carousel" id="vereadores-carousel">
+                            ${extendedVereadores
+                              .map((vereador) => createVereadorCard(vereador))
+                              .join("")}
+                        </div>
+                    </div>
+                    <div class="vereadores-carousel-controls">
+                        <button class="vereadores-carousel-btn" id="vereadores-prev">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <div class="vereadores-info">
+                            <span>${vereadores.length} vereadores</span>
+                        </div>
+                        <button class="vereadores-carousel-btn" id="vereadores-next">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                `;
+
+          container.innerHTML = html;
+          initVereadoresCarousel(vereadores.length);
+        }
+
+        // Builds a councilor card for carousel rendering.
+        // Criar HTML para card de vereador (carrossel)
+        function createVereadorCard(vereador) {
+          let cargoFormatado = vereador.cargo || "Vereador";
+          if (cargoFormatado === "Presidente da Câmara") {
+            cargoFormatado = "Presidente";
+          }
+
+          return `
+                    <div class="vereador-card">
+                        <img src="${vereador.foto_url}" alt="${
+                          vereador.nome
+                        }" class="vereador-avatar"
+                             onerror="this.src='https://via.placeholder.com/80x80/E5E7EB/6B7280?text=${vereador.nome.charAt(
+                               0,
+                             )}'">
+                        <h3 class="vereador-name">${vereador.nome}</h3>
+                        <div class="vereador-party">
+                            ${
+                              vereador.partido.logo_url
+                                ? `<img src="${vereador.partido.logo_url}" alt="${vereador.partido.sigla}" class="partido-logo"
+                                      onerror="this.style.display='none'">`
+                                : ""
+                            }
+                            <span><strong>${
+                              vereador.partido.sigla
+                            }</strong> - ${cargoFormatado}</span>
+                        </div>
+                        <div class="vereador-stats">
+                            <div class="stat-item">
+                                <span class="number">${
+                                  vereador.estatisticas?.percentual_presenca ||
+                                  0
+                                }%</span>
+                                <span class="label">Presença</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="number">${
+                                  vereador.estatisticas?.total_votacoes || 0
+                                }</span>
+                                <span class="label">Votações</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+        }
+
+        // Builds a councilor card for static grid rendering.
+        // Criar HTML para card de vereador estático (sem margin-right)
+        function createVereadorCardStatic(vereador) {
+          let cargoFormatado = vereador.cargo || "Vereador";
+          if (cargoFormatado === "Presidente da Câmara") {
+            cargoFormatado = "Presidente";
+          }
+
+          return `
+                    <div class="vereador-card" style="margin-right: 0;">
+                        <img src="${vereador.foto_url}" alt="${
+                          vereador.nome
+                        }" class="vereador-avatar"
+                             onerror="this.src='https://via.placeholder.com/80x80/E5E7EB/6B7280?text=${vereador.nome.charAt(
+                               0,
+                             )}'">
+                        <h3 class="vereador-name">${vereador.nome}</h3>
+                        <div class="vereador-party">
+                            ${
+                              vereador.partido.logo_url
+                                ? `<img src="${vereador.partido.logo_url}" alt="${vereador.partido.sigla}" class="partido-logo"
+                                      onerror="this.style.display='none'">`
+                                : ""
+                            }
+                            <span><strong>${
+                              vereador.partido.sigla
+                            }</strong> - ${cargoFormatado}</span>
+                        </div>
+                        <div class="vereador-stats">
+                            <div class="stat-item">
+                                <span class="number">${
+                                  vereador.estatisticas?.percentual_presenca ||
+                                  0
+                                }%</span>
+                                <span class="label">Presença</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="number">${
+                                  vereador.estatisticas?.total_votacoes || 0
+                                }</span>
+                                <span class="label">Votações</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+        }
+
+        // Wires carousel controls and autoplay for councilors.
+        // Inicializar carrossel de vereadores
+        function initVereadoresCarousel(totalVereadores) {
+          const carousel = document.getElementById("vereadores-carousel");
+          const prevBtn = document.getElementById("vereadores-prev");
+          const nextBtn = document.getElementById("vereadores-next");
+
+          let currentIndex = 0;
+          let isMoving = false;
+          const cardWidth = 304; // 280px + 24px margin
+
+          function moveCarousel(direction) {
+            if (isMoving) return;
+            isMoving = true;
+
+            if (direction === "next") {
+              currentIndex++;
+            } else {
+              currentIndex--;
+            }
+
+            const translateX = -currentIndex * cardWidth;
+            carousel.style.transform = `translateX(${translateX}px)`;
+
+            setTimeout(() => {
+              // Reset infinito
+              if (currentIndex >= totalVereadores) {
+                carousel.style.transition = "none";
+                carousel.style.transform = "translateX(0px)";
+                currentIndex = 0;
+              } else if (currentIndex < 0) {
+                carousel.style.transition = "none";
+                const resetTranslateX = -(totalVereadores - 1) * cardWidth;
+                carousel.style.transform = `translateX(${resetTranslateX}px)`;
+                currentIndex = totalVereadores - 1;
+              }
+
+              setTimeout(() => {
+                carousel.style.transition = "transform 0.5s ease-in-out";
+                isMoving = false;
+              }, 50);
+            }, 500);
+          }
+
+          // Event listeners
+          nextBtn.addEventListener("click", () => moveCarousel("next"));
+          prevBtn.addEventListener("click", () => moveCarousel("prev"));
+
+          // Auto-play mais lento para vereadores
+          setInterval(() => {
+            if (!isMoving) {
+              moveCarousel("next");
+            }
+          }, 7000);
+        }
+
+        // Displays a portal-level load error in the hero area.
+        // Função para mostrar erro
+        function showError(message) {
+          console.error("❌", message);
+          document.getElementById("heroTitle").textContent =
+            "Erro ao Carregar Portal";
+          document.getElementById("heroDescription").textContent = message;
+        }
+
+        // Loads recent finalized votes for the selected chamber.
+        // Função para carregar votações recentes
+        async function loadVotacoesRecentes(camaraId) {
+          console.log("🗳️ Carregando votações recentes da câmara:", camaraId);
+          const container = document.getElementById("votacoes-grid");
+
+          // Mostrar loading usando o módulo carregamento.js
+          renderLoadingState(container, "Carregando votações recentes...");
+
+          try {
+            // Buscar votações recentes da API
+            const response = await fetch(
+              `/api/camaras/${camaraId}/votacoes-recentes`,
+            );
+
+            if (!response.ok) {
+              throw new Error(
+                `Erro ${response.status}: ${response.statusText}`,
+              );
+            }
+
+            const data = await response.json();
+            const pautas = data.pautas || [];
+
+            renderVotacoesRecentes(pautas);
+            console.log(
+              "✅ Votações recentes carregadas da API:",
+              pautas.length,
+            );
+          } catch (error) {
+            console.error(
+              "❌ Erro ao carregar votações recentes da API:",
+              error,
+            );
+            console.log("⚠️ Usando dados de demonstração para desenvolvimento");
+
+            // Fallback com dados de demonstração
+            const mockPautas = [
+              {
+                id: "demo-1",
+                nome: "Projeto de Lei Demo 001/2025",
+                descricao:
+                  "Institui o programa municipal de sustentabilidade e preservação ambiental",
+                autor: "Vereador Demo",
+                status: "APROVADA",
+                statusClass: "approved",
+                sessao: { nome: "Sessão Demo", data: new Date().toISOString() },
+              },
+              {
+                id: "demo-2",
+                nome: "Projeto de Lei Demo 002/2025",
+                descricao:
+                  "Regulamenta o funcionamento do comércio ambulante no centro da cidade",
+                autor: "Vereadora Demo",
+                status: "REPROVADA",
+                statusClass: "rejected",
+                sessao: { nome: "Sessão Demo", data: new Date().toISOString() },
+              },
+              {
+                id: "demo-3",
+                nome: "Projeto de Lei Demo 003/2025",
+                descricao:
+                  "Criação do parque municipal e área de lazer para a comunidade local",
+                autor: "Vereador Demo 2",
+                status: "APROVADA",
+                statusClass: "approved",
+                sessao: { nome: "Sessão Demo", data: new Date().toISOString() },
+              },
+            ];
+
+            renderVotacoesRecentes(mockPautas);
+            console.log(
+              "🎭 Votações recentes carregadas (demo):",
+              mockPautas.length,
+            );
+          }
+        }
+
+        // Renders recent vote cards with responsive limits.
+        // Função para renderizar votações recentes
+        function renderVotacoesRecentes(pautas) {
+          const container = document.getElementById("votacoes-grid");
+
+          // Restaurar display grid (após renderLoadingState ter usado display: block)
+          container.style.display = "";
+
+          if (!pautas || pautas.length === 0) {
+            container.innerHTML = `
+                        <div class="empty-state" style="grid-column: 1 / -1;">
+                            <i class="fas fa-vote-yea"></i>
+                            <h3>Nenhuma votação recente</h3>
+                            <p>Não há votações registradas no momento. As votações aparecerão aqui conforme forem finalizadas.</p>
+                        </div>
+                    `;
+            return;
+          }
+
+          // Limitar pautas: 6 no mobile, 9 no desktop
+          const isMobile = window.innerWidth <= 768;
+          const limite = isMobile ? 6 : 9;
+          const pautasLimitadas = pautas.slice(0, limite);
+
+          const html = pautasLimitadas
+            .map((pauta) => createVotacaoCard(pauta))
+            .join("");
+          container.innerHTML = html;
+
+          // Adicionar event listeners para os cards clicáveis
+          addVotacaoClickListeners();
+        }
+
+        // Wires click navigation for recent vote cards.
+        // Adicionar event listeners para navegação das votações
+        function addVotacaoClickListeners() {
+          const clickableCards = document.querySelectorAll(".clickable-card");
+          clickableCards.forEach((card) => {
+            card.addEventListener("click", function () {
+              const pautaId = this.getAttribute("data-pauta-id");
+              if (pautaId) {
+                navegarParaVotacao(pautaId);
+              }
+            });
+          });
+        }
+
+        // Inserts a newly finalized pauta into the recent votes list.
+        // Função para adicionar nova pauta às votações recentes (via WebSocket)
+        function addPautaToVotacoesRecentes(novaPauta) {
+          console.log(
+            "🔄 Adicionando nova pauta às votações recentes:",
+            novaPauta,
+          );
+
+          const container = document.getElementById("votacoes-grid");
+
+          // Verificar se existem pautas atualmente
+          const currentCards = container.querySelectorAll(".vote-card");
+          const emptyState = container.querySelector(".empty-state");
+
+          // Converter pauta para formato esperado pelo createVotacaoCard
+          const pautaFormatada = {
+            id: novaPauta.id,
+            nome: novaPauta.nome,
+            descricao: novaPauta.descricao,
+            autor: novaPauta.autor,
+            status: formatarStatusParaExibicao(novaPauta.resultado_votacao),
+            statusClass: getStatusClass(novaPauta.resultado_votacao),
+          };
+
+          if (emptyState) {
+            // Se estava vazio, remover estado vazio e adicionar a primeira pauta
+            container.innerHTML = "";
+            const novoPautaHTML = createVotacaoCard(pautaFormatada);
+            container.innerHTML = novoPautaHTML;
+          } else {
+            // Adicionar nova pauta no início
+            const novoPautaHTML = createVotacaoCard(pautaFormatada);
+            container.insertAdjacentHTML("afterbegin", novoPautaHTML);
+
+            // Manter limite: 6 no mobile, 9 no desktop
+            const isMobile = window.innerWidth <= 768;
+            const limite = isMobile ? 6 : 9;
+            const allCards = container.querySelectorAll(".vote-card");
+            if (allCards.length > limite) {
+              allCards[allCards.length - 1].remove();
+              console.log(
+                "🗑️ Removida pauta mais antiga para manter limite de 9",
+              );
+            }
+          }
+
+          // Reconfigurar event listeners
+          addVotacaoClickListeners();
+
+          // Adicionar animação de destaque à nova pauta
+          const novoPautaElement = container.querySelector(".vote-card");
+          if (novoPautaElement) {
+            novoPautaElement.style.border = "2px solid var(--accent-blue)";
+            novoPautaElement.style.transform = "scale(1.02)";
+
+            // Remover destaque após 3 segundos
+            setTimeout(() => {
+              novoPautaElement.style.border = "";
+              novoPautaElement.style.transform = "";
+            }, 3000);
+          }
+
+          console.log(
+            "✅ Nova pauta adicionada com sucesso às votações recentes",
+          );
+        }
+
+        // Exposes selected local helpers for global socket handlers.
+        // --- Expor funções críticas globalmente ---
+        // O Socket.IO client e alguns handlers são definidos em escopo global
+        // (fora do callback DOMContentLoaded). Para evitar ReferenceError quando
+        // um evento de WebSocket chega antes das funções locais serem
+        // visíveis, expomos as funções críticas em window.
+        try {
+          window.addPautaToVotacoesRecentes = addPautaToVotacoesRecentes;
+          window.loadVotacoesRecentes = loadVotacoesRecentes;
+          window.addVotacaoClickListeners = addVotacaoClickListeners;
+          window.updateVoteCountersUI = updateVoteCountersUI;
+          window.connectToVotacaoWebSocket = connectToVotacaoWebSocket;
+        } catch (exposureErr) {
+          // Em navegadores muito antigos isso não deve falhar, mas registramos
+          // caso aconteça para facilitar diagnóstico.
+          console.warn(
+            "Não foi possível expor funções globais do portal:",
+            exposureErr,
+          );
+        }
+
+        // Converts backend voting results to display labels.
+        // Função auxiliar para formatar status para exibição
+        function formatarStatusParaExibicao(resultadoVotacao) {
+          switch (resultadoVotacao) {
+            case "Aprovada":
+              return "APROVADA";
+            case "Reprovada":
+              return "REPROVADA";
+            default:
+              return "FINALIZADA";
+          }
+        }
+
+        // Maps voting results to card badge classes.
+        // Função auxiliar para obter classe CSS do status
+        function getStatusClass(resultadoVotacao) {
+          switch (resultadoVotacao) {
+            case "Aprovada":
+              return "approved";
+            case "Reprovada":
+              return "rejected";
+            default:
+              return "pending";
+          }
+        }
+
+        // Builds a recent vote card.
+        // Criar HTML para card de votação
+        function createVotacaoCard(pauta) {
+          // Limitar descrição a 100 caracteres para 2 linhas
+          const descricaoLimitada =
+            pauta.descricao && pauta.descricao.length > 100
+              ? pauta.descricao.substring(0, 100) + "..."
+              : pauta.descricao || "Descrição não informada";
+
+          return `
+                    <div class="vote-card clickable-card" data-pauta-id="${pauta.id}">
+                        <div class="vote-card-header">
+                            <div class="vote-title">${pauta.nome}</div>
+                            <div class="vote-badge-container">
+                                <div class="result-badge ${pauta.statusClass}">${pauta.status}</div>
+                            </div>
+                        </div>
+                        <div class="vote-info">
+                            <p class="vote-description">${descricaoLimitada}</p>
+                            <p class="vote-author">Autor: ${pauta.autor}</p>
+                        </div>
+                        <div class="vote-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
+                `;
+        }
+
+        // Navigates to the public voting details page.
+        // Função para navegar para página de votação pública
+        function navegarParaVotacao(pautaId) {
+          // Obter câmara atual
+          const camaraAtual = getCamaraFromUrl() || getCamaraFromStorage();
+
+          if (!camaraAtual) {
+            console.error("Câmara não encontrada");
+            return;
+          }
+
+          // Construir URL com parâmetros
+          const url = `votacao_publica.html?id=${pautaId}&camara=${camaraAtual.id}`;
+
+          console.log("🔗 Navegando para votação:", url);
+          window.location.href = url;
+        }
+
+        // Configures the disabled "all pautas" call-to-action.
+        // Função para configurar o botão "Ver Todas as Pautas"
+        function setupVerTodasPautasButton() {
+          const verTodasBtn = document.getElementById("ver-todas-pautas");
+          if (verTodasBtn) {
+            verTodasBtn.addEventListener("click", (e) => {
+              // Obter ID da câmara do localStorage ou URL
+              const camaraFromStorage = getCamaraFromStorage();
+              const camaraFromUrl = getCamaraFromUrl();
+              const camaraAtual = camaraFromUrl || camaraFromStorage;
+
+              console.log(
+                '💡 Funcionalidade "Ver Todas as Pautas" em desenvolvimento',
+              );
+              // Redirecionamento desabilitado - funcionalidade em breve
+              e.preventDefault();
+            });
+          }
+        }
+
+        // === LIVESTREAM FUNCTIONALITY ===
+
+        // Loads the current livestream or latest VOD for the selected chamber.
+        // Função para carregar livestream da câmara
+        async function loadLivestream() {
+          console.log("📺 Carregando livestream...");
+
+          const camaraAtual = getCamaraFromUrl() || getCamaraFromStorage();
+          if (!camaraAtual || !camaraAtual.id) {
+            console.log("❌ Nenhuma câmara selecionada para livestream");
+            return;
+          }
+
+          try {
+            const response = await fetch(
+              `/api/livestreams/camara/${camaraAtual.id}/display`,
+            );
+
+            if (response.ok) {
+              const result = await response.json();
+
+              if (result.data) {
+                // CORREÇÃO: Garantir que o estado reflete o que veio do servidor
+                // Isso evita estados "fantasma" de sessões anteriores
+                const isLiveFromServer = result.isLive;
+
+                // Se o servidor diz que NÃO está ao vivo, garantir que o estado local está correto
+                if (!isLiveFromServer && livestreamState.status === "live") {
+                  console.log(
+                    "📺 [LOAD] Corrigindo estado inconsistente: servidor diz VOD, local dizia LIVE",
+                  );
+                  updateLivestreamState({
+                    status: "vod",
+                    isTransitioning: false,
+                  });
+                }
+
+                displayLivestream(result.data, result.isLive);
+                console.log(
+                  `📺 Livestream carregada: ${result.data.title} (${
+                    result.isLive ? "AO VIVO" : "ÚLTIMA"
+                  })`,
+                );
+              } else {
+                hideLivestreamSection();
+                console.log("📺 Nenhuma livestream encontrada");
+              }
+            } else if (response.status === 404) {
+              hideLivestreamSection();
+              console.log("📺 Nenhuma livestream disponível para esta câmara");
+            } else {
+              console.error("❌ Erro ao carregar livestream:", response.status);
+              hideLivestreamSection();
+            }
+          } catch (error) {
+            console.error("❌ Erro ao carregar livestream:", error);
+            hideLivestreamSection();
+          }
+        }
+
+        // Resets the livestream area to its unavailable placeholder state.
+        // Função para ocultar livestream e mostrar placeholder
+        function hideLivestreamSection() {
+          const sessionTitle = document.getElementById("session-status-title");
+          const liveDot = document.getElementById("live-dot");
+          const placeholderContent = document.getElementById(
+            "video-placeholder-content",
+          );
+          const player = document.getElementById("youtube-player");
+          const livestreamInfo = document.getElementById("livestream-info");
+
+          // Destruir player do YouTube se existir
+          if (youtubePlayer) {
+            youtubePlayer.destroy();
+            youtubePlayer = null;
+          }
+
+          // Voltar ao estado original
+          sessionTitle.textContent = "SESSÃO AO VIVO";
+          liveDot.className = "live-dot";
+
+          // Mostrar placeholder e ocultar player
+          placeholderContent.style.display = "flex";
+          placeholderContent.querySelector("p").textContent =
+            "Nenhuma transmissão disponível";
+          player.style.display = "none";
+          player.innerHTML = ""; // Limpar conteúdo do player
+          livestreamInfo.style.display = "none";
+        }
+
+        // Formats ISO 8601 YouTube durations for display.
+        // Função para formatar duração em formato legível
+        function formatDuration(duration) {
+          // Duration vem no formato ISO 8601 (PT4M13S) do YouTube
+          const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+          if (!match) return duration;
+
+          const hours = parseInt(match[1]) || 0;
+          const minutes = parseInt(match[2]) || 0;
+          const seconds = parseInt(match[3]) || 0;
+
+          if (hours > 0) {
+            return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds
+              .toString()
+              .padStart(2, "0")}`;
+          } else {
+            return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+          }
+        }
+
+        // Starts periodic livestream refresh checks.
+        // Função para verificar periodicamente se o status da live mudou
+        function startLivestreamPolling() {
+          // Verificar a cada 30 segundos se há mudanças no status da live
+          setInterval(async () => {
+            const player = document.getElementById("youtube-player");
+            if (player && player.style.display !== "none") {
+              await loadLivestream();
+            }
+          }, 30000); // 30 segundos
+        }
+
+        // Disconnects realtime resources when leaving the page.
+        // Limpeza ao sair da página
+        window.addEventListener("beforeunload", () => {
+          // Desconectar WebSocket principal
+          if (socket && socket.connected) {
+            socket.disconnect();
+          }
+
+          // Desconectar WebSocket de votação ao vivo
+          if (socketVotacaoAoVivo && socketVotacaoAoVivo.connected) {
+            socketVotacaoAoVivo.disconnect();
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
