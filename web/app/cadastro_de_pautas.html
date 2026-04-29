@@ -1,0 +1,2381 @@
+<!doctype html>
+<!--
+  Agenda item management page for Legisla Net chamber administrators.
+  Lists registered agenda items, supports filtering and pagination, and provides
+  actions for creation, voting status changes, rescheduling, and removal.
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pautas - Legisla Net</title>
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+    />
+
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/forms.css" />
+    <link rel="stylesheet" href="../css/admin.css" />
+    <link rel="stylesheet" href="../css/modals.css" />
+    <link rel="stylesheet" href="../css/pagination.css" />
+    <link rel="stylesheet" href="../css/toast.css" />
+    <link rel="stylesheet" href="../css/customSelect.css" />
+    <link rel="stylesheet" href="../css/carregamento.css" />
+
+    <style>
+      .pautas-section {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 24px 24px 0 24px;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0; /* Permite que o flex funcione corretamente */
+      }
+      .pautas-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+      .pautas-header h2 {
+        font-size: 1.25rem;
+        margin: 0;
+      }
+      .header-titles {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .pautas-subtitle {
+        margin: 0;
+        color: var(--secondary-text);
+        font-size: 0.875rem;
+      }
+      .header-left {
+        display: flex;
+        align-items: center;
+      }
+      .header-right {
+        display: flex;
+        align-items: center;
+      }
+      .filters-section {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr auto;
+        gap: 16px;
+        align-items: end;
+        flex-shrink: 0;
+      }
+      .filters-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 8px;
+      }
+      .contador-pautas-filtros {
+        color: var(--secondary-text);
+        font-size: 0.875rem;
+        white-space: nowrap;
+      }
+      .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--secondary-text);
+        font-size: 0.875rem;
+      }
+      .custom-select {
+        background-color: var(--hover-bg);
+        border: 1px solid var(--border-color);
+        color: var(--primary-text);
+        padding: 6px 12px;
+        border-radius: 6px;
+      }
+
+      @media (max-width: 768px) {
+        .pautas-header {
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .header-left {
+          min-width: 0;
+        }
+
+        .header-right {
+          width: auto;
+        }
+
+        /* Botão vira ícone apenas (padrão mobile) */
+        .header-right .btn.btn-primary {
+          width: 40px;
+          height: 40px;
+          min-height: 40px;
+          padding: 0;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          white-space: nowrap;
+          border-radius: 10px;
+          flex: 0 0 auto;
+        }
+
+        .header-right .btn.btn-primary i {
+          margin: 0;
+        }
+
+        .header-right .btn.btn-primary .btn-text {
+          display: none;
+        }
+
+        .filters-section {
+          grid-template-columns: 1fr;
+          padding: 16px;
+          gap: 12px;
+        }
+
+        .filters-right {
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+        }
+
+        .filters-right #clear-filters {
+          min-height: 44px;
+          padding: 9px 12px;
+          font-size: 0.9rem;
+          font-weight: 600;
+        }
+
+        .contador-pautas-filtros {
+          font-size: 0.85rem;
+        }
+
+        .form-group label {
+          font-size: 0.85rem;
+          margin-bottom: 6px;
+          font-weight: 500;
+        }
+
+        .form-input {
+          font-size: 16px !important;
+          padding: 9px 11px !important;
+          border-radius: 6px;
+        }
+
+        .custom-select-wrapper {
+          font-size: 0.95rem;
+        }
+
+        .custom-select-trigger {
+          padding: 9px 11px;
+          min-height: 44px;
+          display: flex;
+          align-items: center;
+        }
+
+        .custom-option {
+          padding: 9px 11px;
+        }
+      }
+      .table-container {
+        flex-grow: 1;
+        overflow-x: auto;
+      }
+      .pautas-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+        table-layout: fixed;
+      }
+      .pautas-table th,
+      .pautas-table td {
+        padding: 12px 16px;
+        text-align: left;
+        white-space: nowrap;
+        vertical-align: middle;
+        overflow: hidden;
+      }
+
+      /* Permitir overflow apenas onde é necessário (dropdown/botões) */
+      .pautas-table td.status-cell,
+      .pautas-table td.actions-cell {
+        overflow: visible;
+      }
+
+      .pautas-table td.actions-cell {
+        overflow: visible;
+        white-space: nowrap;
+      }
+
+      .pautas-table tbody tr {
+        height: 72px;
+      }
+      .pautas-table tbody tr {
+        border-bottom: 1px solid var(--border-color);
+        transition: background-color 0.2s;
+      }
+
+      /* Linha clicável (abre painel de votação) */
+      .pautas-table tbody tr[data-pauta-id] {
+        cursor: pointer;
+      }
+
+      /* Card clicável (abre painel de votação) */
+      .pauta-card[data-pauta-id] {
+        cursor: pointer;
+      }
+
+      /* Não transformar botões/links em "clicável de card" */
+      .pauta-card[data-pauta-id] .btn,
+      .pauta-card[data-pauta-id] a,
+      .pauta-card[data-pauta-id] .status-dropdown {
+        cursor: default;
+      }
+
+      /* Não transformar botões/links em "clicável de linha" */
+      .pautas-table tbody tr[data-pauta-id] .btn,
+      .pautas-table tbody tr[data-pauta-id] a,
+      .pautas-table tbody tr[data-pauta-id] .status-dropdown {
+        cursor: default;
+      }
+      .pautas-table tbody tr:hover {
+        background-color: var(--hover-bg);
+      }
+      .pautas-table th {
+        color: var(--secondary-text);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+      }
+      .pautas-table td .description {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        display: block;
+      }
+
+      .pautas-table td .cell-ellipsis {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .pautas-table th:nth-child(1),
+      .pautas-table td:nth-child(1) {
+        width: 20%;
+      }
+      .pautas-table th:nth-child(2),
+      .pautas-table td:nth-child(2) {
+        width: 22%;
+      }
+      .pautas-table th:nth-child(3),
+      .pautas-table td:nth-child(3) {
+        width: 8%;
+      }
+      .pautas-table th:nth-child(4),
+      .pautas-table td:nth-child(4) {
+        width: 160px;
+      }
+      .pautas-table th:nth-child(5),
+      .pautas-table td:nth-child(5) {
+        width: 14%;
+      }
+      .pautas-table th:nth-child(6),
+      .pautas-table td:nth-child(6) {
+        width: 14%;
+      }
+      .pautas-table th:nth-child(7),
+      .pautas-table td:nth-child(7) {
+        width: 200px; /* Aumentado para acomodar badge de 140px + ícones */
+        text-align: center;
+      }
+      .pautas-table .link {
+        color: var(--accent-blue);
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .status-cell {
+        position: relative;
+      }
+      .status-dropdown {
+        display: inline-flex;
+        flex-direction: column;
+        gap: 4px;
+        cursor: pointer;
+        position: relative;
+        align-items: flex-start;
+        width: fit-content;
+      }
+
+      .status-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-height: 52px; /* reserva espaço para 2 badges */
+        align-items: flex-start;
+        justify-content: center;
+      }
+      .status-badge-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0; /* Remove gap between badge and chevron if needed, or keep for spacing */
+        padding: 0; /* Remove padding to eliminate space between badge and outline */
+        border-radius: 99px;
+        transition: background-color 0.2s;
+        border: 1px solid transparent; /* The outline user sees might be this */
+        width: fit-content;
+        min-width: 140px; /* Wrapper takes the width */
+        min-height: 28px;
+        position: relative;
+        overflow: hidden; /* Ensure child fills rounded corners */
+      }
+      .status-dropdown:hover .status-badge-wrapper {
+        background-color: var(--hover-bg);
+        border-color: var(--border-color);
+      }
+      .status-badge {
+        display: flex; /* Changed from inline-flex to fill */
+        align-items: center;
+        justify-content: center;
+        height: 28px;
+        width: 100%; /* Fill wrapper */
+        flex: 1;
+        padding: 0 12px;
+        border-radius: 99px; /* Keep radius */
+        font-weight: 500;
+        font-size: 0.8rem;
+        text-align: center;
+        white-space: nowrap;
+        letter-spacing: 0.3px;
+        /* Remove inner borders if wrapper handles it, but currently badge handles colors */
+      }
+      /* Cores originais das tags com bordas específicas */
+      .status-badge.pendente {
+        background-color: rgba(240, 227, 51, 0.2);
+        color: rgb(233, 241, 110);
+        border: 1px solid rgba(240, 227, 51, 0.4);
+      }
+      .status-badge.em-votacao {
+        background-color: rgba(88, 166, 255, 0.2);
+        color: aqua;
+        border: 1px solid rgba(88, 166, 255, 0.4);
+      }
+      .status-badge.finalizada {
+        background-color: rgba(46, 160, 67, 0.2);
+        color: #71e67f;
+        border: 1px solid rgba(46, 160, 67, 0.4);
+      }
+      .status-badge.simbolica {
+        background-color: rgba(218, 54, 51, 0.2);
+        color: #f85149;
+        border: 1px solid rgba(218, 54, 51, 0.4);
+      }
+
+      /* Sub-badge (SIMBÓLICA) - alinhado com o badge de status */
+      .status-sub-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: auto; /* Override width: 100% do .status-badge */
+        flex: none; /* Override flex: 1 do .status-badge */
+        min-width: 127px; /* Alinha com o badge de status */
+        height: 28px;
+        padding: 0 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        border-radius: 99px;
+      }
+
+      .status-sub-badge.is-empty {
+        visibility: hidden;
+      }
+
+      .status-dropdown .fa-chevron-down {
+        color: var(--secondary-text);
+        font-size: 0.7rem;
+        transition: transform 0.2s;
+        flex: 0 0 auto;
+        margin-left: 2px;
+      }
+      .status-dropdown.open .fa-chevron-down {
+        transform: rotate(180deg);
+      }
+      .dropdown-menu {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 4px;
+        z-index: 1000;
+        min-width: 140px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        max-height: 200px;
+        overflow-y: auto;
+      }
+      .status-dropdown.open .dropdown-menu {
+        display: block;
+      }
+      /* Dropdown que abre para cima quando necessário */
+      .status-dropdown.dropdown-up .dropdown-menu {
+        top: auto;
+        bottom: 100%;
+        margin-bottom: 2px;
+        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+      }
+      /* Garantir que o container da tabela permite overflow para dropdowns */
+      .table-container {
+        flex-grow: 1;
+        overflow-x: auto;
+        overflow-y: visible;
+        position: relative;
+      }
+      .dropdown-item {
+        padding: 8px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        color: var(--primary-text);
+      }
+      .dropdown-item:hover {
+        background-color: var(--accent-blue);
+        color: white;
+      }
+
+      /* ===== Mobile: cards no lugar da tabela ===== */
+      .pautas-cards {
+        display: none;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .pauta-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .pauta-card-title {
+        font-weight: 600;
+        font-size: 1rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .pauta-card-desc {
+        color: var(--secondary-text);
+        font-size: 0.875rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        min-height: 2.6em;
+      }
+
+      .pauta-card-meta {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 6px;
+        font-size: 0.875rem;
+      }
+
+      .pauta-card-meta .label {
+        color: var(--secondary-text);
+        margin-right: 6px;
+      }
+
+      .pauta-card-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+
+      /* Mobile: garantir contraste nos botões dos cards */
+      .pauta-card-actions .btn-action {
+        color: white !important;
+      }
+
+      @media (max-width: 768px) {
+        .table-container {
+          display: none;
+        }
+        .pautas-cards {
+          display: flex;
+        }
+      }
+      .modal-body.confirm-text p {
+        line-height: 1.5;
+        color: var(--secondary-text);
+      }
+
+      /* Botões de ícone (Opção 1) */
+      .btn-icon-square {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        margin-right: 4px;
+        transition:
+          transform 0.2s,
+          background-color 0.2s;
+      }
+      .btn-icon-square:hover {
+        transform: translateY(-2px);
+      }
+      .btn-icon-square i {
+        font-size: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-layout">
+      <!-- Shared application shell placeholders populated by the global layout script. -->
+      <div id="sidebar-placeholder"></div>
+
+      <main class="main-content" id="mainContent">
+        <div id="header-placeholder"></div>
+
+        <!-- Main agenda management workspace. -->
+        <section class="pautas-section fade-in">
+          <!-- Page title and primary action for creating a new agenda item. -->
+          <div class="pautas-header">
+            <div class="header-left">
+              <div class="header-titles">
+                <h2>Pautas cadastradas</h2>
+                <p class="pautas-subtitle">Filtre e gerencie as pautas</p>
+              </div>
+            </div>
+            <div class="header-right">
+              <!-- Adicionado data-action para o listener delegado -->
+              <button class="btn btn-primary" data-action="nova-pauta">
+                <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                <span class="btn-text">Nova Pauta</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter controls for status, author, session, and text search. -->
+          <div class="filters-section">
+            <div class="form-group" style="margin: 0">
+              <label>Status</label>
+              <div class="custom-select-wrapper" id="filter-status-wrapper">
+                <input type="hidden" id="filter-status-value" name="status" />
+                <div class="custom-select-trigger">
+                  <span>Todos os status</span>
+                </div>
+                <div class="custom-options">
+                  <div class="custom-option" data-value="">
+                    <span>Todos os status</span>
+                  </div>
+                  <div class="custom-option" data-value="Pendente">
+                    <span>Pendente</span>
+                  </div>
+                  <div class="custom-option" data-value="Em Votação">
+                    <span>Em Votação</span>
+                  </div>
+                  <div class="custom-option" data-value="Finalizada">
+                    <span>Finalizada</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="form-group" style="margin: 0">
+              <label>Autor</label>
+              <div class="custom-select-wrapper" id="filter-autor-wrapper">
+                <input type="hidden" id="filter-autor-value" name="autor" />
+                <div class="custom-select-trigger">
+                  <span>Todos os autores</span>
+                </div>
+                <div class="custom-options">
+                  <div class="custom-option" data-value="">
+                    <span>Todos os autores</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="form-group" style="margin: 0">
+              <label>Sessão</label>
+              <div class="custom-select-wrapper" id="filter-sessao-wrapper">
+                <input
+                  type="hidden"
+                  id="filter-sessao-value"
+                  name="sessao_id"
+                />
+                <div class="custom-select-trigger">
+                  <span>Todas as sessões</span>
+                </div>
+                <div class="custom-options">
+                  <div class="custom-option" data-value="">
+                    <span>Todas as sessões</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="form-group" style="margin: 0">
+              <label for="filter-search">Buscar</label>
+              <input
+                type="text"
+                id="filter-search"
+                class="form-input"
+                placeholder="Nome da pauta..."
+              />
+            </div>
+            <div class="filters-right">
+              <button
+                type="button"
+                id="clear-filters"
+                class="btn btn-secondary"
+              >
+                <i class="fa-solid fa-filter-circle-xmark"></i> Limpar
+              </button>
+              <span id="contador-pautas" class="contador-pautas-filtros"
+                >0 pautas</span
+              >
+            </div>
+          </div>
+
+          <div id="pautas-loading" style="display: none"></div>
+
+          <!-- Desktop table view populated from the agenda API. -->
+          <div class="table-container">
+            <table class="pautas-table">
+              <thead>
+                <tr>
+                  <th>Nome da Pauta</th>
+                  <th>Descrição</th>
+                  <th>Link</th>
+                  <th>Status</th>
+                  <th>Autor</th>
+                  <th>Sessão</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Dados carregados dinamicamente via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile card view populated with the same agenda data as the table. -->
+          <div class="pautas-cards" id="pautas-cards">
+            <!-- Cards carregados dinamicamente via JavaScript (mobile) -->
+          </div>
+
+          <!-- Pagination controls generated after each agenda query. -->
+          <div class="pagination-container" id="pagination-container">
+            <div class="pagination-controls" id="pagination-controls"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Confirmation modal for agenda item removal. -->
+    <div class="modal-overlay" id="removerPautaModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Confirmar Exclusão</h3>
+          <button class="modal-close" onclick="closeModal('removerPautaModal')">
+            <i class="fa-solid fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body confirm-text">
+          <p>Você tem certeza que deseja remover a pauta:</p>
+          <p><strong id="pauta-nome-remover">Nome da pauta</strong></p>
+          <p style="color: var(--accent-red); font-weight: 500">
+            ⚠️ Esta ação não poderá ser desfeita.
+          </p>
+          <p style="color: var(--secondary-text); font-size: 0.875rem">
+            Nota: Só é possível remover pautas sem votos registrados.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick="closeModal('removerPautaModal')"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn"
+            id="confirmar-remover-btn"
+            style="background-color: var(--accent-red); color: white"
+          >
+            <i class="fa-solid fa-trash"></i> Excluir Pauta
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal for moving an agenda item to a future session. -->
+    <div class="modal-overlay" id="remanejarPautaModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Remanejar Pauta</h3>
+          <button
+            class="modal-close"
+            onclick="closeModal('remanejarPautaModal')"
+          >
+            <i class="fa-solid fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-description">
+            Selecione uma nova sessão para a pauta
+            <strong id="remanejar-pauta-nome">...</strong>.
+          </p>
+
+          <div class="form-group">
+            <label for="nova-sessao-select">Nova Sessão (Futura)</label>
+            <div class="custom-select-wrapper" id="nova-sessao-wrapper">
+              <input type="hidden" id="nova-sessao-value" name="nova_sessao" />
+              <div class="custom-select-trigger">
+                <span>Selecione uma sessão...</span>
+              </div>
+              <div class="custom-options" id="nova-sessao-options">
+                <!-- Opções carregadas via JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick="closeModal('remanejarPautaModal')"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="confirmar-remanejar-btn"
+          >
+            Salvar Mudança
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Client-side dependencies for layout, modals, pagination, feedback, and custom selects. -->
+    <script src="../js/mockMode.js?v=4"></script>
+    <script src="../js/global.js"></script>
+    <script src="../js/modals.js"></script>
+    <script src="../js/pagination.js"></script>
+    <script src="../js/toast.js"></script>
+    <script src="../js/customSelect.js"></script>
+    <script src="../js/carregamento.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/dayjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/locale/pt-br.min.js"></script>
+
+    <!-- Page controller: authentication, data loading, filtering, rendering, and item actions. -->
+    <script>
+      let pautas = [];
+      let pautasFiltradas = [];
+      let currentPage = 1;
+      const PAUTAS_PER_PAGE_MOBILE = 10;
+      const PAUTAS_PER_PAGE_DESKTOP = 40;
+      const mediaSmall = window.matchMedia("(max-width: 768px)");
+      let PAUTAS_PER_PAGE = mediaSmall.matches
+        ? PAUTAS_PER_PAGE_MOBILE
+        : PAUTAS_PER_PAGE_DESKTOP;
+      let statusSelect, autorSelect, sessaoSelect, novaSessaoSelect;
+      let autoresGlobaisCarregados = false;
+      let sessoesGlobaisCarregadas = false;
+
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Script para Dropdown de Status
+
+        try {
+          // === NOVA AUTENTICAÇÃO COM VALIDAÇÃO DE ROLE ===
+          try {
+            await protectPage({
+              allowedRoles: ["admin_camara"],
+              requireAuth: true,
+              autoRedirect: true,
+            });
+          } catch (error) {
+            console.error("[AUTH] Falha na autenticação:", error);
+            return;
+          }
+          initLayout({
+            title: "Pautas",
+            icon: "fa-file-lines",
+            navActive: "nav-cadastro",
+          });
+
+          {
+            autoFixFormSectionLayout();
+          }
+
+          // Inicializar custom selects dos filtros
+          statusSelect = new CustomSelect({
+            wrapperId: "filter-status-wrapper",
+            placeholder: "Todos os status",
+            onSelect: () => aplicarFiltros(),
+          });
+
+          autorSelect = new CustomSelect({
+            wrapperId: "filter-autor-wrapper",
+            placeholder: "Todos os autores",
+            onSelect: () => aplicarFiltros(),
+          });
+
+          sessaoSelect = new CustomSelect({
+            wrapperId: "filter-sessao-wrapper",
+            placeholder: "Todas as sessões",
+            onSelect: () => aplicarFiltros(),
+          });
+
+          novaSessaoSelect = new CustomSelect({
+            wrapperId: "nova-sessao-wrapper",
+            placeholder: "Selecione uma sessão...",
+            onSelect: () => {},
+          });
+
+          // Carregar autores (global) para o filtro, antes de carregar a tabela
+          await carregarAutoresGlobais();
+
+          // Carregar sessões para filtro
+          await carregarSessoesParaFiltro();
+
+          // Carregar pautas do banco
+          await carregarPautas();
+
+          // Ajustar limite por página automaticamente ao mudar de viewport
+          if (!mediaSmall._boundForPautas) {
+            mediaSmall.addEventListener("change", () => {
+              const newLimit = mediaSmall.matches
+                ? PAUTAS_PER_PAGE_MOBILE
+                : PAUTAS_PER_PAGE_DESKTOP;
+              if (newLimit === PAUTAS_PER_PAGE) return;
+
+              PAUTAS_PER_PAGE = newLimit;
+              currentPage = 1;
+              const filtros = obterFiltrosAtuais();
+              carregarPautas(currentPage, filtros);
+            });
+            mediaSmall._boundForPautas = true;
+          }
+
+          // Configurar eventos dos filtros
+          const filterSearch = document.getElementById("filter-search");
+          const clearFiltersBtn = document.getElementById("clear-filters");
+
+          // Event listener para campo de busca com debounce
+          let searchTimeout;
+          filterSearch.addEventListener("input", () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(aplicarFiltros, 500);
+          });
+
+          // Event listener para botão limpar filtros
+          clearFiltersBtn.addEventListener("click", () => {
+            statusSelect.reset();
+            autorSelect.reset();
+            sessaoSelect.reset();
+            filterSearch.value = "";
+            aplicarFiltros();
+          });
+
+          // Verificação adicional de segurança para dropdowns após carregamento inicial
+          setTimeout(() => {
+            console.log(
+              "🔍 SAFETY CHECK: Verificando se todos os dropdowns foram configurados...",
+            );
+            const allDropdowns = document.querySelectorAll(".status-dropdown");
+            const unconfiguredDropdowns = document.querySelectorAll(
+              '.status-dropdown .status-badge-wrapper:not([data-configured="true"])',
+            );
+
+            console.log(
+              `📊 SAFETY CHECK: Total dropdowns: ${allDropdowns.length}, Não configurados: ${unconfiguredDropdowns.length}`,
+            );
+
+            if (unconfiguredDropdowns.length > 0) {
+              console.warn(
+                "⚠️ SAFETY CHECK: Alguns dropdowns não foram configurados, tentando novamente...",
+              );
+              configurarDropdowns();
+            } else {
+              console.log(
+                "✅ SAFETY CHECK: Todos os dropdowns estão configurados corretamente",
+              );
+            }
+          }, 500);
+        } catch (e) {
+          console.error(e.message);
+          return; // Interrompe a execução se não estiver autenticado.
+        }
+
+        // Delegação de evento robusta: busca o elemento mais próximo com data-action
+        document.addEventListener("click", async (e) => {
+          // Clique na linha da tabela abre o painel de votação (migração do dashboard)
+          const clickedRow = e.target.closest(
+            ".pautas-table tbody tr[data-pauta-id]",
+          );
+          if (clickedRow) {
+            // Ignorar cliques em elementos interativos
+            const clickedInteractive = e.target.closest(
+              "[data-action], a, button, .status-dropdown, .dropdown-menu",
+            );
+            if (!clickedInteractive) {
+              const pautaId = clickedRow.dataset.pautaId;
+              if (pautaId) {
+                window.location.href = `painel_votacao.html?id=${pautaId}`;
+                return;
+              }
+            }
+          }
+
+          // Clique no card (mobile) abre o painel de votação
+          const clickedCard = e.target.closest(".pauta-card[data-pauta-id]");
+          if (clickedCard) {
+            // Ignorar cliques em elementos interativos dentro do card
+            const clickedInteractive = e.target.closest(
+              "[data-action], a, button, .status-dropdown, .dropdown-menu",
+            );
+            if (!clickedInteractive) {
+              const pautaId = clickedCard.dataset.pautaId;
+              if (pautaId) {
+                window.location.href = `painel_votacao.html?id=${pautaId}`;
+                return;
+              }
+            }
+          }
+
+          const el = e.target.closest("[data-action]");
+          if (!el) return;
+          const action = el.dataset.action;
+
+          if (action === "nova-pauta") {
+            console.log(
+              "Ação nova-pauta detectada → navigateToPage('nova_pauta')",
+            );
+            navigateToPage("nova_pauta");
+          } else if (action === "editar-pauta") {
+            console.log("Ação editar-pauta detectada");
+            const pautaId = el.dataset.pautaId;
+            if (pautaId) {
+              console.log(`Redirecionando para edição da pauta ${pautaId}`);
+              window.location.href = `editar_pauta.html?id=${pautaId}`;
+            } else {
+              showToast("Erro: ID da pauta não encontrado", "error");
+            }
+          } else if (action === "remover-pauta") {
+            console.log("Ação remover-pauta detectada");
+            const pautaId = el.dataset.pautaId;
+            const pautaRow = el.closest("tr");
+            const pautaCard = el.closest(".pauta-card");
+            const pautaNome = pautaRow
+              ? pautaRow.querySelector("td")?.textContent
+              : pautaCard
+                ? pautaCard.querySelector(".pauta-card-title")?.textContent
+                : "Pauta";
+
+            // Configurar modal com dados da pauta
+            document.getElementById("pauta-nome-remover").textContent =
+              pautaNome;
+            document.getElementById("confirmar-remover-btn").dataset.pautaId =
+              pautaId;
+
+            openModal("removerPautaModal");
+          } else if (action === "remanejar-pauta") {
+            const pautaId = el.dataset.pautaId;
+            const nomePauta = el.dataset.pautaNome;
+
+            document.getElementById("remanejar-pauta-nome").textContent =
+              nomePauta;
+            document.getElementById("confirmar-remanejar-btn").dataset.pautaId =
+              pautaId;
+
+            // Carregar sessões futuras
+            await carregarSessoesFuturas();
+            novaSessaoSelect.reset();
+
+            openModal("remanejarPautaModal");
+          }
+        });
+
+        document
+          .getElementById("confirmar-remanejar-btn")
+          .addEventListener("click", async function () {
+            const pautaId = this.dataset.pautaId;
+            const novaSessaoId =
+              document.getElementById("nova-sessao-value").value;
+
+            if (!novaSessaoId) {
+              showToast("Selecione uma nova sessão", "warning");
+              return;
+            }
+
+            try {
+              const token = localStorage.getItem("authToken");
+              const response = await fetch(`/api/pautas/${pautaId}`, {
+                method: "PUT",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ sessao_id: novaSessaoId }),
+              });
+
+              if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || "Falha ao remanejar pauta");
+              }
+
+              showToast("Pauta remanejada com sucesso!", "success");
+              closeModal("remanejarPautaModal");
+              carregarPautas(currentPage, obterFiltrosAtuais());
+            } catch (error) {
+              console.error(error);
+              showToast(error.message, "error");
+            }
+          });
+
+        const statusDropdowns = document.querySelectorAll(".status-dropdown");
+        statusDropdowns.forEach((dropdown) => {
+          const badgeWrapper = dropdown.querySelector(".status-badge-wrapper");
+          const dropdownMenu = dropdown.querySelector(".dropdown-menu");
+
+          badgeWrapper.addEventListener("click", (event) => {
+            event.stopPropagation();
+            closeAllDropdowns(dropdown);
+            dropdown.classList.toggle("open");
+          });
+
+          dropdownMenu.querySelectorAll(".dropdown-item").forEach((item) => {
+            item.addEventListener("click", () => {
+              const newValue = item.getAttribute("data-value");
+              const newText = item.textContent;
+              const mainBadge = dropdown.querySelector(
+                ".status-badge-wrapper .status-badge",
+              );
+              if (mainBadge) {
+                mainBadge.classList.remove(
+                  "pendente",
+                  "em-votacao",
+                  "finalizada",
+                );
+                mainBadge.classList.add(newValue);
+                mainBadge.textContent = newText.toUpperCase();
+              }
+              dropdown.classList.remove("open");
+              console.log(`Status alterado para: ${newValue}`);
+            });
+          });
+        });
+
+        function closeAllDropdowns(exceptThisOne = null) {
+          // Buscar apenas dropdowns que realmente existem no DOM atual
+          const allDropdowns = document.querySelectorAll(".status-dropdown");
+          const openDropdowns = Array.from(allDropdowns).filter((dropdown) =>
+            dropdown.classList.contains("open"),
+          );
+
+          console.log(
+            `🔒 CLOSE ALL: Dropdowns no DOM: ${
+              allDropdowns.length
+            }, Realmente abertos: ${openDropdowns.length}${
+              exceptThisOne ? " (exceto um)" : ""
+            }`,
+          );
+
+          let closedCount = 0;
+          allDropdowns.forEach((dropdown) => {
+            if (dropdown !== exceptThisOne) {
+              const wasOpen = dropdown.classList.contains("open");
+
+              if (wasOpen) {
+                dropdown.classList.remove("open");
+                dropdown.classList.remove("dropdown-up");
+                const pautaId = dropdown.dataset.pautaId || "desconhecida";
+                console.log(
+                  `🔒 CLOSE ALL: Fechado dropdown da pauta ${pautaId}`,
+                );
+                closedCount++;
+              }
+            }
+          });
+
+          console.log(
+            `🔒 CLOSE ALL: ${closedCount} dropdowns realmente fechados`,
+          );
+        }
+
+        // Fechar dropdowns ao clicar fora
+        window.addEventListener("click", (event) => {
+          // Verificar se o clique foi dentro de algum dropdown
+          const clickedDropdown = event.target.closest(".status-dropdown");
+
+          if (!clickedDropdown) {
+            console.log(
+              "🔒 CLICK OUTSIDE: Fechando todos os dropdowns (clique fora)",
+            );
+            closeAllDropdowns(); // Fecha todos
+          }
+        });
+
+        // Função para carregar pautas do banco
+        async function carregarAutoresGlobais() {
+          try {
+            const token = localStorage.getItem("authToken");
+            if (!token) {
+              throw new Error("Token não encontrado");
+            }
+
+            const response = await fetch("/api/pautas/autores", {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            });
+
+            if (!response.ok) {
+              throw new Error(`Erro ao carregar autores: ${response.status}`);
+            }
+
+            const result = await response.json();
+            const autores = Array.isArray(result.data) ? result.data : [];
+
+            const optionsContainer = document.querySelector(
+              "#filter-autor-wrapper .custom-options",
+            );
+            if (!optionsContainer) return;
+
+            // Limpar opções atuais (mantendo apenas a primeira: "Todos os autores")
+            const todasOpcoes =
+              optionsContainer.querySelectorAll(".custom-option");
+            todasOpcoes.forEach((opcao, index) => {
+              if (index > 0) opcao.remove();
+            });
+
+            // Adicionar autores retornados pela API
+            autores.forEach((autor) => {
+              if (typeof autor !== "string") return;
+              const autorTrimmed = autor.trim();
+              if (!autorTrimmed) return;
+
+              const opcao = document.createElement("div");
+              opcao.className = "custom-option";
+              opcao.setAttribute("data-value", autorTrimmed);
+              const span = document.createElement("span");
+              span.textContent = autorTrimmed;
+              opcao.appendChild(span);
+              optionsContainer.appendChild(opcao);
+            });
+
+            autoresGlobaisCarregados = true;
+
+            if (autorSelect && autorSelect.reinitialize) {
+              autorSelect.reinitialize();
+            }
+          } catch (error) {
+            console.warn(
+              "⚠️ Não foi possível carregar autores globais. Usando autores da página.",
+              error,
+            );
+            autoresGlobaisCarregados = false;
+          }
+        }
+
+        async function carregarSessoesParaFiltro() {
+          try {
+            const token = localStorage.getItem("authToken");
+            if (!token) {
+              throw new Error("Token não encontrado");
+            }
+
+            const response = await fetch("/api/sessoes/opcoes", {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            });
+
+            if (!response.ok) {
+              throw new Error(`Erro ao carregar sessões: ${response.status}`);
+            }
+
+            const result = await response.json();
+            const sessoes = Array.isArray(result.data) ? result.data : [];
+
+            const optionsContainer = document.querySelector(
+              "#filter-sessao-wrapper .custom-options",
+            );
+            if (!optionsContainer) return;
+
+            // Limpar opções atuais (mantendo apenas a primeira: "Todas as sessões")
+            const todasOpcoes =
+              optionsContainer.querySelectorAll(".custom-option");
+            todasOpcoes.forEach((opcao, index) => {
+              if (index > 0) opcao.remove();
+            });
+
+            sessoes.forEach((sessao) => {
+              if (!sessao || !sessao.id) return;
+
+              let label = sessao.nome || "Sessão";
+              if (sessao.data_sessao) {
+                const d = new Date(sessao.data_sessao);
+                if (!Number.isNaN(d.getTime())) {
+                  const dataFormatada = d.toLocaleString("pt-BR", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+                  label = `${label} - ${dataFormatada}`;
+                }
+              }
+
+              const opcao = document.createElement("div");
+              opcao.className = "custom-option";
+              opcao.setAttribute("data-value", sessao.id);
+              const span = document.createElement("span");
+              span.textContent = label;
+              opcao.appendChild(span);
+              optionsContainer.appendChild(opcao);
+            });
+
+            sessoesGlobaisCarregadas = true;
+            if (sessaoSelect && sessaoSelect.reinitialize) {
+              sessaoSelect.reinitialize();
+            }
+          } catch (error) {
+            console.warn(
+              "⚠️ Não foi possível carregar sessões para o filtro.",
+              error,
+            );
+            sessoesGlobaisCarregadas = false;
+          }
+        }
+
+        async function carregarSessoesFuturas() {
+          try {
+            const token = localStorage.getItem("authToken");
+            const response = await fetch("/api/sessoes/opcoes?futuras=true", {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            const result = await response.json();
+            const sessoes = result.data || [];
+
+            const optionsContainer = document.querySelector(
+              "#nova-sessao-wrapper .custom-options",
+            );
+            optionsContainer.innerHTML = "";
+
+            if (sessoes.length === 0) {
+              optionsContainer.innerHTML =
+                '<div class="custom-option disabled"><span>Nenhuma sessão futura disponível</span></div>';
+              return;
+            }
+
+            // Filtrar apenas sessões futuras no JS também por segurança
+            const agora = new Date();
+            const sessoesFuturas = sessoes.filter((s) => {
+              const dataSessao = new Date(s.data_sessao);
+              return dataSessao > agora;
+            });
+
+            if (sessoesFuturas.length === 0) {
+              optionsContainer.innerHTML =
+                '<div class="custom-option disabled"><span>Nenhuma sessão futura disponível</span></div>';
+              return;
+            }
+
+            sessoesFuturas.forEach((sessao) => {
+              const dataFormatada = new Date(sessao.data_sessao).toLocaleString(
+                "pt-BR",
+              );
+              const label = `${sessao.nome} - ${dataFormatada}`;
+
+              const div = document.createElement("div");
+              div.className = "custom-option";
+              div.dataset.value = sessao.id;
+              div.innerHTML = `<span>${label}</span>`;
+              optionsContainer.appendChild(div);
+            });
+
+            novaSessaoSelect.reinitialize();
+          } catch (error) {
+            console.error("Erro ao carregar sessões futuras:", error);
+            showToast("Erro ao carregar lista de sessões", "error");
+          }
+        }
+
+        async function carregarPautas(page = 1, filtros = {}) {
+          try {
+            console.log(`📡 Carregando pautas - Página ${page}...`);
+
+            const loadingContainer = document.getElementById("pautas-loading");
+            const tableContainer = document.querySelector(".table-container");
+            const cardsContainer = document.getElementById("pautas-cards");
+
+            if (loadingContainer) {
+              renderLoadingState(loadingContainer, "Carregando pautas...");
+              loadingContainer.style.display = "block";
+            }
+            if (tableContainer) tableContainer.style.display = "none";
+            if (cardsContainer) cardsContainer.style.display = "none";
+
+            const token = localStorage.getItem("authToken");
+            if (!token) {
+              throw new Error("Token não encontrado");
+            }
+
+            // Construir URL com parâmetros de paginação e filtros
+            const params = new URLSearchParams({
+              page: page,
+              limit: PAUTAS_PER_PAGE,
+              ...filtros,
+            });
+
+            const response = await fetch(`/api/pautas?${params}`, {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            });
+
+            if (!response.ok) {
+              throw new Error(`Erro ao carregar pautas: ${response.status}`);
+            }
+
+            const result = await response.json();
+            pautas = result.data || [];
+
+            console.log(
+              `✅ ${pautas.length} pautas carregadas (Página ${page})`,
+            );
+
+            // Renderizar tabela com os dados
+            renderizarTabela();
+            atualizarContador(result.pagination);
+
+            // Atualizar opções do filtro de autor
+            atualizarFiltroAutor();
+
+            // Configurar paginação
+            configurarPaginacao(result.pagination);
+
+            if (loadingContainer) {
+              loadingContainer.innerHTML = "";
+              loadingContainer.style.display = "none";
+            }
+            if (tableContainer) tableContainer.style.display = "";
+            if (cardsContainer) cardsContainer.style.display = "";
+          } catch (error) {
+            console.error("❌ Erro ao carregar pautas:", error);
+
+            const loadingContainer = document.getElementById("pautas-loading");
+            const tableContainer = document.querySelector(".table-container");
+            const cardsContainer = document.getElementById("pautas-cards");
+
+            if (loadingContainer) {
+              loadingContainer.innerHTML = "";
+              loadingContainer.style.display = "none";
+            }
+            if (tableContainer) tableContainer.style.display = "";
+            if (cardsContainer) cardsContainer.style.display = "";
+
+            mostrarMensagemErro("Erro ao carregar pautas do banco de dados");
+          }
+        }
+
+        // Função para renderizar a tabela
+        function renderizarTabela() {
+          console.log("🎨 RENDER: Iniciando renderização da tabela...");
+
+          // LIMPEZA CRÍTICA: Garantir que todos os dropdowns são fechados antes de renderizar nova página
+          const existingDropdowns =
+            document.querySelectorAll(".status-dropdown");
+          console.log(
+            `🧹 RENDER: Limpando ${existingDropdowns.length} dropdowns existentes antes da renderização...`,
+          );
+
+          existingDropdowns.forEach((dropdown, index) => {
+            const wasOpen = dropdown.classList.contains("open");
+            dropdown.classList.remove("open", "dropdown-up");
+
+            // Resetar tracking manual também
+            const badge = dropdown.querySelector(".status-badge-wrapper");
+            if (badge) {
+              badge._dropdownState = "closed";
+            }
+
+            if (wasOpen) {
+              const pautaId = dropdown.dataset.pautaId || `dropdown-${index}`;
+              console.log(
+                `🧹 RENDER: Dropdown da pauta ${pautaId} foi limpo (estava aberto, tracking resetado)`,
+              );
+            }
+          });
+
+          const tbody = document.querySelector(".pautas-table tbody");
+
+          if (pautas.length === 0) {
+            console.log("📋 RENDER: Nenhuma pauta para exibir");
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="7" style="text-align: center; padding: 2rem; color: var(--secondary-text);">
+                  <i class="fa-regular fa-file-lines" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+                  Nenhuma pauta encontrada
+                </td>
+              </tr>
+            `;
+            renderizarCards();
+            return;
+          }
+
+          console.log(`📋 RENDER: Renderizando ${pautas.length} pautas...`);
+
+          tbody.innerHTML = pautas
+            .map((pauta, index) => {
+              // Mapeamento correto de status para classes CSS
+              const getStatusClass = (status) => {
+                if (!status) return "pendente";
+
+                const statusMap = {
+                  pendente: "pendente",
+                  "em votação": "em-votacao",
+                  finalizada: "finalizada",
+                };
+
+                const normalized = status.toLowerCase().trim();
+                const cssClass = statusMap[normalized] || "pendente";
+
+                console.log(
+                  `🎨 STATUS CLASS: "${status}" → "${normalized}" → "${cssClass}"`,
+                );
+                return cssClass;
+              };
+
+              const statusClass = getStatusClass(pauta.status);
+              const statusText = pauta.status || "Pendente";
+
+              // Função para truncar texto com limite
+              const truncateText = (text, maxLength, fallback = "N/A") => {
+                if (!text) return fallback;
+                return text.length > maxLength
+                  ? text.substring(0, maxLength) + "..."
+                  : text;
+              };
+
+              // Processar campos com limites
+              const nome = truncateText(pauta.nome, 35, "Sem nome");
+              const nomeFull = pauta.nome || "Sem nome";
+              const descricao = truncateText(
+                pauta.descricao,
+                40,
+                "Sem descrição",
+              );
+              const descricaoFull = pauta.descricao || "Sem descrição";
+              const autor = truncateText(pauta.autor, 25, "Não informado");
+              const autorFull = pauta.autor || "Não informado";
+              const sessaoNome = truncateText(pauta.sessoes?.nome, 30, "N/A");
+              const sessaoFull = pauta.sessoes?.nome || "N/A";
+
+              // Verificar se tem arquivo anexo
+              const linkArquivo = pauta.anexo_url
+                ? `<a href="${pauta.anexo_url}" target="_blank" class="link">Acessar PDF</a>`
+                : '<span style="color: var(--secondary-text);">Sem arquivo</span>';
+
+              // Badge para votação simbólica (sempre reserva o mesmo espaço)
+              const badgeSimbolicaClass = pauta.votacao_simbolica
+                ? ""
+                : "is-empty";
+              const badgeSimbolica = `<span class="status-badge simbolica status-sub-badge ${badgeSimbolicaClass}">SIMBÓLICA</span>`;
+
+              console.log(
+                `📄 RENDER: Pauta ${index + 1}/${pautas.length} - ID: ${
+                  pauta.id
+                }, Status: ${statusText}`,
+              );
+
+              return `
+              <tr data-pauta-id="${pauta.id}">
+                <td title="${nomeFull}"><span class="cell-ellipsis">${nome}</span></td>
+                <td>
+                  <span class="description" title="${descricaoFull}">
+                    ${descricao}
+                  </span>
+                </td>
+                <td>${linkArquivo}</td>
+                <td class="status-cell">
+                  <div class="status-stack">
+                    <div class="status-dropdown" data-pauta-id="${
+                      pauta.id
+                    }" data-status="${statusText}">
+                      <div class="status-badge-wrapper">
+                        <span class="status-badge ${statusClass}">${statusText.toUpperCase()}</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                      </div>
+                      <div class="dropdown-menu">
+                        <div class="dropdown-item" data-value="pendente">Pendente</div>
+                        <div class="dropdown-item" data-value="em-votacao">Em Votação</div>
+                        <div class="dropdown-item" data-value="finalizada">Finalizada</div>
+                      </div>
+                    </div>
+                    ${badgeSimbolica}
+                  </div>
+                </td>
+                <td title="${autorFull}"><span class="cell-ellipsis">${autor}</span></td>
+                <td title="${sessaoFull}"><span class="cell-ellipsis">${sessaoNome}</span></td>
+                <td class="actions-cell">
+                  <button class="btn btn-action btn-edit btn-icon-square" data-action="editar-pauta" data-pauta-id="${
+                    pauta.id
+                  }" title="Editar">
+                    <i class="fa-solid fa-pen"></i>
+                  </button>
+                  ${
+                    pauta.status !== "Finalizada"
+                      ? `<button class="btn btn-action btn-edit btn-icon-square" style="background-color: var(--accent-purple); color: white;" data-action="remanejar-pauta" data-pauta-id="${pauta.id}" data-pauta-nome="${nomeFull}" title="Remanejar">
+                      <i class="fa-solid fa-calendar-days"></i>
+                    </button>`
+                      : ""
+                  }
+                  <button class="btn btn-action btn-remove btn-icon-square" data-action="remover-pauta" data-pauta-id="${
+                    pauta.id
+                  }" title="Remover">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            `;
+            })
+            .join("");
+
+          console.log("✅ RENDER: HTML da tabela inserido no DOM");
+
+          // Renderizar cards (mobile) junto com a tabela
+          renderizarCards();
+
+          setTimeout(() => {
+            console.log(
+              "⏰ RENDER: Iniciando configuração de dropdowns após timeout...",
+            );
+            configurarDropdowns();
+          }, 100);
+        }
+
+        function renderizarCards() {
+          const container = document.getElementById("pautas-cards");
+          if (!container) return;
+
+          if (!pautas || pautas.length === 0) {
+            container.innerHTML = `
+              <div class="pauta-card" style="text-align: center; color: var(--secondary-text);">
+                <div style="font-size: 0.95rem; font-weight: 500;">Nenhuma pauta encontrada</div>
+              </div>
+            `;
+            return;
+          }
+
+          const getStatusClass = (status) => {
+            if (!status) return "pendente";
+            const statusMap = {
+              pendente: "pendente",
+              "em votação": "em-votacao",
+              finalizada: "finalizada",
+            };
+            const normalized = status.toLowerCase().trim();
+            return statusMap[normalized] || "pendente";
+          };
+
+          const truncateText = (text, maxLength, fallback = "N/A") => {
+            if (!text) return fallback;
+            return text.length > maxLength
+              ? text.substring(0, maxLength) + "..."
+              : text;
+          };
+
+          container.innerHTML = pautas
+            .map((pauta) => {
+              const statusClass = getStatusClass(pauta.status);
+              const statusText = pauta.status || "Pendente";
+
+              const nome = truncateText(pauta.nome, 55, "Sem nome");
+              const nomeFull = pauta.nome || "Sem nome";
+              const descricao = truncateText(
+                pauta.descricao,
+                120,
+                "Sem descrição",
+              );
+              const autor = truncateText(pauta.autor, 60, "Não informado");
+              const sessaoNome = truncateText(pauta.sessoes?.nome, 80, "N/A");
+
+              const linkArquivo = pauta.anexo_url
+                ? `<a href="${pauta.anexo_url}" target="_blank" class="link">Acessar PDF</a>`
+                : '<span style="color: var(--secondary-text);">Sem arquivo</span>';
+
+              const badgeSimbolicaClass = pauta.votacao_simbolica
+                ? ""
+                : "is-empty";
+              const badgeSimbolica = `<span class="status-badge simbolica status-sub-badge ${badgeSimbolicaClass}">SIMBÓLICA</span>`;
+
+              return `
+                <div class="pauta-card" data-pauta-id="${pauta.id}">
+                  <div class="pauta-card-title" title="${nomeFull}">${nome}</div>
+                  <div class="pauta-card-desc">${descricao}</div>
+
+                  <div class="status-stack">
+                    <div class="status-dropdown" data-pauta-id="${
+                      pauta.id
+                    }" data-status="${statusText}">
+                      <div class="status-badge-wrapper">
+                        <span class="status-badge ${statusClass}">${statusText.toUpperCase()}</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                      </div>
+                      <div class="dropdown-menu">
+                        <div class="dropdown-item" data-value="pendente">Pendente</div>
+                        <div class="dropdown-item" data-value="em-votacao">Em Votação</div>
+                        <div class="dropdown-item" data-value="finalizada">Finalizada</div>
+                      </div>
+                    </div>
+                    ${badgeSimbolica}
+                  </div>
+
+                  <div class="pauta-card-meta">
+                    <div><span class="label">Autor:</span><span>${autor}</span></div>
+                    <div><span class="label">Sessão:</span><span>${sessaoNome}</span></div>
+                    <div><span class="label">Arquivo:</span>${linkArquivo}</div>
+                  </div>
+
+                  <div class="pauta-card-actions">
+                    <button class="btn btn-action btn-edit btn-icon-square" data-action="editar-pauta" data-pauta-id="${
+                      pauta.id
+                    }" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                    ${
+                      pauta.status !== "Finalizada"
+                        ? `<button class="btn btn-action btn-edit btn-icon-square" style="background-color: var(--accent-purple); color: white !important;" data-action="remanejar-pauta" data-pauta-id="${pauta.id}" data-pauta-nome="${nomeFull}" title="Remanejar"><i class="fa-solid fa-calendar-days"></i></button>`
+                        : ""
+                    }
+                    <button class="btn btn-action btn-remove btn-icon-square" data-action="remover-pauta" data-pauta-id="${
+                      pauta.id
+                    }" title="Remover"><i class="fa-solid fa-trash"></i></button>
+                  </div>
+                </div>
+              `;
+            })
+            .join("");
+        }
+
+        // Função para configurar dropdowns de status
+        function configurarDropdowns() {
+          // DIAGNÓSTICO INICIAL: Verificar se algum dropdown já tem classe open
+          const preExistingOpen = document.querySelectorAll(
+            ".status-dropdown.open",
+          );
+          if (preExistingOpen.length > 0) {
+            console.warn(
+              `🚨 DIAGNÓSTICO: Encontrados ${preExistingOpen.length} dropdowns com classe 'open' ANTES da configuração!`,
+            );
+            preExistingOpen.forEach((problematic, idx) => {
+              const problematicId =
+                problematic.dataset.pautaId || `dropdown-${idx}`;
+              console.warn(
+                `🚨 DIAGNÓSTICO: Dropdown problemático: ${problematicId}`,
+              );
+              console.warn(
+                `🚨 DIAGNÓSTICO: Classes:`,
+                Array.from(problematic.classList),
+              );
+
+              // Limpar imediatamente
+              problematic.classList.remove("open", "dropdown-up");
+              console.warn(
+                `🚨 DIAGNÓSTICO: Limpeza preventiva aplicada para ${problematicId}`,
+              );
+            });
+          }
+
+          const statusDropdowns = document.querySelectorAll(".status-dropdown");
+          console.log(
+            `🔢 DROPDOWN: Encontrados ${statusDropdowns.length} dropdowns para configurar`,
+          );
+
+          if (statusDropdowns.length === 0) {
+            console.warn(
+              "⚠️ DROPDOWN: Nenhum dropdown encontrado! Verificando se a tabela foi renderizada...",
+            );
+            const tbody = document.querySelector(".pautas-table tbody");
+            console.log(
+              "📋 DROPDOWN: Conteúdo do tbody:",
+              tbody?.innerHTML?.substring(0, 200) + "...",
+            );
+            return;
+          }
+
+          statusDropdowns.forEach((dropdown, index) => {
+            const pautaId = dropdown.dataset.pautaId;
+            const currentStatus = dropdown.dataset.status;
+
+            console.log(
+              `⚙️ DROPDOWN ${index + 1}/${
+                statusDropdowns.length
+              }: Configurando pauta ${pautaId} (Status: ${currentStatus})`,
+            );
+
+            const badgeWrapper = dropdown.querySelector(
+              ".status-badge-wrapper",
+            );
+            const dropdownMenu = dropdown.querySelector(".dropdown-menu");
+
+            if (!badgeWrapper) {
+              console.error(
+                `❌ DROPDOWN ${
+                  index + 1
+                }: Badge wrapper não encontrado para pauta ${pautaId}`,
+              );
+              return;
+            }
+
+            if (!dropdownMenu) {
+              console.error(
+                `❌ DROPDOWN ${
+                  index + 1
+                }: Menu não encontrado para pauta ${pautaId}`,
+              );
+              return;
+            }
+
+            // Verificar se já tem event listeners (indicador de duplicação)
+            if (badgeWrapper.dataset.configured === "true") {
+              console.warn(
+                `⚠️ DROPDOWN ${
+                  index + 1
+                }: Badge wrapper já configurado para pauta ${pautaId}, pulando...`,
+              );
+              return;
+            }
+
+            console.log(
+              `🔧 DROPDOWN ${index + 1}: Configurando event listeners...`,
+            );
+
+            // Marcar como configurado
+            badgeWrapper.dataset.configured = "true";
+            dropdownMenu.dataset.configured = "true";
+
+            // Variável para tracking manual do estado
+            let dropdownState = "closed";
+
+            badgeWrapper.addEventListener("click", (event) => {
+              console.log(
+                `👆 DROPDOWN CLICK: Pauta ${pautaId} - Badge clicado`,
+              );
+              event.stopPropagation();
+
+              // Verificar estado via classe E via tracking manual
+              const classState = dropdown.classList.contains("open");
+              console.log(
+                `🔍 DROPDOWN STATE: Pauta ${pautaId} - Classe: ${
+                  classState ? "ABERTO" : "FECHADO"
+                }, Tracking: ${dropdownState}`,
+              );
+
+              // SEMPRE limpar todos os dropdowns primeiro
+              console.log(
+                `🧹 DROPDOWN CLICK: Limpeza TOTAL de todos os dropdowns...`,
+              );
+
+              const allDropdowns =
+                document.querySelectorAll(".status-dropdown");
+              allDropdowns.forEach((anyDropdown, idx) => {
+                anyDropdown.classList.remove("open", "dropdown-up");
+                // Resetar tracking de todos os outros dropdowns
+                const otherBadge = anyDropdown.querySelector(
+                  ".status-badge-wrapper",
+                );
+                if (otherBadge && otherBadge !== badgeWrapper) {
+                  otherBadge._dropdownState = "closed";
+                }
+              });
+
+              console.log(`🧹 LIMPEZA TOTAL: Todos os dropdowns limpos`);
+
+              // Decidir ação baseada no tracking manual
+              if (dropdownState === "closed") {
+                // ABRIR
+                dropdown.classList.add("open");
+                dropdownState = "open";
+                badgeWrapper._dropdownState = "open";
+                console.log(`🎯 DROPDOWN CLICK: Pauta ${pautaId} - ABRINDO`);
+
+                // Calcular posicionamento
+                requestAnimationFrame(() => {
+                  const rect = dropdown.getBoundingClientRect();
+                  const menuRect = dropdownMenu.getBoundingClientRect();
+                  const viewportHeight = window.innerHeight;
+                  const containerRect = dropdown
+                    .closest(".table-container")
+                    ?.getBoundingClientRect();
+                  const containerBottom = containerRect
+                    ? containerRect.bottom
+                    : viewportHeight;
+
+                  const spaceBelow =
+                    Math.min(viewportHeight, containerBottom) - rect.bottom;
+                  const spaceAbove = rect.top;
+
+                  console.log(`📐 DROPDOWN POSITION: Pauta ${pautaId}`, {
+                    spaceBelow: Math.round(spaceBelow),
+                    spaceAbove: Math.round(spaceAbove),
+                    menuHeight: Math.round(menuRect.height),
+                    viewportHeight,
+                    containerBottom: containerRect
+                      ? Math.round(containerBottom)
+                      : "N/A",
+                  });
+
+                  const safetyMargin = 20;
+                  const needsSpaceBelow = menuRect.height + safetyMargin;
+
+                  if (
+                    spaceBelow < needsSpaceBelow &&
+                    spaceAbove > needsSpaceBelow
+                  ) {
+                    dropdown.classList.add("dropdown-up");
+                    console.log(
+                      `⬆️ DROPDOWN POSITION: Pauta ${pautaId} - Abrindo para CIMA`,
+                    );
+                  } else if (
+                    spaceBelow < needsSpaceBelow &&
+                    spaceAbove < needsSpaceBelow
+                  ) {
+                    dropdown.classList.add("dropdown-up");
+                    console.log(
+                      `⬆️ DROPDOWN POSITION: Pauta ${pautaId} - FORÇANDO para CIMA`,
+                    );
+                  } else {
+                    dropdown.classList.remove("dropdown-up");
+                    console.log(
+                      `⬇️ DROPDOWN POSITION: Pauta ${pautaId} - Abrindo para BAIXO`,
+                    );
+                  }
+                });
+              } else {
+                // FECHAR (já foi limpo na limpeza total)
+                dropdownState = "closed";
+                badgeWrapper._dropdownState = "closed";
+                console.log(`🎯 DROPDOWN CLICK: Pauta ${pautaId} - FECHANDO`);
+              }
+            });
+
+            // Inicializar tracking
+            badgeWrapper._dropdownState = "closed";
+
+            // Configurar items do dropdown
+            const menuItems = dropdownMenu.querySelectorAll(".dropdown-item");
+            console.log(
+              `📋 DROPDOWN ${index + 1}: Configurando ${
+                menuItems.length
+              } itens do menu`,
+            );
+
+            menuItems.forEach((item, itemIndex) => {
+              const itemValue = item.getAttribute("data-value");
+              const itemText = item.textContent;
+
+              console.log(
+                `📝 DROPDOWN ${index + 1}: Item ${
+                  itemIndex + 1
+                } - ${itemValue}: ${itemText}`,
+              );
+
+              item.addEventListener("click", async (event) => {
+                console.log(
+                  `🎯 MENU ITEM CLICK: Pauta ${pautaId} - Selecionado: ${itemText} (${itemValue})`,
+                );
+                event.stopPropagation();
+
+                const newValue = itemValue;
+                const newText = itemText;
+
+                // --- VALIDAÇÃO DE DATA DA SESSÃO ---
+                let validationPassed = true;
+
+                if (newValue === "em-votacao") {
+                  try {
+                    const pautaAlvo = pautas.find((p) => p.id == pautaId);
+
+                    if (!pautaAlvo) {
+                      console.warn(
+                        "⚠️ Pauta não encontrada no cache local. Bloqueando por segurança.",
+                      );
+                      validationPassed = false;
+                    } else if (
+                      pautaAlvo.sessoes &&
+                      pautaAlvo.sessoes.data_sessao
+                    ) {
+                      const dataSessao = new Date(
+                        pautaAlvo.sessoes.data_sessao,
+                      );
+
+                      if (isNaN(dataSessao.getTime())) {
+                        console.warn(
+                          "⚠️ Data da sessão inválida:",
+                          pautaAlvo.sessoes.data_sessao,
+                        );
+                        showToast("Erro: Data da sessão inválida.", "error");
+                        validationPassed = false;
+                      } else {
+                        const dataLimite = new Date(dataSessao);
+                        dataLimite.setHours(23, 59, 59, 999);
+                        const agoraVal = new Date();
+
+                        if (agoraVal > dataLimite) {
+                          console.warn(
+                            `🚫 BLOCKED: Sessão expirada (${dataLimite.toLocaleString()})`,
+                          );
+                          showToast(
+                            "A data desta sessão já passou. Não é possível iniciar votação.",
+                            "error",
+                          );
+                          validationPassed = false;
+                        }
+                      }
+                    }
+                  } catch (e) {
+                    console.error("Erro na validação:", e);
+                    showToast("Erro ao validar dados da sessão.", "error");
+                    validationPassed = false;
+                  }
+
+                  if (!validationPassed) {
+                    dropdown.classList.remove("open");
+                    const bWrapper = dropdown.querySelector(
+                      ".status-badge-wrapper",
+                    );
+                    if (bWrapper) bWrapper._dropdownState = "closed";
+
+                    // REVERT FORÇADO: Se por acaso algo mudou visualmente, restauramos o original
+                    const originalStatus =
+                      dropdown.dataset.status || "PENDENTE";
+                    const badgeSpan = dropdown.querySelector(".status-badge");
+                    if (badgeSpan) {
+                      const statusUpper = originalStatus.toUpperCase();
+                      badgeSpan.textContent = statusUpper;
+
+                      // Restaurar classe correta
+                      badgeSpan.className = "status-badge"; // Reset
+                      let cls = "pendente"; // Default
+                      const s = originalStatus.toLowerCase();
+
+                      if (
+                        s === "em votação" ||
+                        s === "em-votacao" ||
+                        s === "em votacao"
+                      )
+                        cls = "em-votacao";
+                      else if (s === "finalizada") cls = "finalizada";
+                      else if (s === "aprovado") cls = "aprovado";
+                      else if (s === "reprovado") cls = "reprovado";
+                      else if (
+                        s.includes("simbólica") ||
+                        s.includes("simbolica")
+                      )
+                        cls = "simbolica";
+                      // Se houver status como 'leitura', 'vista', etc, adicione aqui ou deixe pendente.
+
+                      badgeSpan.classList.add(cls);
+                    }
+
+                    return; // STOP EXECUTION
+                  }
+                }
+                // ------------------------------------
+                const mainBadge = dropdown.querySelector(
+                  ".status-badge-wrapper .status-badge",
+                );
+
+                // Fechar dropdown imediatamente
+                dropdown.classList.remove("open");
+                console.log(
+                  `🔒 MENU ITEM: Dropdown fechado para pauta ${pautaId}`,
+                );
+
+                // Atualizar status no banco de dados
+                try {
+                  console.log(
+                    `📡 API CALL: Atualizando pauta ${pautaId} para status "${newText}"`,
+                  );
+                  await atualizarStatusPauta(pautaId, newText);
+
+                  // Atualizar visualmente apenas se a requisição foi bem-sucedida
+                  if (mainBadge) {
+                    const oldClasses = Array.from(mainBadge.classList);
+
+                    // Remover todas as classes de status possíveis
+                    mainBadge.classList.remove(
+                      "pendente",
+                      "em-votacao",
+                      "finalizada",
+                    );
+
+                    // Aplicar classe correta baseada no newValue (que vem do data-value)
+                    mainBadge.classList.add(newValue);
+                    mainBadge.textContent = newText.toUpperCase();
+
+                    console.log(
+                      `✅ UI UPDATE: Pauta ${pautaId} - Classes: ${oldClasses.join(
+                        ",",
+                      )} → ${Array.from(mainBadge.classList).join(",")}`,
+                    );
+                    console.log(
+                      `✅ UI UPDATE: Pauta ${pautaId} - Texto: "${currentStatus}" → "${newText.toUpperCase()}"`,
+                    );
+                    console.log(
+                      `✅ UI UPDATE: Pauta ${pautaId} - Classe aplicada: "${newValue}"`,
+                    );
+                  }
+
+                  console.log(
+                    `🎉 SUCCESS: Pauta ${pautaId} atualizada com sucesso para ${newValue}`,
+                  );
+                } catch (error) {
+                  console.error(
+                    `❌ ERROR: Falha ao atualizar pauta ${pautaId}:`,
+                    error,
+                  );
+                  // Não atualizar visualmente se houve erro
+                }
+              });
+            });
+
+            console.log(
+              `✅ DROPDOWN ${
+                index + 1
+              }: Configuração concluída para pauta ${pautaId}`,
+            );
+
+            // VERIFICAÇÃO FINAL: Monitorar se a classe open aparece mysteriosamente
+            setTimeout(() => {
+              if (dropdown.classList.contains("open")) {
+                console.error(
+                  `🚨 MYSTERY BUG: Dropdown ${pautaId} ganhou classe 'open' sozinho após configuração!`,
+                );
+                console.error(
+                  `🚨 MYSTERY BUG: Classes atuais:`,
+                  Array.from(dropdown.classList),
+                );
+                dropdown.classList.remove("open", "dropdown-up");
+                console.error(
+                  `🚨 MYSTERY BUG: Classe 'open' removida forçadamente`,
+                );
+              }
+            }, 50);
+          });
+
+          console.log(
+            `🏁 DROPDOWN: Configuração de todos os ${statusDropdowns.length} dropdowns concluída`,
+          );
+        }
+
+        // Função para atualizar contador
+        function atualizarContador(pagination) {
+          const contador = document.getElementById("contador-pautas");
+
+          if (contador && pagination) {
+            const inicio = (pagination.page - 1) * pagination.limit + 1;
+            const fim = Math.min(inicio + pautas.length - 1, pagination.total);
+            contador.textContent = `${inicio}-${fim} de ${pagination.total} pautas`;
+          } else if (contador) {
+            contador.textContent = "0 pautas";
+          }
+        }
+
+        // Função para configurar paginação
+        function configurarPaginacao(pagination) {
+          if (!pagination) return;
+
+          const paginationContainer = document.getElementById(
+            "pagination-container",
+          );
+
+          if (pagination.totalPages <= 1) {
+            paginationContainer.style.display = "none";
+            return;
+          }
+
+          paginationContainer.style.display = "flex";
+
+          createPaginationControls({
+            containerId: "pagination-controls",
+            currentPage: pagination.page,
+            totalItems: pagination.total,
+            itemsPerPage: PAUTAS_PER_PAGE,
+            onPageChange: (newPage) => {
+              currentPage = newPage;
+              const filtros = obterFiltrosAtuais();
+              carregarPautas(currentPage, filtros);
+            },
+          });
+        }
+
+        // Função para atualizar opções do filtro de autor
+        function atualizarFiltroAutor() {
+          // Se já carregamos os autores globais, não recalcular por página.
+          if (autoresGlobaisCarregados) return;
+          if (!autorSelect || !pautas || pautas.length === 0) return;
+
+          // Extrair autores únicos das pautas
+          const autoresUnicos = [
+            ...new Set(
+              pautas
+                .map((pauta) => pauta.autor)
+                .filter((autor) => autor && autor.trim() !== ""),
+            ),
+          ].sort();
+
+          // Limpar opções atuais (exceto "Todos os autores")
+          const optionsContainer = document.querySelector(
+            "#filter-autor-wrapper .custom-options",
+          );
+          if (!optionsContainer) return;
+
+          // Manter apenas a primeira opção ("Todos os autores")
+          const todasOpcoes =
+            optionsContainer.querySelectorAll(".custom-option");
+          todasOpcoes.forEach((opcao, index) => {
+            if (index > 0) opcao.remove();
+          });
+
+          // Adicionar novas opções de autores
+          autoresUnicos.forEach((autor) => {
+            const opcao = document.createElement("div");
+            opcao.className = "custom-option";
+            opcao.setAttribute("data-value", autor);
+            opcao.innerHTML = `<span>${autor}</span>`;
+            optionsContainer.appendChild(opcao);
+          });
+
+          // Reconfigurar o custom select para reconhecer as novas opções
+          if (autorSelect.reinitialize) {
+            autorSelect.reinitialize();
+          }
+        }
+
+        // Função para aplicar filtros
+        function aplicarFiltros() {
+          const filtros = obterFiltrosAtuais();
+          currentPage = 1;
+          carregarPautas(currentPage, filtros);
+        }
+
+        // Função para obter filtros atuais
+        function obterFiltrosAtuais() {
+          const filtros = {};
+          const filterSearch = document.getElementById("filter-search");
+
+          // Filtro por status
+          const statusValue = statusSelect ? statusSelect.getValue() : "";
+          if (statusValue && statusValue !== "") {
+            filtros.status = statusValue;
+          }
+
+          // Filtro por autor
+          const autorValue = autorSelect ? autorSelect.getValue() : "";
+          if (autorValue && autorValue !== "") {
+            filtros.autor = autorValue;
+          }
+
+          // Filtro por sessão
+          const sessaoValue = sessaoSelect ? sessaoSelect.getValue() : "";
+          if (sessaoValue && sessaoValue !== "") {
+            filtros.sessao_id = sessaoValue;
+          }
+
+          // Filtro por busca de texto
+          if (filterSearch && filterSearch.value.trim() !== "") {
+            filtros.search = filterSearch.value.trim();
+          }
+
+          return filtros;
+        }
+
+        // Função para atualizar status da pauta no banco
+        async function atualizarStatusPauta(pautaId, novoStatus) {
+          try {
+            console.log(
+              `📡 Atualizando status da pauta ${pautaId} para "${novoStatus}"...`,
+            );
+
+            const token = localStorage.getItem("authToken");
+            if (!token) {
+              throw new Error("Token não encontrado");
+            }
+
+            const response = await fetch(`/api/pautas/${pautaId}/status`, {
+              method: "PUT",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                status: novoStatus,
+              }),
+            });
+
+            if (!response.ok) {
+              const error = await response.json();
+              throw new Error(error.error || `Erro ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log(`✅ Status atualizado com sucesso:`, result.data);
+
+            // Status atualizado com sucesso
+
+            return result.data;
+          } catch (error) {
+            console.error("❌ Erro ao atualizar status da pauta:", error);
+            showToast(error.message, "error");
+            throw error;
+          }
+        }
+
+        // Função para mostrar mensagem de erro
+        function mostrarMensagemErro(mensagem) {
+          const tbody = document.querySelector(".pautas-table tbody");
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 2rem; color: var(--accent-red);">
+                <i class="fa-solid fa-triangle-exclamation" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+                ${mensagem}
+              </td>
+            </tr>
+          `;
+
+          const cards = document.getElementById("pautas-cards");
+          if (cards) {
+            cards.innerHTML = `
+              <div class="pauta-card" style="text-align: center; color: var(--accent-red);">
+                <div style="font-size: 0.95rem; font-weight: 600; margin-bottom: 6px;">${mensagem}</div>
+                <div style="color: var(--secondary-text); font-size: 0.875rem;">Tente novamente em instantes.</div>
+              </div>
+            `;
+          }
+        }
+
+        // Os filtros agora são gerenciados pelos custom selects
+
+        // Configurar botão de confirmação de remoção
+        const confirmarRemoverBtn = document.getElementById(
+          "confirmar-remover-btn",
+        );
+        if (confirmarRemoverBtn) {
+          confirmarRemoverBtn.addEventListener("click", async (e) => {
+            const pautaId = e.target.dataset.pautaId;
+            if (!pautaId) {
+              showToast("Erro: ID da pauta não encontrado", "error");
+              return;
+            }
+
+            try {
+              // Desabilitar botão e mostrar loading
+              e.target.disabled = true;
+              e.target.innerHTML =
+                '<i class="fa fa-spinner fa-spin"></i> Removendo...';
+
+              const token = localStorage.getItem("authToken");
+              if (!token) {
+                throw new Error("Token não encontrado");
+              }
+
+              const response = await fetch(`/api/pautas/${pautaId}`, {
+                method: "DELETE",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+              });
+
+              const result = await response.json();
+
+              if (!response.ok) {
+                throw new Error(result.error || `Erro ${response.status}`);
+              }
+
+              // Sucesso
+              showToast(
+                result.message || "Pauta removida com sucesso!",
+                "success",
+              );
+              closeModal("removerPautaModal");
+
+              // Recarregar lista de pautas
+              const filtros = obterFiltrosAtuais();
+              await carregarPautas(currentPage, filtros);
+            } catch (error) {
+              console.error("❌ Erro ao remover pauta:", error);
+
+              // Tratar erro específico de votos registrados
+              if (error.message.includes("votos registrados")) {
+                showToast(
+                  "⚠️ Não é possível remover esta pauta pois ela já possui votos registrados",
+                  "error",
+                );
+              } else {
+                showToast(`Erro ao remover pauta: ${error.message}`, "error");
+              }
+            } finally {
+              // Restaurar botão
+              e.target.disabled = false;
+              e.target.innerHTML =
+                '<i class="fa-solid fa-trash"></i> Excluir Pauta';
+            }
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
