@@ -1,0 +1,985 @@
+<!doctype html>
+<!--
+  Vote Report Page
+  Provides the authenticated chamber administrator workflow for reviewing
+  agenda vote summaries and exporting them as PDF or CSV.
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Relatório de Votos - Legisla Net</title>
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+    />
+
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/carregamento.css" />
+
+    <style>
+      /* ESTILOS ESPECÍFICOS DA PÁGINA DE RELATÓRIO */
+      .sidebar-header .logo-svg {
+        height: 32px;
+        width: auto;
+        flex-shrink: 0;
+      }
+      .relatorio-section {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 24px;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+      }
+      .relatorio-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+      .relatorio-header h2 {
+        font-size: 1.25rem;
+      }
+
+      /* Botões de Exportação */
+      .export-buttons {
+        display: flex;
+        gap: 12px;
+      }
+      .btn-export {
+        background-color: var(--hover-bg);
+        border: 1px solid var(--border-color);
+        color: var(--primary-text);
+        padding: 9px 12px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition:
+          transform 0.1s ease,
+          filter 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .btn-export:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.08);
+      }
+      .btn-export:active {
+        transform: scale(0.98);
+      }
+
+      .btn-export-pdf {
+        border-color: rgba(179, 11, 0, 0.5);
+      }
+      .btn-export-excel {
+        border-color: rgba(29, 111, 66, 0.55);
+      }
+
+      .btn-export-pdf .text-format {
+        color: var(--pdf-red);
+      }
+      .btn-export-excel .text-format {
+        color: var(--excel-green);
+      }
+
+      .btn-export i {
+        font-size: 1.05rem;
+      }
+
+      /* Tabela de Relatórios */
+      .table-container {
+        flex-grow: 1;
+        overflow-x: auto;
+      }
+
+      /* Overlay de carregamento centralizado (full-screen) */
+      .relatorio-loading-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: rgba(13, 17, 23, 0.78);
+      }
+
+      .relatorio-loading-overlay .loading-state {
+        padding: 24px;
+      }
+
+      /* Container de estado (vazio/erro) fora da tabela */
+      #relatorioState {
+        display: none;
+      }
+      .relatorio-table {
+        width: 100%;
+        min-width: 1320px;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+        table-layout: fixed;
+      }
+      .relatorio-table th,
+      .relatorio-table td {
+        padding: 12px 16px;
+        text-align: left;
+        vertical-align: middle;
+        white-space: nowrap;
+        overflow: hidden;
+      }
+      .relatorio-table tbody tr {
+        border-bottom: 1px solid var(--border-color);
+        transition: background-color 0.2s;
+      }
+      .relatorio-table tbody tr:hover {
+        background-color: var(--hover-bg);
+      }
+      .relatorio-table th {
+        color: var(--secondary-text);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        white-space: nowrap;
+      }
+
+      /* Colunas: prioriza espaço para SIM/NÃO/ABSTENÇÃO (como no placeholder) */
+      .relatorio-table th:nth-child(1),
+      .relatorio-table td:nth-child(1) {
+        width: 260px;
+      }
+      .relatorio-table th:nth-child(2),
+      .relatorio-table td:nth-child(2) {
+        width: 190px;
+      }
+      .relatorio-table th:nth-child(3),
+      .relatorio-table td:nth-child(3) {
+        width: 170px;
+      }
+      .relatorio-table th:nth-child(4),
+      .relatorio-table td:nth-child(4) {
+        width: 110px;
+      }
+      .relatorio-table th:nth-child(5),
+      .relatorio-table td:nth-child(5),
+      .relatorio-table th:nth-child(6),
+      .relatorio-table td:nth-child(6),
+      .relatorio-table th:nth-child(7),
+      .relatorio-table td:nth-child(7) {
+        width: 260px;
+      }
+
+      /* Colunas de votos podem quebrar linha, mantendo alinhamento */
+      .relatorio-table td:nth-child(5),
+      .relatorio-table td:nth-child(6),
+      .relatorio-table td:nth-child(7) {
+        white-space: normal;
+        vertical-align: top;
+      }
+
+      .cell-ellipsis {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+      }
+
+      /* Status badges (mesmo estilo do cadastro_de_pautas) */
+      .status-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-height: 52px;
+        align-items: flex-start;
+        justify-content: center;
+      }
+
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 120px;
+        height: 24px;
+        padding: 0 12px;
+        border-radius: 99px;
+        font-weight: 500;
+        font-size: 0.8rem;
+        text-align: center;
+        white-space: nowrap;
+        letter-spacing: 0.3px;
+      }
+
+      .status-badge.pendente {
+        background-color: rgba(240, 227, 51, 0.2);
+        color: rgb(233, 241, 110);
+        border: 1px solid rgba(240, 227, 51, 0.4);
+      }
+      .status-badge.em-votacao {
+        background-color: rgba(88, 166, 255, 0.2);
+        color: aqua;
+        border: 1px solid rgba(88, 166, 255, 0.4);
+      }
+      .status-badge.finalizada {
+        background-color: rgba(46, 160, 67, 0.2);
+        color: #71e67f;
+        border: 1px solid rgba(46, 160, 67, 0.4);
+      }
+      .status-badge.simbolica {
+        background-color: rgba(218, 54, 51, 0.2);
+        color: #f85149;
+        border: 1px solid rgba(218, 54, 51, 0.4);
+      }
+
+      /* Sub-badge (Votação Simbólica) - mesmas dimensões do status-badge */
+      .status-sub-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 120px;
+        height: 24px;
+        padding: 0 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        border-radius: 99px;
+      }
+
+      .status-sub-badge.is-empty {
+        visibility: hidden;
+      }
+
+      .votos-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .votos-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 600;
+      }
+      .votos-sim .votos-header {
+        color: var(--accent-green);
+      }
+      .votos-nao .votos-header {
+        color: var(--accent-red);
+      }
+      .votos-abstencao .votos-header {
+        color: var(--accent-orange);
+      }
+      .votos-list {
+        font-size: 0.8rem;
+        color: var(--secondary-text);
+        line-height: 1.4;
+        word-break: break-word;
+      }
+
+      /* RESPONSIVIDADE */
+      .cards-container {
+        display: none;
+      }
+      @media (max-width: 992px) {
+        .table-container {
+          display: none;
+        }
+        .cards-container {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 16px;
+          flex-grow: 1;
+        }
+        .relatorio-card {
+          background-color: var(--hover-bg);
+          border: 1px solid var(--border-color);
+          border-radius: 8px;
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .relatorio-card-header h3 {
+          font-size: 1rem;
+          font-weight: 600;
+        }
+        .relatorio-card-body {
+          font-size: 0.875rem;
+          color: var(--secondary-text);
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .relatorio-card-body .info-row {
+          display: flex;
+          justify-content: space-between;
+        }
+        .relatorio-card-footer {
+          border-top: 1px solid var(--border-color);
+          padding-top: 12px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .relatorio-section {
+          padding: 16px;
+        }
+
+        /* Botões viram ícone-only (padrão mobile do projeto) */
+        .btn-export {
+          width: 40px;
+          height: 40px;
+          min-height: 40px;
+          padding: 0;
+          justify-content: center;
+          border-radius: 10px;
+        }
+        .btn-export .text-black,
+        .btn-export .text-format {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Application shell with shared sidebar and header placeholders. -->
+    <div class="app-layout">
+      <div id="sidebar-placeholder"></div>
+
+      <main class="main-content" id="mainContent">
+        <div id="header-placeholder"></div>
+
+        <!-- Report workspace with export controls, loading state, table, and mobile cards. -->
+        <section class="relatorio-section fade-in">
+          <div class="relatorio-header">
+            <h2>Relatório de Votos</h2>
+            <!-- Export actions for printable PDF and spreadsheet-compatible CSV. -->
+            <div class="export-buttons">
+              <button
+                class="btn-export btn-export-pdf"
+                id="exportPdfBtn"
+                type="button"
+              >
+                <i class="fa-solid fa-file-pdf"></i>
+                <span class="text-black">Exportar</span>
+                <span class="text-format">PDF</span>
+              </button>
+              <button
+                class="btn-export btn-export-excel"
+                id="exportExcelBtn"
+                type="button"
+              >
+                <i class="fa-solid fa-file-excel"></i>
+                <span class="text-black">Exportar</span>
+                <span class="text-format">Excel</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Full-screen loading overlay displayed while report rows are assembled. -->
+          <div
+            class="relatorio-loading-overlay"
+            id="relatorioLoading"
+            aria-hidden="true"
+          >
+            <div id="relatorioLoadingInner"></div>
+          </div>
+
+          <!-- Empty and error states are rendered outside the table for clear feedback. -->
+          <div id="relatorioState"></div>
+
+          <!-- Desktop report table with vote counts and voter names by option. -->
+          <div class="table-container">
+            <table class="relatorio-table">
+              <colgroup>
+                <col style="width: 260px" />
+                <col style="width: 190px" />
+                <col style="width: 170px" />
+                <col style="width: 110px" />
+                <col style="width: 260px" />
+                <col style="width: 260px" />
+                <col style="width: 260px" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Pauta</th>
+                  <th>Autor</th>
+                  <th>Status</th>
+                  <th>Data</th>
+                  <th>Sim</th>
+                  <th>Não</th>
+                  <th>Abstenção</th>
+                </tr>
+              </thead>
+              <tbody id="relatorioTbody"></tbody>
+            </table>
+          </div>
+
+          <!-- Mobile report cards rendered from the same report dataset. -->
+          <div class="cards-container" id="relatorioCards"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="../js/mockMode.js?v=4"></script>
+    <script src="../js/global.js"></script>
+    <script src="../js/carregamento.js"></script>
+    <script>
+      // Page-level cache used by the export actions.
+      let relatorioRows = [];
+
+      // Initialize authentication, shared layout, export actions, and report loading.
+      document.addEventListener("DOMContentLoaded", async () => {
+        try {
+          await protectPage({
+            allowedRoles: ["admin_camara"],
+            requireAuth: true,
+            autoRedirect: true,
+          });
+        } catch (e) {
+          console.error(e.message);
+          return;
+        }
+
+        initLayout({
+          title: "Relatório de Votos",
+          icon: "fa-chart-pie",
+          navActive: "nav-relatorio",
+        });
+
+        bindExportButtons();
+        await loadRelatorio();
+      });
+
+      // Bind export buttons to the currently loaded report rows.
+      function bindExportButtons() {
+        const pdfBtn = document.getElementById("exportPdfBtn");
+        const excelBtn = document.getElementById("exportExcelBtn");
+
+        if (pdfBtn) {
+          pdfBtn.addEventListener("click", () => exportToPdf(relatorioRows));
+        }
+        if (excelBtn) {
+          excelBtn.addEventListener("click", () =>
+            exportToExcelCsv(relatorioRows),
+          );
+        }
+      }
+
+      // Normalize status text for class mapping and comparisons.
+      function normalizeStatus(status) {
+        if (!status || typeof status !== "string") return "";
+        return status.toLowerCase().trim();
+      }
+
+      // Parse date values defensively for sorting and display.
+      function parseDateSafe(value) {
+        if (!value) return null;
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+
+      // Format date values for the Brazilian locale.
+      function formatDatePtBR(value) {
+        const date = parseDateSafe(value);
+        if (!date) return "N/A";
+        return date.toLocaleDateString("pt-BR");
+      }
+
+      // Choose the best available activity date for report ordering.
+      function getPautaActivityDate(pauta) {
+        return (
+          pauta.updated_at ||
+          pauta.updatedAt ||
+          pauta.created_at ||
+          pauta.createdAt ||
+          null
+        );
+      }
+
+      // Map agenda status values to report badge classes.
+      function getStatusBadgeClass(status) {
+        const s = normalizeStatus(status);
+        if (s === "em votação" || s === "em votacao" || s === "em_votacao")
+          return "em-votacao";
+        if (s === "finalizada") return "finalizada";
+        return "pendente";
+      }
+
+      // Escape dynamic text before injecting it into HTML templates.
+      function escapeHtml(text = "") {
+        return String(text)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      // Fetch authenticated JSON and redirect when the session is invalid.
+      async function fetchJson(url) {
+        const authToken = localStorage.getItem("authToken");
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (response.status === 401) {
+          localStorage.clear();
+          window.location.href = "/app/login.html";
+          return null;
+        }
+
+        if (!response.ok) {
+          throw new Error("Falha na comunicação com o servidor.");
+        }
+
+        return response.json();
+      }
+
+      // Run API enrichment tasks with a bounded level of concurrency.
+      async function mapWithConcurrency(items, concurrency, mapper) {
+        const results = new Array(items.length);
+        let index = 0;
+
+        async function worker() {
+          while (index < items.length) {
+            const currentIndex = index;
+            index += 1;
+            results[currentIndex] = await mapper(
+              items[currentIndex],
+              currentIndex,
+            );
+          }
+        }
+
+        const workers = Array.from({ length: Math.max(1, concurrency) }, () =>
+          worker(),
+        );
+        await Promise.all(workers);
+        return results;
+      }
+
+      // Load agenda items, enrich them with votes, and render report views.
+      async function loadRelatorio() {
+        const tbody = document.getElementById("relatorioTbody");
+        const cards = document.getElementById("relatorioCards");
+        const loadingOverlay = document.getElementById("relatorioLoading");
+        const loadingInner = document.getElementById("relatorioLoadingInner");
+        const stateContainer = document.getElementById("relatorioState");
+        const tableContainer = document.querySelector(".table-container");
+        if (!tbody || !cards) return;
+
+        if (stateContainer) {
+          stateContainer.innerHTML = "";
+          stateContainer.style.display = "none";
+        }
+        if (tableContainer) tableContainer.style.display = "none";
+        if (cards) cards.style.display = "none";
+        if (loadingOverlay && loadingInner) {
+          renderLoadingState(loadingInner, "Carregando relatório...");
+          loadingOverlay.style.display = "flex";
+        }
+
+        try {
+          const pautasResp = await fetchJson(
+            "/api/pautas?page=1&limit=50&sortBy=created_at&sortOrder=desc",
+          );
+          if (!pautasResp) return;
+
+          const pautas = Array.isArray(pautasResp.data) ? pautasResp.data : [];
+
+          if (pautas.length === 0) {
+            if (loadingOverlay) loadingOverlay.style.display = "none";
+            if (stateContainer) {
+              renderEmptyState(
+                stateContainer,
+                "Nenhuma pauta encontrada para gerar relatório.",
+                "fa-solid fa-inbox",
+              );
+              stateContainer.style.display = "block";
+            }
+            return;
+          }
+
+          const sorted = [...pautas].sort((a, b) => {
+            const da = parseDateSafe(getPautaActivityDate(a));
+            const db = parseDateSafe(getPautaActivityDate(b));
+            return (db ? db.getTime() : 0) - (da ? da.getTime() : 0);
+          });
+
+          const rows = await mapWithConcurrency(sorted, 6, async (pauta) => {
+            const status = pauta.status || "Pendente";
+            const canHaveVotes =
+              normalizeStatus(status) === "finalizada" ||
+              normalizeStatus(status).startsWith("em");
+
+            let votosData = null;
+            if (canHaveVotes) {
+              try {
+                votosData = await fetchJson(
+                  `/api/votos/pauta/${encodeURIComponent(pauta.id)}`,
+                );
+              } catch (e) {
+                votosData = null;
+              }
+            }
+
+            const votos = Array.isArray(votosData?.votos)
+              ? votosData.votos
+              : [];
+            const sim = votos
+              .filter((v) => v.voto === "SIM")
+              .map((v) => v.vereadores?.nome_parlamentar)
+              .filter(Boolean);
+            const nao = votos
+              .filter((v) => v.voto === "NÃO")
+              .map((v) => v.vereadores?.nome_parlamentar)
+              .filter(Boolean);
+            const abstencao = votos
+              .filter((v) => v.voto === "ABSTENÇÃO")
+              .map((v) => v.vereadores?.nome_parlamentar)
+              .filter(Boolean);
+
+            return {
+              id: pauta.id,
+              nome: pauta.nome || "Sem nome",
+              autor: pauta.autor || "—",
+              status,
+              statusClass: getStatusBadgeClass(status),
+              votacaoSimbolica: Boolean(pauta.votacao_simbolica),
+              data: getPautaActivityDate(pauta),
+              sim,
+              nao,
+              abstencao,
+            };
+          });
+
+          relatorioRows = rows;
+          renderRelatorioTable(tbody, rows);
+          renderRelatorioCards(cards, rows);
+
+          if (loadingOverlay) loadingOverlay.style.display = "none";
+          if (tableContainer) tableContainer.style.display = "";
+          if (cards) cards.style.display = "";
+        } catch (error) {
+          if (loadingOverlay) loadingOverlay.style.display = "none";
+          if (tableContainer) tableContainer.style.display = "none";
+          if (cards) cards.style.display = "none";
+          if (stateContainer) {
+            renderErrorState(stateContainer, error.message);
+            stateContainer.style.display = "block";
+          }
+        }
+      }
+
+      // Render a vote summary cell with count and voter names.
+      function renderVoteCell({ label, icon, count, names, className }) {
+        const list =
+          names && names.length
+            ? `<div class="votos-list">${escapeHtml(names.join(", "))}</div>`
+            : "";
+        return `
+                <div class="votos-info ${className}">
+                    <div class="votos-header"><i class="${icon}"></i> ${escapeHtml(
+                      label,
+                    )} (${count})</div>
+                    ${list}
+                </div>
+            `;
+      }
+
+      // Render agenda status and symbolic voting badges.
+      function renderStatusStack(row) {
+        const mainText = String(row.status || "Pendente").toUpperCase();
+        const simbolica = row.votacaoSimbolica
+          ? `<span class="status-badge simbolica status-sub-badge">SIMBÓLICA</span>`
+          : `<span class="status-badge simbolica status-sub-badge is-empty">SIMBÓLICA</span>`;
+
+        return `
+                <div class="status-stack">
+                    <span class="status-badge ${row.statusClass}">${escapeHtml(
+                      mainText,
+                    )}</span>
+                    ${simbolica}
+                </div>
+            `;
+      }
+
+      // Render the desktop report table.
+      function renderRelatorioTable(tbody, rows) {
+        if (!rows || rows.length === 0) {
+          tbody.innerHTML = `
+              <tr>
+                <td colspan="7" style="text-align: center; padding: 2rem; color: var(--secondary-text);">
+                  <i class="fa-regular fa-file-lines" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+                  Nenhum dado de relatório disponível
+                </td>
+              </tr>
+            `;
+          return;
+        }
+
+        tbody.innerHTML = rows
+          .map((row) => {
+            const data = formatDatePtBR(row.data);
+            return `
+                    <tr>
+                        <td><span class="cell-ellipsis" title="${escapeHtml(
+                          row.nome,
+                        )}">${escapeHtml(row.nome)}</span></td>
+                        <td><span class="cell-ellipsis" title="${escapeHtml(
+                          row.autor,
+                        )}">${escapeHtml(row.autor)}</span></td>
+                        <td>${renderStatusStack(row)}</td>
+                        <td>${escapeHtml(data)}</td>
+                        <td class="votos-sim">
+                            ${renderVoteCell({
+                              label: "Sim",
+                              icon: "fa-regular fa-circle-check",
+                              count: row.sim.length,
+                              names: row.sim,
+                              className: "votos-sim",
+                            })}
+                        </td>
+                        <td class="votos-nao">
+                            ${renderVoteCell({
+                              label: "Não",
+                              icon: "fa-regular fa-circle-xmark",
+                              count: row.nao.length,
+                              names: row.nao,
+                              className: "votos-nao",
+                            })}
+                        </td>
+                        <td class="votos-abstencao">
+                            ${renderVoteCell({
+                              label: "Abstenção",
+                              icon: "fa-regular fa-circle",
+                              count: row.abstencao.length,
+                              names: row.abstencao,
+                              className: "votos-abstencao",
+                            })}
+                        </td>
+                    </tr>
+                `;
+          })
+          .join("");
+      }
+
+      // Render the mobile report cards.
+      function renderRelatorioCards(container, rows) {
+        if (!rows || rows.length === 0) {
+          container.innerHTML = "";
+          renderEmptyState(
+            container,
+            "Nenhum dado de relatório disponível.",
+            "fa-solid fa-inbox",
+          );
+          return;
+        }
+
+        container.innerHTML = rows
+          .map((row) => {
+            const data = formatDatePtBR(row.data);
+            return `
+                    <div class="relatorio-card">
+                        <div class="relatorio-card-header"><h3 title="${escapeHtml(
+                          row.nome,
+                        )}">${escapeHtml(row.nome)}</h3></div>
+                        <div class="relatorio-card-body">
+                            <div class="info-row"><span class="label">Autor:</span> <span class="cell-ellipsis">${escapeHtml(
+                              row.autor,
+                            )}</span></div>
+                            <div class="info-row"><span class="label">Data:</span> <span>${escapeHtml(
+                              data,
+                            )}</span></div>
+                            <div class="info-row"><span class="label">Status:</span> <span>${renderStatusStack(
+                              row,
+                            )}</span></div>
+                        </div>
+                        <div class="relatorio-card-footer">
+                            ${renderVoteCell({
+                              label: "Sim",
+                              icon: "fa-regular fa-circle-check",
+                              count: row.sim.length,
+                              names: row.sim.slice(0, 10),
+                              className: "votos-sim",
+                            })}
+                            ${renderVoteCell({
+                              label: "Não",
+                              icon: "fa-regular fa-circle-xmark",
+                              count: row.nao.length,
+                              names: row.nao.slice(0, 10),
+                              className: "votos-nao",
+                            })}
+                            ${renderVoteCell({
+                              label: "Abstenção",
+                              icon: "fa-regular fa-circle",
+                              count: row.abstencao.length,
+                              names: row.abstencao.slice(0, 10),
+                              className: "votos-abstencao",
+                            })}
+                        </div>
+                    </div>
+                `;
+          })
+          .join("");
+      }
+
+      // Trigger a browser download for generated report content.
+      function downloadBlob(content, mimeType, filename) {
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      // Escape values for semicolon-delimited CSV output.
+      function csvEscape(value) {
+        const s = String(value ?? "");
+        const escaped = s.replace(/\"/g, '""');
+        return `"${escaped}"`;
+      }
+
+      // Export report rows as a spreadsheet-compatible CSV file.
+      function exportToExcelCsv(rows) {
+        if (!rows || rows.length === 0) return;
+
+        const header = [
+          "Pauta",
+          "Autor",
+          "Status",
+          "Data",
+          "Sim (qtd)",
+          "Sim (nomes)",
+          "Não (qtd)",
+          "Não (nomes)",
+          "Abstenção (qtd)",
+          "Abstenção (nomes)",
+        ];
+
+        const lines = [header.map(csvEscape).join(";")];
+        rows.forEach((row) => {
+          lines.push(
+            [
+              row.nome,
+              row.autor,
+              row.status,
+              formatDatePtBR(row.data),
+              row.sim.length,
+              row.sim.join(", "),
+              row.nao.length,
+              row.nao.join(", "),
+              row.abstencao.length,
+              row.abstencao.join(", "),
+            ]
+              .map(csvEscape)
+              .join(";"),
+          );
+        });
+
+        const today = new Date().toISOString().slice(0, 10);
+        const csv = `\ufeff${lines.join("\n")}`;
+        downloadBlob(
+          csv,
+          "text/csv;charset=utf-8",
+          `relatorio_votos_${today}.csv`,
+        );
+      }
+
+      // Open a printable report document for PDF export.
+      function exportToPdf(rows) {
+        if (!rows || rows.length === 0) return;
+
+        const htmlRows = rows
+          .map((row) => {
+            return `
+                    <tr>
+                        <td>${escapeHtml(row.nome)}</td>
+                        <td>${escapeHtml(row.autor)}</td>
+                        <td>${escapeHtml(row.status)}</td>
+                        <td>${escapeHtml(formatDatePtBR(row.data))}</td>
+                        <td>${row.sim.length}</td>
+                        <td>${row.nao.length}</td>
+                        <td>${row.abstencao.length}</td>
+                    </tr>
+                `;
+          })
+          .join("");
+
+        const win = window.open("", "_blank");
+        if (!win) return;
+
+        win.document.open();
+        win.document.write(`
+                <!doctype html>
+                <html lang="pt-BR">
+                <head>
+                    <meta charset="utf-8" />
+                    <meta name="viewport" content="width=device-width, initial-scale=1" />
+                    <title>Relatório de Votos</title>
+                    <style>
+                        body { font-family: Inter, Arial, sans-serif; padding: 24px; }
+                        h1 { font-size: 18px; margin: 0 0 12px; }
+                        .meta { font-size: 12px; margin: 0 0 16px; }
+                        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }
+                        th { background: #f5f5f5; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Relatório de Votos</h1>
+                    <p class="meta">Gerado em: ${escapeHtml(
+                      new Date().toLocaleString("pt-BR"),
+                    )}</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Pauta</th>
+                                <th>Autor</th>
+                                <th>Status</th>
+                                <th>Data</th>
+                                <th>Sim</th>
+                                <th>Não</th>
+                                <th>Abstenção</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${htmlRows}
+                        </tbody>
+                    </table>
+                </body>
+                </html>
+            `);
+        win.document.close();
+        win.focus();
+        win.print();
+      }
+    </script>
+  </body>
+</html>
