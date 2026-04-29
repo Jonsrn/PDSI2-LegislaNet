@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<!--
+  Daily Order Speakers Page
+  Provides the chamber workflow for viewing, paginating, creating, editing,
+  and removing scheduled speakers for upcoming sessions.
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ordem do Dia - Legisla Net</title>
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+    />
+
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/modals.css" />
+    <link rel="stylesheet" href="../css/forms.css" />
+    <link rel="stylesheet" href="../css/toast.css" />
+    <link rel="stylesheet" href="../css/customSelect.css" />
+    <link rel="stylesheet" href="../css/pagination.css" />
+    <link rel="stylesheet" href="../css/carregamento.css" />
+
+    <style>
+      /* ESTILOS ESPECÍFICOS DA ORDEM DO DIA */
+      .oradores-section {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 24px;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 600px; /* Altura mínima para cálculo de paginação */
+        height: calc(100vh - 140px); /* Altura baseada na viewport */
+      }
+      .oradores-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+      .oradores-header h2 {
+        font-size: 1.25rem;
+      }
+
+      /* Lista de Oradores */
+      .oradores-list {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+      .list-header,
+      .list-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+      }
+      .list-header {
+        color: var(--secondary-text);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .list-item {
+        font-size: 0.875rem;
+        border-bottom: 1px solid var(--border-color);
+        transition: background-color 0.2s;
+      }
+      .list-item:hover {
+        background-color: var(--hover-bg);
+      }
+      .col-ordem {
+        flex: 0.5;
+        text-align: center;
+      }
+      .col-vereador {
+        flex: 3;
+      }
+      .col-sessao {
+        flex: 2.5;
+      }
+      .col-tempo {
+        flex: 1.5;
+        text-align: center;
+      }
+      .col-acoes {
+        flex: 1.5;
+        text-align: right;
+      }
+      /* Botões de ação - seguindo padrão do cadastro de pautas */
+      .actions-cell {
+        display: flex;
+        gap: 0;
+        justify-content: flex-end;
+      }
+
+      .actions-cell .btn-action {
+        color: white;
+        padding: 6px 14px;
+        margin-left: 8px;
+        text-decoration: none;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .btn-edit {
+        background-color: var(--accent-orange);
+      }
+
+      .btn-edit:hover {
+        background-color: #e07c00;
+        transform: translateY(-1px);
+      }
+
+      .btn-remove {
+        background-color: var(--accent-red);
+      }
+
+      .btn-remove:hover {
+        background-color: #c82333;
+        transform: translateY(-1px);
+      }
+
+      /* Estado vazio */
+      .no-data {
+        border: none !important;
+      }
+
+      .no-data:hover {
+        background: transparent !important;
+      }
+
+      /* Customizações específicas para select de vereadores */
+      .vereador-container {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        gap: 12px;
+      }
+
+      .vereador-foto {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--border-color);
+        flex-shrink: 0;
+      }
+
+      .vereador-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        min-width: 0; /* Permite que o texto seja truncado se necessário */
+      }
+
+      .vereador-nome {
+        font-weight: 500;
+        font-size: 0.95rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .vereador-separador {
+        color: var(--secondary-text);
+        font-weight: normal;
+      }
+
+      .vereador-partido-container {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+
+      .vereador-partido {
+        font-size: 0.85rem;
+        color: var(--secondary-text);
+        font-weight: 500;
+      }
+
+      .partido-logo {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 1px solid var(--border-color);
+      }
+
+      /* Ajustes específicos para o trigger quando selecionado */
+      .custom-select-trigger {
+        min-height: 48px; /* Acomodar a foto de 40px + padding */
+        padding: 6px 12px;
+      }
+
+      .custom-select-trigger .vereador-container {
+        margin: 0;
+      }
+
+      /* Ajustes para as opções no dropdown */
+      .custom-option {
+        padding: 8px 12px; /* Mais espaço vertical para a foto maior */
+      }
+
+      .custom-option .vereador-container {
+        margin: 0;
+      }
+
+      /* Responsividade para telas menores */
+      @media (max-width: 480px) {
+        .vereador-nome {
+          max-width: 120px;
+        }
+      }
+
+      /* RESPONSIVIDADE */
+      .cards-container {
+        display: none;
+        visibility: hidden;
+      }
+      @media (max-width: 768px) {
+        .oradores-header {
+          gap: 12px;
+        }
+
+        /* Botão padrão mobile: ícone-only */
+        #novoOradorBtn {
+          width: 40px;
+          height: 40px;
+          min-height: 40px;
+          padding: 0;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          white-space: nowrap;
+          border-radius: 10px;
+          flex: 0 0 auto;
+        }
+
+        #novoOradorBtn .btn-text {
+          display: none;
+        }
+
+        #novoOradorBtn i {
+          margin: 0;
+        }
+
+        .oradores-list {
+          display: none;
+          visibility: hidden;
+        }
+        .cards-container {
+          display: grid;
+          visibility: visible;
+          grid-template-columns: 1fr;
+          gap: 12px;
+          flex-grow: 1;
+        }
+        .orador-card {
+          background-color: var(--hover-bg);
+          border: 1px solid var(--border-color);
+          border-radius: 8px;
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .orador-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 12px;
+        }
+        .orador-card-header h3 {
+          font-size: 1rem;
+          font-weight: 600;
+          margin: 0;
+          flex: 1;
+        }
+        .orador-card-body {
+          font-size: 0.875rem;
+          color: var(--secondary-text);
+        }
+
+        /* Botões menores nos cards */
+        .orador-card .actions-cell .btn-action {
+          padding: 4px 8px;
+          font-size: 0.7rem;
+          margin-left: 4px;
+        }
+      }
+
+      /* Estados vazios e de erro */
+      .empty-state {
+        text-align: center;
+        padding: 64px 24px;
+        color: var(--secondary-text);
+      }
+
+      .empty-state i {
+        font-size: 2rem;
+        margin-bottom: 16px;
+        display: block;
+        opacity: 0.6;
+      }
+
+      .empty-state p {
+        margin: 0;
+        font-size: 1rem;
+      }
+
+      /* Modo lote (modal de orador) */
+      .batch-vereadores-list {
+        max-height: 240px;
+        overflow-y: auto;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        background-color: var(--hover-bg);
+        padding: 8px;
+      }
+
+      .batch-vereador-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 8px;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .batch-vereador-item:last-child {
+        border-bottom: none;
+      }
+
+      .batch-vereador-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .batch-vereador-name {
+        font-weight: 600;
+        color: var(--primary-text);
+      }
+
+      .batch-vereador-meta {
+        font-size: 0.85rem;
+        color: var(--secondary-text);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Application shell with shared sidebar and header placeholders. -->
+    <div class="app-layout">
+      <div id="sidebar-placeholder"></div>
+
+      <main class="main-content" id="mainContent">
+        <div id="header-placeholder"></div>
+
+        <!-- Speaker order workspace with responsive list, cards, and pagination. -->
+        <section class="oradores-section fade-in">
+          <div class="oradores-header">
+            <h2>Ordem dos Oradores</h2>
+            <button class="btn btn-primary" id="novoOradorBtn">
+              <i class="fa-solid fa-plus" aria-hidden="true"></i>
+              <span class="btn-text">Novo Orador</span>
+            </button>
+          </div>
+
+          <!-- Desktop speaker list populated dynamically from API data. -->
+          <div class="oradores-list">
+            <div class="list-header">
+              <div class="col-ordem">#</div>
+              <div class="col-vereador">Vereador</div>
+              <div class="col-sessao">Sessão</div>
+              <div class="col-tempo">Tempo</div>
+              <div class="col-acoes">Ações</div>
+            </div>
+            <div id="oradores-list-content">
+              <!-- Oradores serão carregados dinamicamente -->
+            </div>
+          </div>
+
+          <!-- Mobile speaker cards populated from the same paginated dataset. -->
+          <div class="cards-container" id="oradores-cards-content">
+            <!-- Cards serão carregados dinamicamente -->
+          </div>
+
+          <!-- Pagination controls for the speaker list. -->
+          <!-- Paginação -->
+          <div class="pagination-container" style="display: none">
+            <div class="pagination-controls" id="oradores-pagination"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Create speaker modal with single and batch registration modes. -->
+    <div class="modal-overlay" id="oradorModal">
+      <div class="modal-container">
+        <div class="modal-header">
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              flex-wrap: wrap;
+            "
+          >
+            <h2 id="oradorModalTitle">Novo Orador</h2>
+            <div class="toggle-group" style="margin-left: 4px">
+              <span style="font-size: 0.85rem; color: var(--secondary-text)"
+                >Modo lote</span
+              >
+              <label
+                class="toggle-switch"
+                title="Alternar para cadastrar vários oradores de uma vez"
+              >
+                <input type="checkbox" id="oradorBatchToggle" />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+          <button class="modal-close" id="closeOradorModal">
+            <i class="fa-solid fa-times"></i>
+          </button>
+        </div>
+        <form class="modal-body" id="oradorForm" novalidate>
+          <!-- Single speaker mode uses the custom councilor selector. -->
+          <div id="orador-mode-single">
+            <div class="form-group">
+              <label>Vereador</label>
+              <div class="custom-select-wrapper" id="vereador-select-wrapper">
+                <input type="hidden" id="vereador-select" name="vereador_id" />
+                <div class="custom-select-trigger">
+                  Carregando vereadores...
+                </div>
+                <div class="custom-options"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Batch speaker mode allows multiple councilors to be selected at once. -->
+          <div id="orador-mode-batch" style="display: none">
+            <div class="form-group">
+              <label>Vereadores</label>
+              <div id="vereadores-batch-list" class="batch-vereadores-list">
+                <div class="empty-state" style="padding: 16px 8px">
+                  <p>Carregando vereadores...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Shared session and speaking time fields for both registration modes. -->
+          <div class="form-group">
+            <label>Sessão</label>
+            <div class="custom-select-wrapper" id="sessao-select-wrapper">
+              <input type="hidden" id="sessao-select" name="sessao_id" />
+              <div class="custom-select-trigger">Carregando sessões...</div>
+              <div class="custom-options"></div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="tempo-input">Tempo de Fala (minutos)</label>
+            <input
+              type="number"
+              id="tempo-input"
+              class="form-input"
+              min="1"
+              placeholder="Ex: 10"
+            />
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="cancelOradorModal"
+            >
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary" id="createOradorBtn">
+              Criar Orador
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Edit speaking time modal for an existing speaker entry. -->
+    <div class="modal-overlay" id="editarTempoModal">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h2>Editar Tempo de Fala</h2>
+          <button class="modal-close" id="closeEditarTempoModal">
+            <i class="fa-solid fa-times"></i>
+          </button>
+        </div>
+        <form class="modal-body">
+          <div class="form-group">
+            <label for="edit-tempo-input">Novo Tempo (minutos)</label>
+            <input
+              type="number"
+              id="edit-tempo-input"
+              class="form-input"
+              min="1"
+              value="10"
+            />
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="cancelEditarTempoModal"
+            >
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Deletion confirmation modal for removing a speaker from the order list. -->
+    <div class="modal-overlay" id="confirmarExclusaoModal">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h2>Confirmar Exclusão</h2>
+          <button class="modal-close" id="closeConfirmarExclusaoModal">
+            <i class="fa-solid fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body confirm-text">
+          <p>Você tem certeza que deseja remover este orador da lista?</p>
+          <p>Esta ação não poderá ser desfeita.</p>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            id="cancelConfirmarExclusaoModal"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn"
+            id="excluirOradorBtn"
+            style="background-color: var(--accent-red); color: white"
+          >
+            Excluir
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="../js/mockMode.js?v=4"></script>
+    <script src="../js/global.js"></script>
+    <script src="../js/modals.js"></script>
+    <script src="../js/toast.js"></script>
+    <script src="../js/customSelect.js"></script>
+    <script src="../js/pagination.js"></script>
+    <script src="../js/carregamento.js"></script>
+
+    <script>
+      // Page-level state for custom selectors.
+      let vereadorSelect, sessaoSelect;
+
+      // Pagination state for the loaded speaker dataset.
+      let currentPage = 1;
+      let itemsPerPage = 10; // Valor padrão, será calculado dinamicamente
+      let allOradoresData = []; // Armazenar todos os oradores para paginação
+
+      // Fetch active councilors and populate single and batch speaker controls.
+      async function carregarVereadoresAtivos() {
+        try {
+          const token = localStorage.getItem("authToken");
+          const response = await fetch("/api/sessoes/vereadores-ativos", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Erro ao carregar vereadores");
+          }
+
+          const responseData = await response.json();
+          const vereadores = responseData.data || [];
+
+          // Guardar para modo lote
+          window.vereadoresAtivosData = vereadores;
+
+          if (vereadores.length === 0) {
+            showToast("Nenhum vereador ativo encontrado", "info");
+            return;
+          }
+
+          // Renderizar lista do modo lote (se existir)
+          renderBatchVereadoresList(vereadores);
+
+          // Preparar opções para o customSelect
+          const options = vereadores.map((vereador) => {
+            const partidoSigla = vereador.partidos?.sigla || "Sem Partido";
+            const logoUrl = vereador.partidos?.logo_url;
+            const fotoUrl = vereador.foto_url;
+
+            return {
+              value: vereador.id,
+              text:
+                vereador.nome_parlamentar +
+                (partidoSigla !== "Sem Partido" ? ` - ${partidoSigla}` : ""),
+              image: fotoUrl,
+              alt: vereador.nome_parlamentar,
+              customHtml: `
+                            <div class="vereador-container">
+                                ${
+                                  fotoUrl
+                                    ? `<img src="${fotoUrl}" alt="${vereador.nome_parlamentar}" class="vereador-foto" onerror="this.style.display='none'">`
+                                    : '<div class="vereador-foto" style="background: var(--border-color); display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-user" style="color: var(--secondary-text); font-size: 16px;"></i></div>'
+                                }
+                                <div class="vereador-info">
+                                    <span class="vereador-nome">${
+                                      vereador.nome_parlamentar
+                                    }</span>
+                                    ${
+                                      partidoSigla !== "Sem Partido"
+                                        ? `<span class="vereador-separador">-</span>`
+                                        : ""
+                                    }
+                                    <div class="vereador-partido-container">
+                                        <span class="vereador-partido">${partidoSigla}</span>
+                                        ${
+                                          logoUrl
+                                            ? `<img src="${logoUrl}" alt="${partidoSigla}" class="partido-logo" onerror="this.style.display='none'">`
+                                            : ""
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        `,
+            };
+          });
+
+          // Popular o select customizado com HTML personalizado
+          const optionsContainer = vereadorSelect.optionsContainer;
+          optionsContainer.innerHTML = "";
+
+          options.forEach((option) => {
+            const optionElement = document.createElement("div");
+            optionElement.className = "custom-option";
+            optionElement.dataset.value = option.value;
+            optionElement.innerHTML = option.customHtml;
+
+            // Event listener personalizado para seleção
+            optionElement.addEventListener("click", () => {
+              // Atualizar valor do input hidden
+              vereadorSelect.hiddenInput.value = option.value;
+
+              // Atualizar visual do trigger com o layout customizado
+              vereadorSelect.trigger.innerHTML = option.customHtml;
+
+              // Atualizar classes de seleção
+              optionsContainer
+                .querySelectorAll(".custom-option")
+                .forEach((opt) => {
+                  opt.classList.remove("selected");
+                });
+              optionElement.classList.add("selected");
+
+              // Fechar dropdown
+              optionsContainer.classList.remove("open");
+
+              // Callback se existir
+              if (vereadorSelect.onSelect) {
+                vereadorSelect.onSelect(option);
+              }
+            });
+
+            optionsContainer.appendChild(optionElement);
+          });
+        } catch (error) {
+          console.error("Erro ao carregar vereadores:", error);
+          showToast("Erro ao carregar vereadores", "error");
+        }
+      }
+
+      // Render the batch councilor checklist used by the create speaker modal.
+      function renderBatchVereadoresList(vereadores) {
+        const container = document.getElementById("vereadores-batch-list");
+        if (!container) return;
+
+        if (!Array.isArray(vereadores) || vereadores.length === 0) {
+          container.innerHTML = `
+                    <div class="empty-state" style="padding: 16px 8px;">
+                        <p>Nenhum vereador disponível.</p>
+                    </div>
+                `;
+          return;
+        }
+
+        const html = vereadores
+          .map((v) => {
+            const partidoSigla = v.partidos?.sigla || "Sem Partido";
+            const meta =
+              partidoSigla !== "Sem Partido" ? partidoSigla : "Sem partido";
+            return `
+                    <div class="batch-vereador-item">
+                        <input type="checkbox" name="vereador_ids" value="${v.id}" />
+                        <div class="batch-vereador-info">
+                            <div class="batch-vereador-name">${v.nome_parlamentar}</div>
+                            <div class="batch-vereador-meta">${meta}</div>
+                        </div>
+                    </div>
+                `;
+          })
+          .join("");
+
+        container.innerHTML = html;
+      }
+
+      // Fetch upcoming sessions and populate the session selector.
+      async function carregarSessoesFuturas() {
+        try {
+          const token = localStorage.getItem("authToken");
+          const response = await fetch("/api/sessoes/disponiveis", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Erro ao carregar sessões");
+          }
+
+          const responseData = await response.json();
+          const sessoesFuturas = responseData.data || [];
+
+          if (sessoesFuturas.length === 0) {
+            showToast("Nenhuma sessão futura disponível", "info");
+            return;
+          }
+
+          // Preparar opções para o customSelect
+          const options = sessoesFuturas.map((sessao) => {
+            const dataSessao = new Date(sessao.data_sessao);
+            const dataFormatada = dataSessao.toLocaleDateString("pt-BR");
+            const tipoSessao = sessao.tipo || "Sessão";
+
+            return {
+              value: sessao.id,
+              text: `${dataFormatada} - ${tipoSessao}`,
+              image: null, // Sessões não têm imagem
+            };
+          });
+
+          // Popular o select customizado
+          sessaoSelect.populateOptions(options);
+
+          // Selecionar automaticamente a primeira sessão (mais próxima)
+          if (options.length > 0) {
+            sessaoSelect.setValue(options[0].value);
+          }
+        } catch (error) {
+          console.error("Erro ao carregar sessões:", error);
+          showToast("Erro ao carregar sessões", "error");
+        }
+      }
+
+      // Calculate how many speaker rows fit in the visible list area.
+      function calculateItemsPerPage() {
+        const oradoresSection = document.querySelector(".oradores-section");
+        const oradoresHeader = document.querySelector(".oradores-header");
+        const listHeader = document.querySelector(".list-header");
+        const paginationContainer = document.querySelector(
+          ".pagination-container"
+        );
+
+        if (!oradoresSection) {
+          return 10; // Valor padrão se não conseguir calcular
+        }
+
+        // Obter altura real da seção
+        let sectionHeight = oradoresSection.offsetHeight;
+
+        // Se ainda não renderizou completamente, usar altura da viewport
+        if (sectionHeight < 100) {
+          sectionHeight = window.innerHeight - 140; // Baseado no CSS height: calc(100vh - 140px)
+        }
+
+        const headerHeight = oradoresHeader ? oradoresHeader.offsetHeight : 60;
+        const listHeaderHeight = listHeader ? listHeader.offsetHeight : 37;
+        const paginationHeight = 70; // Altura estimada da paginação
+
+        // Altura de cada item da lista (padding 12px * 2 + altura do conteúdo + border 1px)
+        const itemHeight = 49;
+
+        // Espaço disponível para itens (incluindo padding da seção: 24px * 2)
+        const availableHeight =
+          sectionHeight -
+          headerHeight -
+          listHeaderHeight -
+          paginationHeight -
+          48;
+
+        // Calcular número de itens que cabem
+        const calculatedItems = Math.floor(availableHeight / itemHeight);
+
+        console.log("Calculando paginação:", {
+          sectionHeight,
+          headerHeight,
+          listHeaderHeight,
+          paginationHeight,
+          availableHeight,
+          itemHeight,
+          calculatedItems,
+        });
+
+        // Garantir um mínimo de 5 e máximo de 25 itens por página
+        return Math.max(5, Math.min(25, calculatedItems));
+      }
+
+      // Fetch all speaker entries and prepare the current paginated view.
+      async function carregarOradores(page = 1) {
+        // Mostrar estado de carregamento apenas no container principal (lista)
+        // O CSS responsivo vai controlar qual é exibido
+        const listContent = document.getElementById("oradores-list-content");
+        const cardsContent = document.getElementById("oradores-cards-content");
+
+        // Mostrar loading apenas no container da lista (desktop)
+        // O mesmo conteúdo será usado para ambos devido ao CSS responsivo
+        renderLoadingState(listContent, "Carregando oradores...");
+        cardsContent.innerHTML = ""; // Limpar cards
+
+        try {
+          const token = localStorage.getItem("authToken");
+          const response = await fetch("/api/sessoes/oradores", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Erro ao carregar oradores");
+          }
+
+          const responseData = await response.json();
+          const oradores = responseData.data || [];
+
+          // Armazenar todos os dados globalmente
+          allOradoresData = oradores;
+          window.oradoresData = oradores;
+
+          // Calcular itens por página dinamicamente
+          setTimeout(() => {
+            itemsPerPage = calculateItemsPerPage();
+            currentPage = page;
+            exibirOradoresPaginados();
+          }, 100); // Aguardar renderização para calcular dimensões corretas
+        } catch (error) {
+          console.error("Erro ao carregar oradores:", error);
+
+          // Mostrar estado de erro apenas no container principal
+          renderErrorState(listContent, "Erro ao carregar oradores");
+          cardsContent.innerHTML = ""; // Limpar cards
+
+          showToast("Erro ao carregar oradores", "error");
+
+          // Ocultar paginação em caso de erro
+          const paginationContainer = document.querySelector(
+            ".pagination-container"
+          );
+          if (paginationContainer) paginationContainer.style.display = "none";
+        }
+      }
+
+      // Display the current page of speaker entries and update pagination controls.
+      // Função para exibir oradores com paginação
+      function exibirOradoresPaginados() {
+        const totalItems = allOradoresData.length;
+
+        // Calcular índices para paginação
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const oradoresPagina = allOradoresData.slice(startIndex, endIndex);
+
+        // Exibir oradores da página atual
+        exibirOradores(oradoresPagina);
+
+        // Atualizar controles de paginação
+        createPaginationControls({
+          containerId: "oradores-pagination",
+          currentPage: currentPage,
+          totalItems: totalItems,
+          itemsPerPage: itemsPerPage,
+          onPageChange: (page) => {
+            currentPage = page;
+            exibirOradoresPaginados();
+            // Rolar para o topo da lista
+            document
+              .querySelector(".oradores-section")
+              .scrollIntoView({ behavior: "smooth" });
+          },
+        });
+      }
+
+      // Render speaker entries in desktop table and mobile card formats.
+      // Exibir oradores na tabela (função base mantida para compatibilidade)
+      function exibirOradores(oradores) {
+        const listContent = document.getElementById("oradores-list-content");
+        const cardsContent = document.getElementById("oradores-cards-content");
+
+        if (!oradores || oradores.length === 0) {
+          // Usar estado vazio apenas no container principal (lista)
+          // O CSS responsivo controlará qual é exibido
+          renderEmptyState(
+            listContent,
+            "Nenhum orador cadastrado ainda",
+            "fa-solid fa-users"
+          );
+          cardsContent.innerHTML = ""; // Limpar cards
+
+          // Ocultar paginação se não há dados
+          const paginationContainer = document.querySelector(
+            ".pagination-container"
+          );
+          if (paginationContainer) paginationContainer.style.display = "none";
+          return;
+        }
+
+        // Limpar conteúdos anteriores
+        listContent.innerHTML = "";
+        cardsContent.innerHTML = "";
+
+        // Agrupar por sessão e ordenar
+        const oradoresPorSessao = oradores.reduce((acc, orador) => {
+          const sessaoId = orador.sessoes?.id;
+          if (!acc[sessaoId]) {
+            acc[sessaoId] = {
+              sessao: orador.sessoes,
+              oradores: [],
+            };
+          }
+          acc[sessaoId].oradores.push(orador);
+          return acc;
+        }, {});
+
+        let html = "";
+        // Ordenar grupos por data da sessão (mais recente primeiro)
+        const gruposOrdenados = Object.values(oradoresPorSessao).sort(
+          (a, b) => {
+            return (
+              new Date(b.sessao.data_sessao) - new Date(a.sessao.data_sessao)
+            );
+          }
+        );
+
+        gruposOrdenados.forEach((grupo) => {
+          // Ordenar oradores por ordem
+          grupo.oradores.sort((a, b) => a.ordem - b.ordem);
+
+          grupo.oradores.forEach((orador) => {
+            const dataSessao = new Date(grupo.sessao.data_sessao);
+            const dataFormatada = dataSessao.toLocaleDateString("pt-BR");
+            const tempoTexto = orador.tempo_fala_minutos
+              ? `${orador.tempo_fala_minutos} min`
+              : "Não definido";
+            const partidoSigla = orador.vereadores?.partidos?.sigla || "S/P";
+
+            html += `
+                        <div class="list-item" data-orador-id="${orador.id}">
+                            <div class="col-ordem">${orador.ordem}º</div>
+                            <div class="col-vereador">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    ${
+                                      orador.vereadores?.foto_url
+                                        ? `<img src="${orador.vereadores.foto_url}" alt="${orador.vereadores.nome_parlamentar}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">`
+                                        : '<div style="width: 24px; height: 24px; border-radius: 50%; background: var(--border-color); display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-user" style="font-size: 10px; color: var(--secondary-text);"></i></div>'
+                                    }
+                                    <span>${
+                                      orador.vereadores?.nome_parlamentar
+                                    }</span>
+                                    <span style="color: var(--secondary-text); font-size: 0.8rem;">(${partidoSigla})</span>
+                                </div>
+                            </div>
+                            <div class="col-sessao">
+                                <div>
+                                    <div style="font-weight: 500;">${
+                                      grupo.sessao.nome
+                                    }</div>
+                                    <div style="color: var(--secondary-text); font-size: 0.8rem;">${dataFormatada}</div>
+                                </div>
+                            </div>
+                            <div class="col-tempo">${tempoTexto}</div>
+                            <div class="col-acoes">
+                                <div class="actions-cell">
+                                    <button class="btn btn-action btn-edit" data-action="edit" data-orador-id="${
+                                      orador.id
+                                    }" title="Editar tempo de fala">
+                                        Editar
+                                    </button>
+                                    <button class="btn btn-action btn-remove" data-action="remove" data-orador-id="${
+                                      orador.id
+                                    }" title="Remover orador">
+                                        Remover
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+          });
+        });
+
+        listContent.innerHTML = html;
+
+        // Gerar cards responsivos
+        let cardsHtml = "";
+        gruposOrdenados.forEach((grupo) => {
+          grupo.oradores.forEach((orador) => {
+            const dataSessao = new Date(grupo.sessao.data_sessao);
+            const dataFormatada = dataSessao.toLocaleDateString("pt-BR");
+            const tempoTexto = orador.tempo_fala_minutos
+              ? `${orador.tempo_fala_minutos} min`
+              : "Não definido";
+            const partidoSigla = orador.vereadores?.partidos?.sigla || "S/P";
+
+            cardsHtml += `
+                        <div class="orador-card" data-orador-id="${orador.id}">
+                            <div class="orador-card-header">
+                                <h3>${orador.vereadores?.nome_parlamentar} (${partidoSigla})</h3>
+                                <div class="actions-cell">
+                                    <button class="btn btn-action btn-edit" data-action="edit" data-orador-id="${orador.id}" title="Editar tempo de fala">
+                                        Editar
+                                    </button>
+                                    <button class="btn btn-action btn-remove" data-action="remove" data-orador-id="${orador.id}" title="Remover orador">
+                                        Remover
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="orador-card-body">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span><strong>Ordem:</strong> ${orador.ordem}º</span>
+                                    <span><strong>Tempo:</strong> ${tempoTexto}</span>
+                                </div>
+                                <div>
+                                    <div style="font-weight: 500;">${grupo.sessao.nome}</div>
+                                    <div style="color: var(--secondary-text); font-size: 0.8rem;">${dataFormatada}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+          });
+        });
+
+        // Renderizar cards (versão mobile) - sempre renderizar para manter consistência
+        cardsContent.innerHTML = cardsHtml;
+      }
+
+      // Initialize layout, custom controls, data loading, modals, and event handlers.
+      document.addEventListener("DOMContentLoaded", () => {
+        initLayout({
+          title: "Ordem do Dia",
+          icon: "fa-gavel",
+          navActive: "nav-ordem-do-dia",
+        });
+
+        // Verificar se CustomSelect está disponível
+        console.log("CustomSelect disponível?", typeof window.CustomSelect);
+        console.log(
+          "Wrapper vereador existe?",
+          document.getElementById("vereador-select-wrapper")
+        );
+        console.log(
+          "Wrapper sessao existe?",
+          document.getElementById("sessao-select-wrapper")
+        );
+
+        // Inicializar selects customizados manualmente
+        if (typeof window.CustomSelect !== "undefined") {
+          try {
+            vereadorSelect = new CustomSelect({
+              wrapperId: "vereador-select-wrapper",
+              placeholder: "Selecione um vereador",
+            });
+            console.log("Vereador select inicializado:", vereadorSelect);
+
+            sessaoSelect = new CustomSelect({
+              wrapperId: "sessao-select-wrapper",
+              placeholder: "Selecione uma sessão",
+            });
+            console.log("Sessao select inicializado:", sessaoSelect);
+          } catch (error) {
+            console.error("Erro ao inicializar selects:", error);
+            showToast("Erro ao inicializar selects customizados", "error");
+          }
+        } else {
+          console.error("CustomSelect não está disponível");
+          showToast("Erro: CustomSelect não carregado", "error");
+        }
+
+        // Carregar oradores ao inicializar (já inclui loading state)
+        carregarOradores();
+
+        // Event listener para abrir modal de novo orador
+        const novoOradorBtn = document.getElementById("novoOradorBtn");
+        if (novoOradorBtn) {
+          novoOradorBtn.addEventListener("click", () => {
+            carregarVereadoresAtivos(); // Carregar vereadores ao abrir modal
+            carregarSessoesFuturas(); // Carregar sessões ao abrir modal
+            // Sempre abrir no modo normal
+            setOradorMode(false);
+            openModal("oradorModal");
+          });
+        }
+
+        document
+          .getElementById("oradorBatchToggle")
+          ?.addEventListener("change", (e) => {
+            setOradorMode(!!e.target.checked);
+          });
+
+        // Event listeners para fechar modais
+        document
+          .getElementById("closeOradorModal")
+          ?.addEventListener("click", () => closeModal("oradorModal"));
+        document
+          .getElementById("cancelOradorModal")
+          ?.addEventListener("click", () => closeModal("oradorModal"));
+
+        document
+          .getElementById("closeEditarTempoModal")
+          ?.addEventListener("click", () => closeModal("editarTempoModal"));
+        document
+          .getElementById("cancelEditarTempoModal")
+          ?.addEventListener("click", () => closeModal("editarTempoModal"));
+
+        document
+          .getElementById("closeConfirmarExclusaoModal")
+          ?.addEventListener("click", () =>
+            closeModal("confirmarExclusaoModal")
+          );
+        document
+          .getElementById("cancelConfirmarExclusaoModal")
+          ?.addEventListener("click", () =>
+            closeModal("confirmarExclusaoModal")
+          );
+
+        // Event listeners para botões de ação (editar/remover)
+        document.addEventListener("click", (e) => {
+          const editBtn = e.target.closest('[data-action="edit"]');
+          const removeBtn = e.target.closest('[data-action="remove"]');
+
+          if (editBtn) {
+            const oradorId = editBtn.getAttribute("data-orador-id");
+            console.log("Editando orador ID:", oradorId);
+            window.currentOradorId = oradorId;
+
+            // Encontrar o orador nos dados e pré-preencher o modal
+            const orador = window.oradoresData?.find((o) => o.id === oradorId);
+            console.log("Orador encontrado:", orador);
+            if (orador && orador.tempo_fala_minutos) {
+              document.getElementById("edit-tempo-input").value =
+                orador.tempo_fala_minutos;
+            } else {
+              // Se não tem tempo definido, usar valor padrão
+              document.getElementById("edit-tempo-input").value = 10;
+            }
+
+            openModal("editarTempoModal");
+          } else if (removeBtn) {
+            const oradorId = removeBtn.getAttribute("data-orador-id");
+            console.log("Removendo orador ID:", oradorId);
+            window.currentOradorId = oradorId;
+
+            // Encontrar o orador nos dados para mostrar informações no modal
+            const orador = window.oradoresData?.find((o) => o.id === oradorId);
+            if (orador) {
+              const modalText = document.querySelector(
+                "#confirmarExclusaoModal .modal-body p"
+              );
+              if (modalText) {
+                modalText.textContent = `Você tem certeza que deseja remover "${orador.vereadores?.nome_parlamentar}" da lista de oradores?`;
+              }
+            }
+
+            openModal("confirmarExclusaoModal");
+          }
+        });
+
+        // Toggle between single and batch speaker creation modes.
+        // Função para cadastrar orador
+        function setOradorMode(isBatch) {
+          const single = document.getElementById("orador-mode-single");
+          const batch = document.getElementById("orador-mode-batch");
+          const title = document.getElementById("oradorModalTitle");
+          const createBtn = document.getElementById("createOradorBtn");
+          const toggle = document.getElementById("oradorBatchToggle");
+
+          if (toggle) toggle.checked = !!isBatch;
+          if (single) single.style.display = isBatch ? "none" : "block";
+          if (batch) batch.style.display = isBatch ? "block" : "none";
+
+          if (title)
+            title.textContent = isBatch
+              ? "Adicionar Oradores (Lote)"
+              : "Novo Orador";
+          if (createBtn)
+            createBtn.textContent = isBatch
+              ? "Cadastrar em Lote"
+              : "Criar Orador";
+
+          // Garantir que a lista esteja renderizada
+          if (isBatch && Array.isArray(window.vereadoresAtivosData)) {
+            renderBatchVereadoresList(window.vereadoresAtivosData);
+          }
+        }
+
+        // Persist a single speaker registration through the API.
+        async function postOrador({ token, vereadorId, sessaoId, tempoFala }) {
+          const response = await fetch("/api/sessoes/oradores", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              vereador_id: vereadorId,
+              sessao_id: sessaoId,
+              tempo_fala_minutos: tempoFala ? parseInt(tempoFala) : null,
+            }),
+          });
+          const result = await response.json();
+          if (!response.ok) {
+            throw new Error(result.error || "Erro ao cadastrar orador");
+          }
+          return result;
+        }
+
+        // Validate and submit single or batch speaker registrations.
+        async function cadastrarOrador() {
+          const isBatch =
+            !!document.getElementById("oradorBatchToggle")?.checked;
+          const sessaoId = sessaoSelect.getValue();
+          const tempoFala = document.getElementById("tempo-input").value;
+
+          if (!sessaoId) {
+            showToast("Selecione uma sessão", "error");
+            return;
+          }
+
+          const createBtn = document.getElementById("createOradorBtn");
+          const originalText = createBtn.textContent;
+          createBtn.disabled = true;
+
+          try {
+            const token = localStorage.getItem("authToken");
+
+            if (!isBatch) {
+              const vereadorId = vereadorSelect.getValue();
+              if (!vereadorId) {
+                showToast("Selecione um vereador", "error");
+                return;
+              }
+
+              // Verificação de duplicata no frontend
+              if (window.oradoresData && window.oradoresData.length > 0) {
+                const duplicata = window.oradoresData.find(
+                  (orador) =>
+                    orador.vereadores?.id === vereadorId &&
+                    orador.sessoes?.id === sessaoId
+                );
+                if (duplicata) {
+                  showToast(
+                    "Este vereador já está cadastrado como orador nesta sessão",
+                    "error"
+                  );
+                  return;
+                }
+              }
+
+              createBtn.textContent = "Cadastrando...";
+              const result = await postOrador({
+                token,
+                vereadorId,
+                sessaoId,
+                tempoFala,
+              });
+
+              showToast(
+                result.message || "Orador cadastrado com sucesso!",
+                "success"
+              );
+              vereadorSelect.reset();
+              document.getElementById("tempo-input").value = "";
+              closeModal("oradorModal");
+              carregarOradores();
+              return;
+            }
+
+            // Modo lote
+            const selectedIds = Array.from(
+              document.querySelectorAll('input[name="vereador_ids"]:checked')
+            ).map((el) => el.value);
+
+            if (selectedIds.length === 0) {
+              showToast("Selecione pelo menos um vereador", "error");
+              return;
+            }
+
+            // Bloquear duplicatas já existentes
+            if (window.oradoresData && window.oradoresData.length > 0) {
+              const existeDuplicata = selectedIds.some((vid) =>
+                window.oradoresData.find(
+                  (orador) =>
+                    orador.vereadores?.id === vid &&
+                    orador.sessoes?.id === sessaoId
+                )
+              );
+              if (existeDuplicata) {
+                showToast(
+                  "Há vereadores selecionados que já são oradores nesta sessão",
+                  "error"
+                );
+                return;
+              }
+            }
+
+            let okCount = 0;
+            const failures = [];
+            for (let i = 0; i < selectedIds.length; i++) {
+              const vereadorId = selectedIds[i];
+              createBtn.textContent = `Cadastrando (${i + 1}/${
+                selectedIds.length
+              })...`;
+              try {
+                await postOrador({ token, vereadorId, sessaoId, tempoFala });
+                okCount++;
+              } catch (err) {
+                failures.push({ vereadorId, message: err.message });
+              }
+            }
+
+            if (failures.length > 0) {
+              showToast(
+                `${okCount} cadastrados, ${failures.length} falharam: ${failures[0].message}`,
+                "error"
+              );
+            } else {
+              showToast("Oradores cadastrados com sucesso!", "success");
+            }
+
+            // Limpar seleção e fechar
+            document
+              .querySelectorAll('input[name="vereador_ids"]:checked')
+              .forEach((el) => (el.checked = false));
+            document.getElementById("tempo-input").value = "";
+            closeModal("oradorModal");
+            carregarOradores();
+          } catch (error) {
+            console.error("Erro ao cadastrar orador:", error);
+            showToast(error.message, "error");
+          } finally {
+            createBtn.disabled = false;
+            createBtn.textContent = originalText;
+          }
+        }
+
+        // Event listener para o formulário de cadastro
+        document
+          .getElementById("oradorForm")
+          ?.addEventListener("submit", (e) => {
+            e.preventDefault();
+            cadastrarOrador();
+          });
+
+        // Submit speaking time changes for the selected speaker.
+        // Função para editar tempo de fala
+        async function editarTempoOrador() {
+          const tempoInput = document.getElementById("edit-tempo-input");
+          const novoTempo = tempoInput.value;
+
+          console.log(
+            "Editando tempo - Orador ID:",
+            window.currentOradorId,
+            "Novo tempo:",
+            novoTempo
+          );
+
+          if (!novoTempo || novoTempo < 1) {
+            showToast("Informe um tempo válido", "error");
+            return;
+          }
+
+          if (!window.currentOradorId) {
+            showToast("Erro: Orador não identificado", "error");
+            return;
+          }
+
+          try {
+            const token = localStorage.getItem("authToken");
+            const response = await fetch(
+              `/api/sessoes/oradores/${window.currentOradorId}`,
+              {
+                method: "PUT",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  tempo_fala_minutos: parseInt(novoTempo),
+                }),
+              }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok) {
+              throw new Error(
+                result.error || "Erro ao atualizar tempo de fala"
+              );
+            }
+
+            showToast(
+              result.message || "Tempo de fala atualizado com sucesso!",
+              "success"
+            );
+            closeModal("editarTempoModal");
+            carregarOradores(); // Recarregar lista
+          } catch (error) {
+            console.error("Erro ao editar tempo:", error);
+            showToast(error.message, "error");
+          }
+        }
+
+        // Remove the selected speaker from the order list.
+        // Função para excluir orador
+        async function excluirOrador() {
+          console.log("Excluindo orador ID:", window.currentOradorId);
+
+          if (!window.currentOradorId) {
+            showToast("Erro: Orador não identificado", "error");
+            return;
+          }
+
+          try {
+            const token = localStorage.getItem("authToken");
+            const response = await fetch(
+              `/api/sessoes/oradores/${window.currentOradorId}`,
+              {
+                method: "DELETE",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok) {
+              throw new Error(result.error || "Erro ao excluir orador");
+            }
+
+            showToast(
+              result.message || "Orador removido com sucesso!",
+              "success"
+            );
+            closeModal("confirmarExclusaoModal");
+            carregarOradores(); // Recarregar lista
+          } catch (error) {
+            console.error("Erro ao excluir orador:", error);
+            showToast(error.message, "error");
+          }
+        }
+
+        // Event listeners para os modais de edição e exclusão
+        document
+          .querySelector("#editarTempoModal .btn-primary")
+          .addEventListener("click", (e) => {
+            e.preventDefault();
+            editarTempoOrador();
+          });
+
+        document
+          .getElementById("excluirOradorBtn")
+          .addEventListener("click", (e) => {
+            e.preventDefault();
+            excluirOrador();
+          });
+
+        // Recalcular paginação quando a janela for redimensionada
+        window.addEventListener("resize", () => {
+          if (allOradoresData.length > 0) {
+            const newItemsPerPage = calculateItemsPerPage();
+            if (newItemsPerPage !== itemsPerPage) {
+              itemsPerPage = newItemsPerPage;
+              // Ajustar página atual para não perder a posição
+              const currentFirstItem = (currentPage - 1) * itemsPerPage;
+              currentPage = Math.floor(currentFirstItem / newItemsPerPage) + 1;
+              exibirOradoresPaginados();
+            }
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
