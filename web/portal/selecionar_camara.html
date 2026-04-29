@@ -1,8 +1,8 @@
 <!doctype html>
 <!--
-  File: selecionar_camara.html
-  Purpose: Public portal page for searching, browsing, and selecting a
-  municipal chamber before entering its public transparency and session view.
+  Chamber Selection Portal Page
+  Presents a searchable, paginated list of public municipal chambers and
+  stores the selected chamber before redirecting visitors to its public portal.
 -->
 <html lang="pt-BR">
   <head>
@@ -547,18 +547,19 @@
     </style>
   </head>
   <body>
-    <!-- Dynamic portal navigation placeholder -->
+    <!-- Dynamic portal navigation loaded by the shared layout system. -->
+    <!-- Navbar carregado dinamicamente -->
     <div id="navbar-placeholder"></div>
 
-    <!-- Fallback back link kept in the markup but visually hidden -->
+    <!-- Legacy back link kept hidden because navigation is handled in the navbar. -->
     <a href="../index.html" class="back-link">
       <i class="fas fa-arrow-left"></i>
       Voltar ao início
     </a>
 
-    <!-- Main chamber selection layout -->
+    <!-- Main chamber selection experience. -->
     <div class="selection-container">
-      <!-- Introductory header for the chamber selection experience -->
+      <!-- Introductory heading and page context for public visitors. -->
       <div class="selection-header fade-in">
         <a href="../index.html" class="logo">
           <svg viewBox="0 0 44 40" xmlns="http://www.w3.org/2000/svg">
@@ -588,7 +589,7 @@
         </p>
       </div>
 
-      <!-- Search input for filtering chambers by city or chamber name -->
+      <!-- Search field used to filter public chambers by city or chamber name. -->
       <div class="search-container fade-in">
         <i class="fas fa-search search-icon"></i>
         <input
@@ -600,27 +601,27 @@
         />
       </div>
 
-      <!-- Loading feedback displayed while chamber data is being fetched -->
+      <!-- Loading state shown while chamber data is being fetched. -->
       <div id="loadingIndicator" class="loading-indicator">
         <div class="loading-spinner"></div>
         <p>Carregando câmaras...</p>
       </div>
 
-      <!-- Dynamic grid used to render the available chambers -->
+      <!-- Dynamic chamber card grid populated from the public chambers API. -->
       <div class="camaras-grid-wrapper fade-in">
         <div id="camarasContainer" class="camaras-grid">
           <!-- Câmaras serão carregadas dinamicamente -->
         </div>
       </div>
 
-      <!-- Empty state shown when the current search yields no results -->
+      <!-- Empty state displayed when search returns no matching chambers. -->
       <div id="noResults" class="no-results" style="display: none">
         <i class="fas fa-search"></i>
         <h3>Nenhuma câmara encontrada</h3>
         <p>Tente buscar pelo nome da cidade ou câmara municipal.</p>
       </div>
 
-      <!-- Pagination area for navigating through chamber result pages -->
+      <!-- Pagination controls for multi-page chamber results. -->
       <div
         class="pagination-container"
         id="pagination-container"
@@ -630,16 +631,18 @@
       </div>
     </div>
 
-    <!-- Dynamic portal footer placeholder -->
+    <!-- Dynamic portal footer loaded by the shared layout system. -->
+    <!-- Footer carregado dinamicamente -->
     <div id="footer-placeholder"></div>
 
     <script src="../js/mockMode.js?v=3"></script>
     <script src="../js/global.js"></script>
     <script src="../js/pagination.js"></script>
     <script>
-      // Configure portal navbar content specific to the chamber-selection page.
+      // Configures page-specific content inside the shared portal navbar.
+      // Função para configurar elementos específicos do navbar para esta página
       function setupSelecionarCamaraNavbar() {
-        // Insert the back action in the left navbar slot.
+        // Adicionar botão voltar no lado esquerdo
         const backButtonContainer = document.getElementById("nav-back-button");
         if (backButtonContainer) {
           backButtonContainer.innerHTML = `
@@ -650,18 +653,18 @@
                 `;
         }
 
-        // The right side of the navbar remains intentionally empty on this page.
+        // Lado direito permanece vazio nesta página
       }
 
-      // Initialize layout, search, data loading, and pagination after the DOM is ready.
       document.addEventListener("DOMContentLoaded", async () => {
-        // Load shared portal components.
+        // Page bootstrap: load shared layout, initialize animation, and fetch data.
+        // Carregar componentes modularizados (navbar e footer)
         await initLayout({});
 
-        // Configure page-specific navbar content.
+        // Configurar botão voltar no navbar
         setupSelecionarCamaraNavbar();
 
-        // Start shared portal animations.
+        // Inicializar animações
         initUnifiedAnimations();
 
         // Debug inicial da tela
@@ -688,10 +691,10 @@
         let currentPage = 1;
         let currentSearch = "";
 
-        // Load the initial chamber list.
+        // Carregar câmaras ao inicializar
         await loadCamaras();
 
-        // Configure debounced search filtering.
+        // Setup da busca com debounce
         searchInput.addEventListener("input", () => {
           clearTimeout(searchTimeout);
           currentSearch = searchInput.value.trim();
@@ -703,7 +706,8 @@
 
         let searchTimeout = null;
 
-        // Fetch chambers from the public API and refresh the list UI.
+        // Fetches public chambers, then renders cards and pagination state.
+        // Função para carregar câmaras do backend
         async function loadCamaras(page = 1, search = "") {
           showLoading(true);
           hideResultsAndPagination();
@@ -736,7 +740,7 @@
           } catch (error) {
             console.error("❌ Erro ao carregar câmaras:", error);
 
-            // Use a lightweight fallback dataset during development failures.
+            // Fallback com dados mockados para desenvolvimento
             const mockCamaras = [
               {
                 id: "1",
@@ -770,7 +774,7 @@
             console.log("⚠️ Usando dados mockados para desenvolvimento");
             renderCamaras(mockCamaras);
 
-            // Build pagination metadata for the fallback dataset.
+            // Criar paginação mockada
             const mockPagination = {
               total: mockCamaras.length,
               totalPages: 1,
@@ -783,7 +787,8 @@
           showLoading(false);
         }
 
-        // Render chamber cards and bind card-selection behavior.
+        // Renders chamber cards and binds selection behavior.
+        // Função para renderizar câmaras
         function renderCamaras(camaras) {
           if (camaras.length === 0) {
             showNoResults(true);
@@ -842,16 +847,17 @@
             card.style.cursor = "pointer";
           });
 
-          // Emit layout diagnostics for grid debugging.
+          // Debug: Verificar dimensões do grid
           debugGridLayout();
 
-          // Re-run reveal animations for newly injected cards.
+          // Re-aplicar animações para novos elementos
           setTimeout(() => {
             initUnifiedAnimations();
           }, 100);
         }
 
-        // Configure pagination controls for the current chamber result set.
+        // Builds pagination controls and reloads the selected result page.
+        // Função para configurar paginação
         function setupPagination(pagination, search) {
           if (pagination.totalPages <= 1) {
             paginationContainer.style.display = "none";
@@ -872,14 +878,16 @@
           });
         }
 
-        // Hide results and pagination while a new search request is in progress.
+        // Hides stale result UI before a new fetch begins.
+        // Função para esconder resultados e paginação
         function hideResultsAndPagination() {
           camarasContainer.style.display = "none";
           paginationContainer.style.display = "none";
           showNoResults(false);
         }
 
-        // Persist the selected chamber and redirect to the public portal view.
+        // Persists the selected chamber and redirects to its public portal.
+        // Função para selecionar câmara
         function selectCamara(camaraId, camaraNome) {
           console.log("🏛️ Câmara selecionada:", {
             id: camaraId,
@@ -894,17 +902,18 @@
             console.log("✅ Dados salvos no localStorage");
 
             // Redirecionar para o portal público
-            const targetUrl = `portal_publico.html?camara=${encodeURIComponent(camaraId)}`;
+            const targetUrl = `/portal/portal_publico.html?camara=${encodeURIComponent(camaraId)}`;
             console.log("🔄 Redirecionando para:", targetUrl);
 
-            window.location.href = targetUrl;
+            window.location.assign(targetUrl);
           } catch (error) {
             console.error("❌ Erro ao selecionar câmara:", error);
             alert("Erro ao selecionar câmara. Tente novamente.");
           }
         }
 
-        // Toggle the loading indicator and grid visibility.
+        // Toggles the fetch loading indicator and result grid visibility.
+        // Funções de UI
         function showLoading(show) {
           loadingIndicator.style.display = show ? "block" : "none";
           if (!show) {
@@ -912,7 +921,7 @@
           }
         }
 
-        // Toggle the empty-state message and result visibility.
+        // Toggles the empty search state and result grid visibility.
         function showNoResults(show) {
           noResults.style.display = show ? "block" : "none";
           if (show) {
@@ -923,7 +932,8 @@
           }
         }
 
-        // Log grid layout diagnostics to help inspect responsive rendering.
+        // Logs responsive grid measurements for layout troubleshooting.
+        // Função para debug do layout do grid
         function debugGridLayout() {
           const container = document.querySelector(".selection-container");
           const grid = document.getElementById("camarasContainer");
@@ -987,7 +997,8 @@
           console.log("=== FIM DEBUG ===");
         }
 
-        // Escape text content before inserting dynamic values into HTML.
+        // Escapes text before injecting dynamic API values into HTML strings.
+        // Função para escapar HTML
         function escapeHtml(text) {
           const map = {
             "&": "&amp;",
