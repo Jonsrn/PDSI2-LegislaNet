@@ -1,8 +1,13 @@
 /**
- * File: mockMode.js
- * Purpose: Provides a local mock API layer for Sprint 1 flows by intercepting
- * fetch requests, serving seeded data, persisting mock state, and exposing a
- * small control surface for tests and demos.
+ * @file Mock API layer for Legisla Net development and Sprint validation.
+ * Intercepts frontend API calls, serves localStorage-backed mock data, and
+ * preserves real authentication endpoints.
+ */
+
+/**
+ * Initializes mock mode once and installs the fetch interceptor.
+ *
+ * @returns {void}
  */
 (function initLegislaMockMode() {
   if (window.legislaMockApi) {
@@ -16,37 +21,41 @@
   window.__LEGISLA_MOCK_STRICT__ = true;
 
   /**
-   * Returns an ISO timestamp relative to the current date.
-   * @param {number} [dayOffset=0] - Number of days to offset from now.
-   * @returns {string}
+   * Builds an ISO timestamp offset by a number of days.
+   *
+   * @param {number} [dayOffset=0] - Number of days to add to the current date.
+   * @returns {string} ISO timestamp.
    */
   function nowIso(dayOffset = 0) {
     return new Date(Date.now() + dayOffset * 24 * 60 * 60 * 1000).toISOString();
   }
 
   /**
-   * Generates a lightweight unique identifier with a prefix.
-   * @param {string} prefix - Prefix for the generated identifier.
-   * @returns {string}
+   * Generates a mock unique identifier with a stable prefix.
+   *
+   * @param {string} prefix - Identifier prefix.
+   * @returns {string} Generated identifier.
    */
   function uid(prefix) {
     return `${prefix}-${Math.random().toString(36).slice(2, 8)}-${Date.now().toString(36)}`;
   }
 
   /**
-   * Produces a deep clone of a JSON-serializable value.
+   * Creates a JSON-safe deep clone of a value.
+   *
    * @param {*} value - Value to clone.
-   * @returns {*}
+   * @returns {*} Cloned value.
    */
   function deepClone(value) {
     return JSON.parse(JSON.stringify(value));
   }
 
   /**
-   * Safely parses JSON and returns a fallback value on failure.
-   * @param {*} value - Raw value or JSON string to parse.
-   * @param {*} fallback - Fallback value returned when parsing fails.
-   * @returns {*}
+   * Parses JSON safely and returns a fallback on failure.
+   *
+   * @param {*} value - Value to parse when it is a string.
+   * @param {*} fallback - Value returned when parsing fails.
+   * @returns {*} Parsed value or fallback.
    */
   function safeJsonParse(value, fallback) {
     try {
@@ -60,9 +69,10 @@
   }
 
   /**
-   * Converts common truthy string values to a boolean.
+   * Converts common form values to a boolean.
+   *
    * @param {*} value - Value to normalize.
-   * @returns {boolean}
+   * @returns {boolean} Boolean representation.
    */
   function toBool(value) {
     if (typeof value === "boolean") return value;
@@ -73,10 +83,11 @@
   }
 
   /**
-   * Converts a value to a finite number or returns a fallback.
+   * Converts a value to a finite number.
+   *
    * @param {*} value - Value to convert.
-   * @param {*} fallback - Value returned when conversion fails.
-   * @returns {number|*}
+   * @param {number} fallback - Value returned when conversion fails.
+   * @returns {number} Parsed number or fallback.
    */
   function toNumber(value, fallback) {
     const parsed = Number(value);
@@ -85,9 +96,10 @@
   }
 
   /**
-   * Normalizes supported request body formats into a plain object.
-   * @param {*} body - Request body to normalize.
-   * @returns {Object}
+   * Normalizes supported fetch request bodies into plain objects.
+   *
+   * @param {*} body - Request body from fetch options.
+   * @returns {object} Parsed request body.
    */
   function parseRequestBody(body) {
     if (!body) return {};
@@ -123,8 +135,9 @@
   }
 
   /**
-   * Creates the default mock application state.
-   * @returns {Object}
+   * Creates the default in-browser mock database.
+   *
+   * @returns {object} Initial mock state.
    */
   function createInitialState() {
     const partidos = [
@@ -452,8 +465,9 @@
   }
 
   /**
-   * Loads persisted mock state from localStorage or recreates the default state.
-   * @returns {Object}
+   * Loads mock state from localStorage or creates a default state.
+   *
+   * @returns {object} Current mock state.
    */
   function loadState() {
     try {
@@ -472,6 +486,7 @@
 
   /**
    * Persists the current mock state to localStorage.
+   *
    * @returns {void}
    */
   function saveState() {
@@ -480,8 +495,9 @@
   }
 
   /**
-   * Returns the currently stored user payload.
-   * @returns {Object|null}
+   * Reads the authenticated user stored by the frontend.
+   *
+   * @returns {object|null} Stored user data, or null when unavailable.
    */
   function getCurrentUser() {
     try {
@@ -493,16 +509,18 @@
   }
 
   /**
-   * Returns the primary chamber ID for the current user scope.
-   * @returns {string|null}
+   * Gets the primary chamber id for the current user scope.
+   *
+   * @returns {string|null} Current chamber id.
    */
   function getCurrentCamaraId() {
     return getCurrentCamaraScope().primaryCamaraId;
   }
 
   /**
-   * Resolves the current chamber scope used to filter mock data.
-   * @returns {{primaryCamaraId: (string|null), scopeCamaraIds: string[]}}
+   * Resolves the chamber ids visible to the current user.
+   *
+   * @returns {{primaryCamaraId: string|null, scopeCamaraIds: string[]}} Chamber scope.
    */
   function getCurrentCamaraScope() {
     const user = getCurrentUser();
@@ -541,10 +559,11 @@
   }
 
   /**
-   * Determines whether an item belongs to the active chamber scope.
-   * @param {*} itemCamaraId - Chamber ID associated with the item.
-   * @param {string[]} scopeCamaraIds - Allowed chamber IDs.
-   * @returns {boolean}
+   * Checks whether a chamber id is allowed by a scope list.
+   *
+   * @param {string} itemCamaraId - Chamber id to check.
+   * @param {string[]} scopeCamaraIds - Allowed chamber ids.
+   * @returns {boolean} True when the item is in scope.
    */
   function isInCamaraScope(itemCamaraId, scopeCamaraIds) {
     if (!Array.isArray(scopeCamaraIds) || scopeCamaraIds.length === 0) {
@@ -555,9 +574,10 @@
   }
 
   /**
-   * Enriches a council member record with its associated party data.
-   * @param {Object} vereador - Council member record.
-   * @returns {Object}
+   * Enriches a councilor with party data.
+   *
+   * @param {object} vereador - Councilor record.
+   * @returns {object} Councilor with a partidos object.
    */
   function withPartido(vereador) {
     const partido = state.partidos.find((p) => p.id === vereador.partido_id) || null;
@@ -576,8 +596,9 @@
 
   /**
    * Calculates aggregate counts for a chamber.
-   * @param {string} camaraId - Chamber identifier.
-   * @returns {{vereadoresCount: number, sessoesCount: number, pautasCount: number}}
+   *
+   * @param {string} camaraId - Chamber id.
+   * @returns {{vereadoresCount: number, sessoesCount: number, pautasCount: number}} Chamber metrics.
    */
   function camaraMetrics(camaraId) {
     const vereadoresCount = state.vereadores.filter((v) => v.camara_id === camaraId).length;
@@ -591,11 +612,12 @@
   }
 
   /**
-   * Applies simple page-based pagination to an array.
-   * @param {Array} items - Collection to paginate.
-   * @param {*} pageParam - Requested page number.
-   * @param {*} limitParam - Requested page size.
-   * @returns {{currentPage: number, totalPages: number, totalItems: number, limit: number, data: Array}}
+   * Applies simple pagination to an array.
+   *
+   * @param {Array} items - Items to paginate.
+   * @param {*} pageParam - Requested page value.
+   * @param {*} limitParam - Requested page size value.
+   * @returns {{currentPage: number, totalPages: number, totalItems: number, limit: number, data: Array}} Paginated result.
    */
   function paginate(items, pageParam, limitParam) {
     const page = Math.max(1, toNumber(pageParam, 1));
@@ -614,10 +636,11 @@
   }
 
   /**
-   * Creates a JSON Response object for a mock endpoint.
+   * Creates a JSON fetch Response.
+   *
    * @param {*} body - Response payload.
    * @param {number} [status=200] - HTTP status code.
-   * @returns {Response}
+   * @returns {Response} JSON response.
    */
   function jsonResponse(body, status = 200) {
     return new Response(JSON.stringify(body), {
@@ -629,8 +652,9 @@
   }
 
   /**
-   * Creates an empty 204 Response object.
-   * @returns {Response}
+   * Creates an empty 204 fetch Response.
+   *
+   * @returns {Response} No-content response.
    */
   function noContentResponse() {
     return new Response(null, {
@@ -639,9 +663,10 @@
   }
 
   /**
-   * Normalizes vote labels to the internal canonical values.
-   * @param {*} vote - Raw vote label.
-   * @returns {string}
+   * Normalizes vote labels to internal mock constants.
+   *
+   * @param {*} vote - Vote value to normalize.
+   * @returns {string} Internal vote label.
    */
   function normalizeVoteLabel(vote) {
     const normalized = String(vote || "")
@@ -656,9 +681,10 @@
   }
 
   /**
-   * Converts an internal vote label to the public display value.
-   * @param {string} vote - Canonical vote label.
-   * @returns {string}
+   * Converts an internal vote label to its public display label.
+   *
+   * @param {string} vote - Internal vote label.
+   * @returns {string} Public vote label.
    */
   function publicVoteLabel(vote) {
     if (vote === "SIM") return "SIM";
@@ -667,9 +693,10 @@
   }
 
   /**
-   * Returns the default admin email for a chamber.
-   * @param {Object} camara - Chamber record.
-   * @returns {string}
+   * Builds the default admin email for a chamber.
+   *
+   * @param {object} camara - Chamber record.
+   * @returns {string} Default admin email.
    */
   function defaultAdminEmailForCamara(camara) {
     const defaults = {
@@ -690,9 +717,10 @@
   }
 
   /**
-   * Returns the default TV email for a chamber.
-   * @param {Object} camara - Chamber record.
-   * @returns {string}
+   * Builds the default TV user email for a chamber.
+   *
+   * @param {object} camara - Chamber record.
+   * @returns {string} Default TV email, or an empty string.
    */
   function defaultTvEmailForCamara(camara) {
     const defaults = {
@@ -705,8 +733,9 @@
   }
 
   /**
-   * Ensures a chamber contains the expected admin and TV contact objects.
-   * @param {Object} camara - Chamber record to normalize.
+   * Ensures a chamber has normalized admin and TV contact objects.
+   *
+   * @param {object} camara - Chamber record to mutate.
    * @returns {void}
    */
   function ensureCamaraContacts(camara) {
@@ -745,7 +774,8 @@
   }
 
   /**
-   * Rebuilds the email index used by uniqueness checks in mock mode.
+   * Rebuilds the mock email index from users and councilors.
+   *
    * @returns {void}
    */
   function refreshEmailIndex() {
@@ -767,10 +797,11 @@
   }
 
   /**
-   * Ensures only one council member holds a unique leadership flag per chamber.
-   * @param {string} camaraId - Chamber identifier.
-   * @param {string} field - Leadership field to normalize.
-   * @param {string} vereadorIdToKeep - Council member ID that should retain the role.
+   * Ensures only one councilor keeps a given chamber role.
+   *
+   * @param {string} camaraId - Chamber id.
+   * @param {string} field - Boolean role field to enforce.
+   * @param {string} vereadorIdToKeep - Councilor id that should keep the role.
    * @returns {void}
    */
   function ensureSingleCargo(camaraId, field, vereadorIdToKeep) {
@@ -782,9 +813,10 @@
   }
 
   /**
-   * Finds a mock admin or TV user by its synthetic user ID.
-   * @param {string} userId - User identifier.
-   * @returns {{camara: Object, slot: string, user: Object}|null}
+   * Finds a mock admin or TV user by id.
+   *
+   * @param {string} userId - User id to locate.
+   * @returns {{camara: object, slot: string, user: object}|null} Matching user entry.
    */
   function findMockUserById(userId) {
     for (const camara of state.camaras) {
@@ -811,11 +843,217 @@
   }
 
   /**
-   * Handles a supported mock API request and returns a mock response when matched.
+   * Initializes optional state branches used by later mock features.
+   *
+   * @returns {void}
+   */
+  function ensureExtendedState() {
+    if (!Array.isArray(state.oradores)) {
+      state.oradores = [];
+    }
+
+    if (!state.liveSpeech || typeof state.liveSpeech !== "object") {
+      state.liveSpeech = null;
+    }
+  }
+
+  /**
+   * Calculates vote totals for a pauta.
+   *
+   * @param {string} pautaId - Pauta id.
+   * @returns {{sim: number, nao: number, abstencao: number, total: number}} Vote totals.
+   */
+  function voteTotalsForPauta(pautaId) {
+    return state.votos
+      .filter((item) => String(item.pauta_id) === String(pautaId))
+      .reduce(
+        (acc, item) => {
+          const normalized = normalizeVoteLabel(item.voto);
+          if (normalized === "SIM") acc.sim += 1;
+          else if (normalized === "NAO") acc.nao += 1;
+          else acc.abstencao += 1;
+          acc.total += 1;
+          return acc;
+        },
+        { sim: 0, nao: 0, abstencao: 0, total: 0 },
+      );
+  }
+
+  /**
+   * Resolves the voting result for a pauta based on vote totals.
+   *
+   * @param {string} pautaId - Pauta id.
+   * @returns {string} Voting result label.
+   */
+  function resolveResultadoVotacao(pautaId) {
+    const totals = voteTotalsForPauta(pautaId);
+    if (totals.total === 0) return "Não Votada";
+    if (totals.sim > totals.nao) return "Aprovada";
+    if (totals.nao > totals.sim) return "Reprovada";
+    return "Empate";
+  }
+
+  /**
+   * Enriches a pauta with its session relationship.
+   *
+   * @param {object|null} pauta - Pauta record.
+   * @returns {object|null} Enriched pauta or null.
+   */
+  function enrichPauta(pauta) {
+    if (!pauta) return null;
+
+    const sessao = state.sessoes.find((item) => String(item.id) === String(pauta.sessao_id));
+
+    return {
+      ...pauta,
+      sessoes: sessao
+        ? {
+            id: sessao.id,
+            nome: sessao.nome,
+            data_sessao: sessao.data_sessao,
+            tipo: sessao.tipo,
+            status: sessao.status,
+            camara_id: sessao.camara_id,
+          }
+        : null,
+    };
+  }
+
+  /**
+   * Enriches a speaker entry with councilor and session data.
+   *
+   * @param {object|null} orador - Speaker record.
+   * @returns {object|null} Enriched speaker or null.
+   */
+  function enrichOrador(orador) {
+    if (!orador) return null;
+
+    const sessao = state.sessoes.find((item) => String(item.id) === String(orador.sessao_id));
+    const vereador = state.vereadores.find(
+      (item) => String(item.id) === String(orador.vereador_id),
+    );
+
+    return {
+      ...orador,
+      vereadores: vereador ? withPartido(vereador) : null,
+      sessoes: sessao
+        ? {
+            id: sessao.id,
+            nome: sessao.nome,
+            data_sessao: sessao.data_sessao,
+            tipo: sessao.tipo,
+            status: sessao.status,
+            camara_id: sessao.camara_id,
+          }
+        : null,
+    };
+  }
+
+  /**
+   * Maps a councilor to the public portal response shape.
+   *
+   * @param {object} vereador - Councilor record.
+   * @returns {object} Portal-ready councilor record.
+   */
+  function mapPortalVereador(vereador) {
+    const vereadorWithPartido = withPartido(vereador);
+    const votos = state.votos.filter((item) => String(item.vereador_id) === String(vereador.id));
+
+    return {
+      ...vereadorWithPartido,
+      nome: vereadorWithPartido.nome_parlamentar,
+      partido: vereadorWithPartido.partidos,
+      estatisticas: {
+        total_votos: votos.length,
+      },
+    };
+  }
+
+  /**
+   * Normalizes and formats a vote for public responses.
+   *
+   * @param {*} voto - Vote value.
+   * @returns {string} Public vote label.
+   */
+  function toPublicVote(voto) {
+    return publicVoteLabel(normalizeVoteLabel(voto));
+  }
+
+  /**
+   * Gets the current Unix timestamp in seconds.
+   *
+   * @returns {number} Current timestamp in seconds.
+   */
+  function currentTimestampSeconds() {
+    return Math.floor(Date.now() / 1000);
+  }
+
+  /**
+   * Advances active speech timing based on elapsed wall-clock time.
+   *
+   * @returns {void}
+   */
+  function ensureLiveSpeechTiming() {
+    if (!state.liveSpeech || state.liveSpeech.status !== "iniciada") {
+      return;
+    }
+
+    if (!state.liveSpeech.lastTickAt) {
+      state.liveSpeech.lastTickAt = currentTimestampSeconds();
+      return;
+    }
+
+    const now = currentTimestampSeconds();
+    const elapsed = Math.max(0, now - Number(state.liveSpeech.lastTickAt || now));
+
+    if (elapsed <= 0) return;
+
+    const previous = Math.max(0, toNumber(state.liveSpeech.tempoRestanteSegundos, 0));
+    const next = Math.max(0, previous - elapsed);
+    state.liveSpeech.tempoRestanteSegundos = next;
+    state.liveSpeech.lastTickAt = now;
+
+    if (next === 0) {
+      state.liveSpeech.status = "tempo_esgotado";
+    }
+  }
+
+  /**
+   * Builds a mock livestream payload for a chamber display endpoint.
+   *
+   * @param {string} camaraId - Chamber id.
+   * @returns {object} Livestream payload.
+   */
+  function buildLivestreamPayload(camaraId) {
+    const camara = state.camaras.find((item) => String(item.id) === String(camaraId));
+    const activeSession = state.sessoes.find(
+      (sessao) =>
+        String(sessao.camara_id) === String(camaraId) &&
+        ["Em andamento", "Aberta"].includes(String(sessao.status || "")),
+    );
+
+    const titleBase = camara?.nome_camara || "Camara Municipal";
+    const title = activeSession
+      ? `${titleBase} - ${activeSession.nome}`
+      : `${titleBase} - Ultima transmissao`;
+
+    return {
+      id: `livestream-${camaraId}`,
+      camara_id: camaraId,
+      title,
+      youtube_video_id: "M7lc1UVf-VE",
+      concurrent_viewers: activeSession ? 58 : 0,
+      started_at: activeSession?.data_sessao || nowIso(-1),
+    };
+  }
+
+  /**
+   * Routes a mock API request to the matching in-memory handler.
+   *
    * @param {URL} urlObj - Parsed request URL.
    * @param {string} method - HTTP method.
-   * @param {Object} body - Normalized request body.
-   * @returns {Response|null}
+   * @param {object} body - Parsed request body.
+   * @returns {Response|null} Mock response, or null to fall back to real fetch.
    */
   function handleMockRequest(urlObj, method, body) {
     const path = urlObj.pathname.replace(/\/+$/, "") || "/";
@@ -824,6 +1062,8 @@
     if (path.startsWith("/api/auth/")) {
       return null;
     }
+
+    ensureExtendedState();
 
     if (path === "/api/admin/camaras" && method === "GET") {
       const search = String(urlObj.searchParams.get("search") || "")
@@ -1332,6 +1572,253 @@
       return noContentResponse();
     }
 
+    if (path === "/api/pautas/autores" && method === "GET") {
+      const autores = Array.from(
+        new Set(
+          state.pautas
+            .map((item) => String(item.autor || "").trim())
+            .filter(Boolean),
+        ),
+      ).sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+      return jsonResponse({ data: autores });
+    }
+
+    if (path === "/api/pautas" && method === "POST") {
+      const payload = body || {};
+      const { primaryCamaraId, scopeCamaraIds } = getCurrentCamaraScope();
+
+      const camaraId = String(payload.camara_id || primaryCamaraId || "");
+      if (!camaraId) {
+        return jsonResponse({ error: "Camara nao encontrada para criar pauta." }, 422);
+      }
+
+      if (scopeCamaraIds.length > 0 && !isInCamaraScope(camaraId, scopeCamaraIds)) {
+        return jsonResponse({ error: "Sem permissao para criar pauta nesta camara." }, 403);
+      }
+
+      const nome = String(payload.nome || payload.titulo || "").trim();
+      if (!nome) {
+        return jsonResponse({ error: "Nome da pauta e obrigatorio." }, 422);
+      }
+
+      const sessaoIdRaw = String(payload.sessao_id || payload.sessaoId || "").trim();
+      const sessao = state.sessoes.find((item) => {
+        const sameCamara = String(item.camara_id) === String(camaraId);
+        if (!sameCamara) return false;
+        if (!sessaoIdRaw) return true;
+        return String(item.id) === sessaoIdRaw;
+      });
+
+      if (!sessao) {
+        return jsonResponse({ error: "Sessao nao encontrada para a pauta." }, 422);
+      }
+
+      const now = nowIso();
+      const newPauta = {
+        id: uid("pauta"),
+        camara_id: camaraId,
+        sessao_id: sessao.id,
+        nome,
+        ementa: String(payload.ementa || payload.descricao || "").trim(),
+        autor: String(payload.autor || payload.autoria || "Autor nao informado").trim(),
+        status: String(payload.status || "Pendente").trim() || "Pendente",
+        resultado_votacao:
+          payload.resultado_votacao !== undefined && payload.resultado_votacao !== null
+            ? String(payload.resultado_votacao).trim()
+            : null,
+        data_apresentacao: String(payload.data_apresentacao || sessao.data_sessao || now),
+        observacoes: String(payload.observacoes || "").trim(),
+        created_at: now,
+        updated_at: now,
+      };
+
+      state.pautas.unshift(newPauta);
+      saveState();
+
+      return jsonResponse(
+        {
+          message: "Pauta criada com sucesso (mock)",
+          data: enrichPauta(newPauta),
+        },
+        201,
+      );
+    }
+
+    if (/^\/api\/pautas\/[^/]+\/status$/.test(path) && method === "PUT") {
+      const pautaId = path.split("/")[3];
+      const { scopeCamaraIds } = getCurrentCamaraScope();
+
+      const pauta = state.pautas.find(
+        (item) =>
+          String(item.id) === String(pautaId) &&
+          isInCamaraScope(item.camara_id, scopeCamaraIds),
+      );
+
+      if (!pauta) {
+        return jsonResponse({ error: "Pauta nao encontrada." }, 404);
+      }
+
+      const status = String((body && body.status) || pauta.status || "Pendente").trim();
+      if (!status) {
+        return jsonResponse({ error: "Status e obrigatorio." }, 422);
+      }
+
+      pauta.status = status;
+
+      const normalizedStatus = status.toLowerCase();
+
+      if (normalizedStatus === "finalizada") {
+        pauta.resultado_votacao = resolveResultadoVotacao(pauta.id);
+      }
+
+      if (["em votacao", "em votação"].includes(normalizedStatus)) {
+        state.liveVoting = {
+          isLive: true,
+          camaraId: pauta.camara_id,
+          pautaId: pauta.id,
+        };
+      } else if (String(state.liveVoting.pautaId) === String(pauta.id)) {
+        state.liveVoting = {
+          isLive: false,
+          camaraId: null,
+          pautaId: null,
+        };
+      }
+
+      pauta.updated_at = nowIso();
+      saveState();
+
+      return jsonResponse({
+        message: "Status da pauta atualizado com sucesso (mock)",
+        data: enrichPauta(pauta),
+      });
+    }
+
+    if (/^\/api\/pautas\/[^/]+$/.test(path) && method === "GET") {
+      const pautaId = path.split("/").pop();
+      const { scopeCamaraIds } = getCurrentCamaraScope();
+
+      const pauta = state.pautas.find(
+        (item) =>
+          String(item.id) === String(pautaId) &&
+          isInCamaraScope(item.camara_id, scopeCamaraIds),
+      );
+
+      if (!pauta) {
+        return jsonResponse({ error: "Pauta nao encontrada." }, 404);
+      }
+
+      const payload = enrichPauta(pauta);
+      return jsonResponse({
+        ...payload,
+        data: payload,
+      });
+    }
+
+    if (/^\/api\/pautas\/[^/]+$/.test(path) && method === "PUT") {
+      const pautaId = path.split("/").pop();
+      const { scopeCamaraIds } = getCurrentCamaraScope();
+
+      const pauta = state.pautas.find(
+        (item) =>
+          String(item.id) === String(pautaId) &&
+          isInCamaraScope(item.camara_id, scopeCamaraIds),
+      );
+
+      if (!pauta) {
+        return jsonResponse({ error: "Pauta nao encontrada." }, 404);
+      }
+
+      const payload = body || {};
+
+      if (payload.nome !== undefined) {
+        pauta.nome = String(payload.nome || "").trim() || pauta.nome;
+      }
+
+      if (payload.ementa !== undefined || payload.descricao !== undefined) {
+        pauta.ementa = String(payload.ementa || payload.descricao || "").trim();
+      }
+
+      if (payload.autor !== undefined || payload.autoria !== undefined) {
+        pauta.autor =
+          String(payload.autor || payload.autoria || "").trim() || pauta.autor;
+      }
+
+      if (payload.status !== undefined) {
+        pauta.status = String(payload.status || pauta.status).trim() || pauta.status;
+      }
+
+      if (payload.resultado_votacao !== undefined) {
+        pauta.resultado_votacao = payload.resultado_votacao
+          ? String(payload.resultado_votacao)
+          : null;
+      }
+
+      if (payload.data_apresentacao !== undefined) {
+        pauta.data_apresentacao = String(payload.data_apresentacao || pauta.data_apresentacao);
+      }
+
+      if (payload.observacoes !== undefined) {
+        pauta.observacoes = String(payload.observacoes || "").trim();
+      }
+
+      if (payload.sessao_id !== undefined || payload.sessaoId !== undefined) {
+        const sessaoId = String(payload.sessao_id || payload.sessaoId || "").trim();
+        const sessao = state.sessoes.find(
+          (item) =>
+            String(item.id) === String(sessaoId) &&
+            isInCamaraScope(item.camara_id, scopeCamaraIds),
+        );
+
+        if (!sessao) {
+          return jsonResponse({ error: "Sessao informada nao encontrada." }, 422);
+        }
+
+        pauta.sessao_id = sessao.id;
+        pauta.camara_id = sessao.camara_id;
+      }
+
+      if (String(pauta.status || "").toLowerCase() === "finalizada" && !pauta.resultado_votacao) {
+        pauta.resultado_votacao = resolveResultadoVotacao(pauta.id);
+      }
+
+      pauta.updated_at = nowIso();
+      saveState();
+
+      return jsonResponse({
+        message: "Pauta atualizada com sucesso (mock)",
+        data: enrichPauta(pauta),
+      });
+    }
+
+    if (/^\/api\/pautas\/[^/]+$/.test(path) && method === "DELETE") {
+      const pautaId = path.split("/").pop();
+      const { scopeCamaraIds } = getCurrentCamaraScope();
+
+      const pauta = state.pautas.find(
+        (item) =>
+          String(item.id) === String(pautaId) &&
+          isInCamaraScope(item.camara_id, scopeCamaraIds),
+      );
+
+      if (!pauta) {
+        return jsonResponse({ error: "Pauta nao encontrada." }, 404);
+      }
+
+      const hasVotes = state.votos.some((item) => String(item.pauta_id) === String(pautaId));
+      if (hasVotes) {
+        return jsonResponse(
+          { error: "Nao e possivel excluir pauta com votos registrados." },
+          409,
+        );
+      }
+
+      state.pautas = state.pautas.filter((item) => String(item.id) !== String(pautaId));
+      saveState();
+      return jsonResponse({ message: "Pauta removida com sucesso (mock)" });
+    }
+
     if (path === "/api/pautas" && method === "GET") {
       const { scopeCamaraIds } = getCurrentCamaraScope();
       let source = state.pautas;
@@ -1362,6 +1849,199 @@
           limit: pageData.limit,
         },
       });
+    }
+
+    if (path === "/api/sessoes/opcoes" && method === "GET") {
+      const { scopeCamaraIds } = getCurrentCamaraScope();
+      const futurasOnly = toBool(urlObj.searchParams.get("futuras"));
+      const now = Date.now();
+
+      let source = state.sessoes.filter((sessao) =>
+        isInCamaraScope(sessao.camara_id, scopeCamaraIds),
+      );
+
+      if (futurasOnly) {
+        source = source.filter((sessao) => {
+          const status = String(sessao.status || "").toLowerCase();
+          const when = new Date(sessao.data_sessao).getTime();
+          return status === "agendada" || status === "aberta" || when >= now;
+        });
+      }
+
+      source = source.slice().sort((a, b) => {
+        const timeA = new Date(a.data_sessao).getTime();
+        const timeB = new Date(b.data_sessao).getTime();
+        return (Number.isFinite(timeA) ? timeA : 0) - (Number.isFinite(timeB) ? timeB : 0);
+      });
+
+      return jsonResponse({ data: source });
+    }
+
+    if (path === "/api/sessoes/disponiveis" && method === "GET") {
+      const { scopeCamaraIds } = getCurrentCamaraScope();
+      const now = Date.now();
+
+      const source = state.sessoes
+        .filter((sessao) => isInCamaraScope(sessao.camara_id, scopeCamaraIds))
+        .filter((sessao) => {
+          const status = String(sessao.status || "").toLowerCase();
+          const when = new Date(sessao.data_sessao).getTime();
+          if (["encerrada", "cancelada", "finalizada"].includes(status)) return false;
+          if (status === "agendada" || status === "aberta") return true;
+          return Number.isFinite(when) ? when >= now : true;
+        })
+        .sort((a, b) => {
+          const timeA = new Date(a.data_sessao).getTime();
+          const timeB = new Date(b.data_sessao).getTime();
+          return (Number.isFinite(timeA) ? timeA : 0) - (Number.isFinite(timeB) ? timeB : 0);
+        });
+
+      return jsonResponse({ data: source });
+    }
+
+    if (path === "/api/sessoes/vereadores-ativos" && method === "GET") {
+      const { scopeCamaraIds } = getCurrentCamaraScope();
+
+      const data = state.vereadores
+        .filter((vereador) => vereador.is_active)
+        .filter((vereador) => isInCamaraScope(vereador.camara_id, scopeCamaraIds))
+        .map(withPartido)
+        .sort((a, b) =>
+          String(a.nome_parlamentar || "").localeCompare(String(b.nome_parlamentar || ""), "pt-BR"),
+        );
+
+      return jsonResponse({ data });
+    }
+
+    if (path === "/api/sessoes/oradores" && method === "GET") {
+      const { scopeCamaraIds } = getCurrentCamaraScope();
+      const sessaoIdFilter = String(urlObj.searchParams.get("sessao_id") || "").trim();
+
+      const data = state.oradores
+        .filter((orador) => {
+          if (sessaoIdFilter && String(orador.sessao_id) !== sessaoIdFilter) return false;
+          const sessao = state.sessoes.find(
+            (item) => String(item.id) === String(orador.sessao_id),
+          );
+          if (!sessao) return false;
+          return isInCamaraScope(sessao.camara_id, scopeCamaraIds);
+        })
+        .sort((a, b) => toNumber(a.ordem, 0) - toNumber(b.ordem, 0))
+        .map(enrichOrador);
+
+      return jsonResponse({ total: data.length, data });
+    }
+
+    if (path === "/api/sessoes/oradores" && method === "POST") {
+      const payload = body || {};
+      const { scopeCamaraIds } = getCurrentCamaraScope();
+
+      const sessaoId = String(payload.sessao_id || payload.sessaoId || "").trim();
+      const vereadorId = String(payload.vereador_id || payload.vereadorId || "").trim();
+
+      if (!sessaoId || !vereadorId) {
+        return jsonResponse({ error: "Sessao e vereador sao obrigatorios." }, 422);
+      }
+
+      const sessao = state.sessoes.find((item) => String(item.id) === sessaoId);
+      if (!sessao || !isInCamaraScope(sessao.camara_id, scopeCamaraIds)) {
+        return jsonResponse({ error: "Sessao nao encontrada." }, 404);
+      }
+
+      const vereador = state.vereadores.find((item) => String(item.id) === vereadorId);
+      if (!vereador || String(vereador.camara_id) !== String(sessao.camara_id)) {
+        return jsonResponse({ error: "Vereador nao encontrado para esta sessao." }, 404);
+      }
+
+      const alreadyExists = state.oradores.some(
+        (item) =>
+          String(item.sessao_id) === sessaoId &&
+          String(item.vereador_id) === vereadorId,
+      );
+
+      if (alreadyExists) {
+        return jsonResponse({ error: "Este vereador ja esta na lista de oradores." }, 409);
+      }
+
+      const sameSessao = state.oradores.filter((item) => String(item.sessao_id) === sessaoId);
+      const ordemPadrao = sameSessao.length + 1;
+
+      const newOrador = {
+        id: uid("orador"),
+        sessao_id: sessaoId,
+        vereador_id: vereadorId,
+        ordem: Math.max(1, toNumber(payload.ordem, ordemPadrao)),
+        tempo_fala_minutos: Math.max(1, toNumber(payload.tempo_fala_minutos, 5)),
+        created_at: nowIso(),
+      };
+
+      state.oradores.push(newOrador);
+      saveState();
+
+      return jsonResponse(
+        {
+          message: "Orador cadastrado com sucesso (mock)",
+          data: enrichOrador(newOrador),
+        },
+        201,
+      );
+    }
+
+    if (/^\/api\/sessoes\/oradores\/[^/]+$/.test(path) && method === "PUT") {
+      const oradorId = path.split("/")[4];
+      const payload = body || {};
+      const { scopeCamaraIds } = getCurrentCamaraScope();
+
+      const orador = state.oradores.find((item) => String(item.id) === String(oradorId));
+      if (!orador) {
+        return jsonResponse({ error: "Orador nao encontrado." }, 404);
+      }
+
+      const sessao = state.sessoes.find((item) => String(item.id) === String(orador.sessao_id));
+      if (!sessao || !isInCamaraScope(sessao.camara_id, scopeCamaraIds)) {
+        return jsonResponse({ error: "Sessao nao encontrada para este orador." }, 404);
+      }
+
+      if (payload.ordem !== undefined) {
+        orador.ordem = Math.max(1, toNumber(payload.ordem, orador.ordem || 1));
+      }
+
+      if (payload.tempo_fala_minutos !== undefined) {
+        orador.tempo_fala_minutos = Math.max(
+          1,
+          toNumber(payload.tempo_fala_minutos, orador.tempo_fala_minutos || 5),
+        );
+      }
+
+      saveState();
+
+      return jsonResponse({
+        message: "Orador atualizado com sucesso (mock)",
+        data: enrichOrador(orador),
+      });
+    }
+
+    if (/^\/api\/sessoes\/oradores\/[^/]+$/.test(path) && method === "DELETE") {
+      const oradorId = path.split("/")[4];
+      const { scopeCamaraIds } = getCurrentCamaraScope();
+
+      const orador = state.oradores.find((item) => String(item.id) === String(oradorId));
+      if (!orador) {
+        return jsonResponse({ error: "Orador nao encontrado." }, 404);
+      }
+
+      const sessao = state.sessoes.find((item) => String(item.id) === String(orador.sessao_id));
+      if (!sessao || !isInCamaraScope(sessao.camara_id, scopeCamaraIds)) {
+        return jsonResponse({ error: "Sessao nao encontrada para este orador." }, 404);
+      }
+
+      state.oradores = state.oradores.filter((item) => String(item.id) !== String(oradorId));
+      if (state.liveSpeech && String(state.liveSpeech.oradorId) === String(oradorId)) {
+        state.liveSpeech = null;
+      }
+
+      saveState();
+      return jsonResponse({ message: "Orador removido com sucesso (mock)" });
     }
 
     if (path === "/api/sessoes" && method === "GET") {
@@ -1665,6 +2345,120 @@
       return jsonResponse({ data: withPartido(vereador) });
     }
 
+    if (/^\/api\/camaras\/[^/]+\/info$/.test(path) && method === "GET") {
+      const camaraId = path.split("/")[3];
+      const camara = state.camaras.find((item) => String(item.id) === String(camaraId));
+
+      if (!camara || !camara.is_active) {
+        return jsonResponse({ error: "Camara nao encontrada." }, 404);
+      }
+
+      const metrics = camaraMetrics(camara.id);
+
+      return jsonResponse({
+        data: {
+          ...camara,
+          vereadores_count: metrics.vereadoresCount,
+          sessoes_count: metrics.sessoesCount,
+          pautas_count: metrics.pautasCount,
+        },
+      });
+    }
+
+    if (/^\/api\/camaras\/[^/]+\/sessoes-futuras$/.test(path) && method === "GET") {
+      const camaraId = path.split("/")[3];
+      const camara = state.camaras.find((item) => String(item.id) === String(camaraId));
+
+      if (!camara || !camara.is_active) {
+        return jsonResponse({ error: "Camara nao encontrada." }, 404);
+      }
+
+      const now = Date.now();
+      const sessoes = state.sessoes
+        .filter((sessao) => String(sessao.camara_id) === String(camaraId))
+        .filter((sessao) => {
+          const status = String(sessao.status || "").toLowerCase();
+          const when = new Date(sessao.data_sessao).getTime();
+          if (["agendada", "aberta", "em andamento"].includes(status)) return true;
+          return Number.isFinite(when) ? when >= now : false;
+        })
+        .sort((a, b) => new Date(a.data_sessao) - new Date(b.data_sessao));
+
+      return jsonResponse({ sessoes, data: sessoes });
+    }
+
+    if (/^\/api\/camaras\/[^/]+\/vereadores$/.test(path) && method === "GET") {
+      const camaraId = path.split("/")[3];
+      const camara = state.camaras.find((item) => String(item.id) === String(camaraId));
+
+      if (!camara || !camara.is_active) {
+        return jsonResponse({ error: "Camara nao encontrada." }, 404);
+      }
+
+      const vereadores = state.vereadores
+        .filter((item) => String(item.camara_id) === String(camaraId) && item.is_active)
+        .map(mapPortalVereador)
+        .sort((a, b) =>
+          String(a.nome_parlamentar || "").localeCompare(
+            String(b.nome_parlamentar || ""),
+            "pt-BR",
+          ),
+        );
+
+      return jsonResponse({ vereadores, data: vereadores });
+    }
+
+    if (/^\/api\/camaras\/[^/]+\/votacoes-recentes$/.test(path) && method === "GET") {
+      const camaraId = path.split("/")[3];
+      const camara = state.camaras.find((item) => String(item.id) === String(camaraId));
+
+      if (!camara || !camara.is_active) {
+        return jsonResponse({ error: "Camara nao encontrada." }, 404);
+      }
+
+      const pautas = state.pautas
+        .filter((item) => String(item.camara_id) === String(camaraId))
+        .filter((item) => {
+          const status = String(item.status || "").toLowerCase();
+          return ["finalizada", "encerrada", "votada"].includes(status);
+        })
+        .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
+        .slice(0, 6)
+        .map((item) => {
+          const totals = voteTotalsForPauta(item.id);
+          return {
+            ...enrichPauta(item),
+            total_votos: totals.total,
+            votos_sim: totals.sim,
+            votos_nao: totals.nao,
+            votos_abstencao: totals.abstencao,
+            resultado_votacao: item.resultado_votacao || resolveResultadoVotacao(item.id),
+          };
+        });
+
+      return jsonResponse({ pautas, data: pautas });
+    }
+
+    if (/^\/api\/livestreams\/camara\/[^/]+\/display$/.test(path) && method === "GET") {
+      const camaraId = path.split("/")[4];
+      const camara = state.camaras.find((item) => String(item.id) === String(camaraId));
+
+      if (!camara || !camara.is_active) {
+        return jsonResponse({ error: "Camara nao encontrada." }, 404);
+      }
+
+      const isLive = state.sessoes.some(
+        (sessao) =>
+          String(sessao.camara_id) === String(camaraId) &&
+          ["Em andamento", "Aberta"].includes(String(sessao.status || "")),
+      );
+
+      return jsonResponse({
+        isLive,
+        data: buildLivestreamPayload(camaraId),
+      });
+    }
+
     if (path === "/api/camaras/publicas" && method === "GET") {
       const search = String(urlObj.searchParams.get("search") || "")
         .trim()
@@ -1793,7 +2587,7 @@
       const estatisticas = votos.reduce(
         (acc, item) => {
           if (item.voto === "SIM") acc.sim += 1;
-          else if (item.voto === "NAO") acc.nao += 1;
+          else if (item.voto === "NÃO") acc.nao += 1;
           else acc.abstencao += 1;
           acc.total += 1;
           return acc;
@@ -1802,6 +2596,309 @@
       );
 
       return jsonResponse({ votos, estatisticas });
+    }
+
+    if (/^\/api\/votos\/pauta\/[^/]+\/totals$/.test(path) && method === "GET") {
+      const pautaId = path.split("/")[4];
+      const totals = voteTotalsForPauta(pautaId);
+      return jsonResponse(totals);
+    }
+
+    if (/^\/api\/votos\/pauta\/[^/]+$/.test(path) && method === "GET") {
+      const pautaId = path.split("/")[4];
+      const pauta = state.pautas.find((item) => String(item.id) === String(pautaId));
+
+      if (!pauta) {
+        return jsonResponse({ error: "Pauta nao encontrada." }, 404);
+      }
+
+      const votos = state.votos
+        .filter((item) => String(item.pauta_id) === String(pautaId))
+        .map((item) => {
+          const vereador = state.vereadores.find((v) => String(v.id) === String(item.vereador_id));
+          const vereadorWithPartido = vereador ? withPartido(vereador) : null;
+
+          return {
+            id: item.id,
+            voto: toPublicVote(item.voto),
+            created_at: item.created_at,
+            vereadores: vereadorWithPartido
+              ? {
+                  id: vereadorWithPartido.id,
+                  nome_parlamentar: vereadorWithPartido.nome_parlamentar,
+                  foto_url: vereadorWithPartido.foto_url,
+                  partidos: vereadorWithPartido.partidos,
+                }
+              : null,
+          };
+        });
+
+      const estatisticas = votos.reduce(
+        (acc, item) => {
+          if (item.voto === "SIM") acc.sim += 1;
+          else if (item.voto === "NÃO") acc.nao += 1;
+          else acc.abstencao += 1;
+          acc.total += 1;
+          return acc;
+        },
+        { sim: 0, nao: 0, abstencao: 0, total: 0 },
+      );
+
+      return jsonResponse({
+        pauta: enrichPauta(pauta),
+        votos,
+        estatisticas,
+      });
+    }
+
+    if (path === "/api/painel-controle/pautas-em-votacao" && method === "GET") {
+      const { scopeCamaraIds } = getCurrentCamaraScope();
+      const data = state.pautas
+        .filter((item) => isInCamaraScope(item.camara_id, scopeCamaraIds))
+        .filter((item) => {
+          const status = String(item.status || "").toLowerCase();
+          return ["pendente", "em votacao", "em votação"].includes(status);
+        })
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .map(enrichPauta);
+
+      return jsonResponse({ total: data.length, data });
+    }
+
+    if (path === "/api/painel-controle/oradores" && method === "GET") {
+      const { scopeCamaraIds } = getCurrentCamaraScope();
+
+      const data = state.oradores
+        .filter((orador) => {
+          const sessao = state.sessoes.find(
+            (item) => String(item.id) === String(orador.sessao_id),
+          );
+          return !!sessao && isInCamaraScope(sessao.camara_id, scopeCamaraIds);
+        })
+        .sort((a, b) => {
+          const sessaoA = state.sessoes.find((item) => String(item.id) === String(a.sessao_id));
+          const sessaoB = state.sessoes.find((item) => String(item.id) === String(b.sessao_id));
+          const dateA = new Date(sessaoA?.data_sessao || 0).getTime();
+          const dateB = new Date(sessaoB?.data_sessao || 0).getTime();
+          if (dateA !== dateB) return dateB - dateA;
+          return toNumber(a.ordem, 0) - toNumber(b.ordem, 0);
+        })
+        .map(enrichOrador);
+
+      return jsonResponse({ total: data.length, data });
+    }
+
+    if (/^\/api\/painel-controle\/iniciar-votacao\/[^/]+$/.test(path) && method === "POST") {
+      const pautaId = path.split("/")[4];
+      const { scopeCamaraIds } = getCurrentCamaraScope();
+
+      const pauta = state.pautas.find(
+        (item) =>
+          String(item.id) === String(pautaId) &&
+          isInCamaraScope(item.camara_id, scopeCamaraIds),
+      );
+
+      if (!pauta) {
+        return jsonResponse({ error: "Pauta nao encontrada." }, 404);
+      }
+
+      if (
+        state.liveVoting.isLive &&
+        state.liveVoting.camaraId &&
+        String(state.liveVoting.camaraId) === String(pauta.camara_id) &&
+        String(state.liveVoting.pautaId) !== String(pauta.id)
+      ) {
+        return jsonResponse({ error: "Ja existe votacao ativa nesta camara." }, 409);
+      }
+
+      pauta.status = "Em Votação";
+      pauta.updated_at = nowIso();
+
+      state.liveVoting = {
+        isLive: true,
+        camaraId: pauta.camara_id,
+        pautaId: pauta.id,
+      };
+
+      saveState();
+
+      return jsonResponse({
+        message: "Votacao iniciada com sucesso (mock)",
+        data: enrichPauta(pauta),
+      });
+    }
+
+    if (path === "/api/painel-controle/fala-ativa" && method === "GET") {
+      ensureLiveSpeechTiming();
+      saveState();
+
+      const isLive = !!state.liveSpeech && state.liveSpeech.status !== "encerrada";
+      return jsonResponse({
+        isLive,
+        fala: isLive ? state.liveSpeech : null,
+      });
+    }
+
+    if (/^\/api\/painel-controle\/iniciar-fala\/[^/]+$/.test(path) && method === "POST") {
+      const oradorId = path.split("/")[4];
+      const { scopeCamaraIds } = getCurrentCamaraScope();
+
+      const orador = state.oradores.find((item) => String(item.id) === String(oradorId));
+      if (!orador) {
+        return jsonResponse({ error: "Orador nao encontrado." }, 404);
+      }
+
+      const oradorEnriched = enrichOrador(orador);
+      if (
+        !oradorEnriched?.sessoes ||
+        !isInCamaraScope(oradorEnriched.sessoes.camara_id, scopeCamaraIds)
+      ) {
+        return jsonResponse({ error: "Sem permissao para este orador." }, 403);
+      }
+
+      if (
+        state.liveSpeech &&
+        state.liveSpeech.status !== "encerrada" &&
+        String(state.liveSpeech.oradorId) !== String(oradorId)
+      ) {
+        return jsonResponse(
+          {
+            message: "Ja existe uma fala ativa no momento.",
+            fala: state.liveSpeech,
+          },
+          409,
+        );
+      }
+
+      const tempoFalaMinutos = Math.max(1, toNumber(orador.tempo_fala_minutos, 5));
+      const agora = currentTimestampSeconds();
+
+      state.liveSpeech = {
+        historicoFalaId:
+          state.liveSpeech && state.liveSpeech.status !== "encerrada"
+            ? state.liveSpeech.historicoFalaId
+            : uid("fala"),
+        oradorId: orador.id,
+        oradorNome: oradorEnriched.vereadores?.nome_parlamentar || "Orador",
+        oradorFotoUrl: oradorEnriched.vereadores?.foto_url || "",
+        partidoSigla: oradorEnriched.vereadores?.partidos?.sigla || "S/P",
+        camaraId: oradorEnriched.sessoes.camara_id,
+        status: "preparada",
+        tempoFalaMinutos,
+        tempoAdicionadoTotalMinutos: 0,
+        totalPausas: 0,
+        recomecos: 0,
+        tempoRestanteSegundos: tempoFalaMinutos * 60,
+        startedAt: null,
+        lastTickAt: agora,
+      };
+
+      saveState();
+
+      return jsonResponse({
+        message: "Fala preparada com sucesso (mock)",
+        fala: state.liveSpeech,
+      });
+    }
+
+    if (/^\/api\/painel-controle\/fala\/[^/]+\/(iniciar|pausar|retomar|adicionar-tempo|recomecar|encerrar)$/.test(path) && method === "POST") {
+      const parts = path.split("/");
+      const historicoFalaId = parts[4];
+      const action = parts[5];
+
+      if (!state.liveSpeech || String(state.liveSpeech.historicoFalaId) !== String(historicoFalaId)) {
+        return jsonResponse({ error: "Fala ativa nao encontrada." }, 404);
+      }
+
+      ensureLiveSpeechTiming();
+
+      if (action === "iniciar") {
+        state.liveSpeech.status = "iniciada";
+        state.liveSpeech.startedAt = state.liveSpeech.startedAt || nowIso();
+        state.liveSpeech.lastTickAt = currentTimestampSeconds();
+      }
+
+      if (action === "pausar") {
+        if (state.liveSpeech.status === "iniciada") {
+          state.liveSpeech.status = "pausada";
+          state.liveSpeech.totalPausas = toNumber(state.liveSpeech.totalPausas, 0) + 1;
+        }
+      }
+
+      if (action === "retomar") {
+        if (state.liveSpeech.status === "pausada") {
+          state.liveSpeech.status = "iniciada";
+          state.liveSpeech.lastTickAt = currentTimestampSeconds();
+        }
+      }
+
+      if (action === "adicionar-tempo") {
+        const minutos = Math.max(1, toNumber((body && body.minutos) || 1, 1));
+        state.liveSpeech.tempoAdicionadoTotalMinutos =
+          toNumber(state.liveSpeech.tempoAdicionadoTotalMinutos, 0) + minutos;
+        state.liveSpeech.tempoRestanteSegundos =
+          Math.max(0, toNumber(state.liveSpeech.tempoRestanteSegundos, 0)) + minutos * 60;
+
+        if (state.liveSpeech.status === "tempo_esgotado") {
+          state.liveSpeech.status = "pausada";
+        }
+      }
+
+      if (action === "recomecar") {
+        state.liveSpeech.recomecos = toNumber(state.liveSpeech.recomecos, 0) + 1;
+        state.liveSpeech.status = "preparada";
+        state.liveSpeech.tempoRestanteSegundos =
+          Math.max(1, toNumber(state.liveSpeech.tempoFalaMinutos, 5)) * 60;
+        state.liveSpeech.lastTickAt = currentTimestampSeconds();
+      }
+
+      if (action === "encerrar") {
+        state.liveSpeech.status = "encerrada";
+      }
+
+      saveState();
+
+      return jsonResponse({
+        message: "Controle de fala atualizado (mock)",
+        fala: state.liveSpeech,
+      });
+    }
+
+    if (/^\/api\/fala-ao-vivo\/status\/[^/]+$/.test(path) && method === "GET") {
+      const camaraId = path.split("/")[4];
+      ensureLiveSpeechTiming();
+      saveState();
+
+      const isLive =
+        !!state.liveSpeech &&
+        String(state.liveSpeech.camaraId) === String(camaraId) &&
+        state.liveSpeech.status !== "encerrada";
+
+      return jsonResponse({
+        isLive,
+        fala: isLive ? state.liveSpeech : null,
+      });
+    }
+
+    if (/^\/api\/fala-ao-vivo\/tempo-esgotado\/[^/]+$/.test(path) && method === "POST") {
+      const historicoFalaId = path.split("/")[4];
+
+      if (!state.liveSpeech || String(state.liveSpeech.historicoFalaId) !== String(historicoFalaId)) {
+        return jsonResponse({ error: "Fala ativa nao encontrada." }, 404);
+      }
+
+      state.liveSpeech.status = "tempo_esgotado";
+      state.liveSpeech.tempoRestanteSegundos = 0;
+      saveState();
+
+      return jsonResponse({
+        message: "Fala marcada como tempo esgotado (mock)",
+        fala: state.liveSpeech,
+      });
+    }
+
+    if (path === "/api/notify/encerrar-votacao" && method === "POST") {
+      return jsonResponse({ ok: true, message: "Notificacao mock recebida." });
     }
 
     if (path === "/api/me" && method === "GET") {
@@ -1846,6 +2943,13 @@
     return null;
   }
 
+  /**
+   * Intercepts API fetch calls and serves matching mock responses.
+   *
+   * @param {Request|string} input - Fetch input.
+   * @param {RequestInit} [init={}] - Fetch options.
+   * @returns {Promise<Response>} Mocked or real fetch response.
+   */
   window.fetch = async function mockAwareFetch(input, init = {}) {
     try {
       const requestUrl =
@@ -1893,15 +2997,17 @@
 
   window.legislaMockApi = {
     /**
-     * Returns a deep-cloned snapshot of the current mock state.
-     * @returns {Object}
+     * Returns a clone of the current mock state.
+     *
+     * @returns {object} Current mock state.
      */
     getState() {
       return deepClone(state);
     },
     /**
-     * Resets the mock state to its seeded defaults and returns the new snapshot.
-     * @returns {Object}
+     * Resets mock state to its default seed data.
+     *
+     * @returns {object} Reset mock state.
      */
     resetState() {
       state = createInitialState();
@@ -1909,9 +3015,10 @@
       return deepClone(state);
     },
     /**
-     * Updates the live voting marker in mock state.
-     * @param {string|null} camaraId - Chamber identifier.
-     * @param {string|null} pautaId - Agenda item identifier.
+     * Sets or clears the active live voting marker.
+     *
+     * @param {string|null} camaraId - Chamber id for live voting.
+     * @param {string|null} pautaId - Pauta id for live voting.
      * @returns {void}
      */
     setLiveVoting(camaraId, pautaId) {
