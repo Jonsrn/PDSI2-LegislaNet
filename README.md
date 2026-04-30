@@ -106,7 +106,7 @@ git push origin your-branch
 
 - If you want a linear history use rebase and `--force-with-lease` when pushing.
 
-- When preparing the sequential commits to transfer changes from the Sprint copy to this repository, follow the documented commit order in `RELATORIO_COMMITS_PARA_PDSI2_SPRINT_WEB_PARTE2.md` to keep history consistent with the sprint narrative.
+- Use the available sprint documentation and runbooks to guide manual integration and validation of UI changes.
 
 ## Testing
 
