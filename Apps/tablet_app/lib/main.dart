@@ -1,44 +1,26 @@
 import 'package:flutter/material.dart';
-import 'login_screen.dart'; // Importação Relativa
+import 'package:flutter/services.dart';
+import 'login_screen.dart';
+import 'dashboard_vereador_screen.dart';
+import 'services/auth_service.dart';
+import 'services/update_service.dart';
 
-/// Starts the Flutter application.
-///
-/// This function initializes the widget tree by launching
-/// [CamaraDigitalApp] as the root widget.
+/// Starts the Flutter application and ensures framework services are ready.
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const CamaraDigitalApp());
 }
 
-/// Configures the root application widget for the digital council app.
-///
-/// This widget defines the global dark theme, application title, and initial
-/// route shown to the user.
+/// Root widget that configures the application theme, routes, and first screen.
 class CamaraDigitalApp extends StatelessWidget {
-  /// Creates the root application widget.
-  ///
-  /// Args:
-  ///   key: The widget key used to preserve this widget's identity in the
-  ///     widget tree.
+  /// Creates the Câmara Digital application shell.
   const CamaraDigitalApp({super.key});
 
+  /// Builds the app-wide Material configuration and navigation routes.
   @override
-  /// Builds the root [MaterialApp] with the shared theme configuration.
-  ///
-  /// Args:
-  ///   context: The build context used to access inherited widgets and theme
-  ///     dependencies.
-  ///
-  /// Returns:
-  ///   A [MaterialApp] configured with the application's theme and initial
-  ///   login screen.
   Widget build(BuildContext context) {
-    // Cores mais claras para o tema escuro
-    const Color corFundoPrincipal = Color(
-      0xFF1C1C1E,
-    ); // Um cinza escuro, quase preto
-    const Color corFundoCard = Color(
-      0xFF2C2C2E,
-    ); // Um cinza um pouco mais claro
+    const Color corFundoPrincipal = Color(0xFF1C1C1E);
+    const Color corFundoCard = Color(0xFF2C2C2E);
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -69,7 +51,83 @@ class CamaraDigitalApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const LoginScreen(),
+      home: const SplashScreen(),
+      routes: {
+        '/login': (context) => const LoginScreen(),
+        '/dashboard': (context) => const DashboardVereadorScreen(),
+      },
     );
+  }
+}
+
+/// Initial screen responsible for checking updates and restoring authentication.
+class SplashScreen extends StatefulWidget {
+  /// Creates the splash screen used during startup initialization.
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+/// Handles startup tasks before routing the user to the proper screen.
+class _SplashScreenState extends State<SplashScreen> {
+  /// Starts the asynchronous initialization flow after the widget is inserted.
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+  }
+
+  /// Checks for available updates, attempts auto-login, and redirects the user.
+  Future<void> _initializeApp() async {
+    final updateData = await UpdateService.checkForUpdate();
+    if (updateData != null && mounted) {
+      await _showUpdateDialog(updateData);
+    }
+
+    final isLoggedIn = await AuthService.tryAutoLogin();
+
+    if (!mounted) return;
+    if (isLoggedIn) {
+      Navigator.of(context).pushReplacementNamed('/dashboard');
+    } else {
+      Navigator.of(context).pushReplacementNamed('/login');
+    }
+  }
+
+  /// Displays the update prompt using metadata returned by [UpdateService].
+  ///
+  /// The [data] map is expected to include the target version, release notes,
+  /// APK URL, and whether the update is required.
+  Future<void> _showUpdateDialog(Map<String, dynamic> data) async {
+    return showDialog(
+      context: context,
+      barrierDismissible: !(data['required'] ?? false),
+      builder: (context) => AlertDialog(
+        title: const Text('Nova Atualização Disponível 🚀'),
+        content: Text(
+          'Versão ${data['version']} está disponível.\n\n${data['notes'] ?? "Melhorias gerais."}',
+        ),
+        actions: [
+          if (!(data['required'] ?? false))
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Depois'),
+            ),
+          ElevatedButton(
+            onPressed: () {
+              UpdateService.launchDownloadUrl(data['apkUrl']);
+            },
+            child: const Text('Baixar Agora'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds a minimal loading view while startup checks are running.
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }
