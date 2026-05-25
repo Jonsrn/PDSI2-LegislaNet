@@ -1,237 +1,207 @@
-require("dotenv").config({ quiet: true });
+/**
+ * LegislaNet web backend entry point.
+ *
+ * Configures HTTP middleware, API routes, health checks, static assets,
+ * scheduled background jobs, and graceful shutdown handling.
+ *
+ * @module server
+ */
 
-const path = require("path");
+"use strict";
+
 const express = require("express");
-const { createClient } = require("@supabase/supabase-js");
+const cors = require("cors");
+const helmet = require("helmet");
+const path = require("path");
+require("dotenv").config();
+
+const createLogger = require("./src/utils/logger");
+const { startSessaoStatusScheduler } = require("./src/utils/sessoesStatusScheduler");
+const { startStatsRefreshScheduler } = require("./src/utils/statsRefreshScheduler");
+
+const serverLogger = createLogger("SERVER");
+
+/**
+ * Parses a comma-separated environment variable into a clean string list.
+ *
+ * @param {string} value - Comma-separated value.
+ * @returns {Array<string>} Trimmed non-empty values.
+ */
+function parseCsv(value) {
+  return (value || "").split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+/**
+ * Resolves allowed CORS origins for the current environment.
+ *
+ * @returns {Array<string|RegExp>} Allowed origin strings or regular expressions.
+ */
+function getAllowedOrigins() {
+  const prodOrigins = parseCsv(process.env.CORS_ORIGINS);
+  if (process.env.NODE_ENV === "production") {
+    if (prodOrigins.length === 0) {
+      serverLogger.error(
+        "CORS_ORIGINS not set in production. Set CORS_ORIGINS=https://yourdomain.com"
+      );
+    }
+    return prodOrigins;
+  }
+  return [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    /^http:\/\/(localhost|127\.0\.0\.1):\d+$/,
+  ];
+}
 
 const app = express();
-app.use(express.json({ limit: "1mb" }));
+const PORT = process.env.PORT || 3000;
 
-const PORT = Number(process.env.PORT || 3000);
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "https://fonts.googleapis.com",
+          "https://cdnjs.cloudflare.com",
+        ],
+        fontSrc: [
+          "'self'",
+          "https://fonts.gstatic.com",
+          "https://cdnjs.cloudflare.com",
+        ],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "https://cdn.jsdelivr.net",
+          "https://cdnjs.cloudflare.com",
+          "https://cdn.socket.io",
+          "https://www.youtube.com",
+        ],
+        scriptSrcAttr: ["'unsafe-inline'"],
+        imgSrc: ["'self'", "data:", "https:", "blob:"],
+        connectSrc: [
+          "'self'",
+          process.env.SUPABASE_URL,
+          "https://legislanet.com.br",
+          "wss://legislanet.com.br",
+        ],
+        frameSrc: ["'self'", "https://www.youtube.com", "https://youtube.com"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  })
+);
 
-const hasSupabaseConfig =
-  SUPABASE_URL && SUPABASE_ANON_KEY && SUPABASE_SERVICE_KEY;
+app.use(
+  cors({
+    origin: getAllowedOrigins(),
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
-const supabase = hasSupabaseConfig
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null;
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-const supabaseAdmin = hasSupabaseConfig
-  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-  : null;
+try {
+  const authRoutes       = require("./src/routes/auth");
+  const adminRoutes      = require("./src/routes/admin");
+  const partidosRoutes   = require("./src/routes/partidos");
+  const sessoesRoutes    = require("./src/routes/sessoes");
+  const camaraRoutes     = require("./src/routes/camaraRoutes");
+  const pautasRoutes     = require("./src/routes/pautas");
+  const votosRoutes      = require("./src/routes/votos");
+  const publicRoutes     = require("./src/routes/public");
+  const {
+    nestedVereadorRouter,
+    singleVereadorRouter,
+    appVereadorRouter,
+  } = require("./src/routes/vereadorRoutes");
+  const {
+    nestedUserRouter,
+    singleUserRouter,
+  } = require("./src/routes/userRoutes");
 
-function decodeJwtPayload(token) {
-  try {
-    const payloadBase64 = token.split(".")[1];
-    if (!payloadBase64) return null;
-    const decodedJson = Buffer.from(payloadBase64, "base64").toString();
-    return JSON.parse(decodedJson);
-  } catch (_error) {
-    return null;
-  }
+  app.use("/api/auth",                    authRoutes);
+  app.use("/api/admin",                   adminRoutes);
+  app.use("/api/partidos",                partidosRoutes);
+  app.use("/api/sessoes",                 sessoesRoutes);
+  app.use("/api/camaras",                 camaraRoutes);
+  app.use("/api/pautas",                  pautasRoutes);
+  app.use("/api/votos",                   votosRoutes);
+  app.use("/api/public",                  publicRoutes);
+  app.use("/api/vereadores",              singleVereadorRouter);
+  app.use("/api/users",                   singleUserRouter);
+  app.use("/api/app/vereadores",          appVereadorRouter);
+  app.use("/api/camaras/:camaraId/vereadores", nestedVereadorRouter);
+  app.use("/api/camaras/:camaraId/users",      nestedUserRouter);
+
+  serverLogger.log("✅ Sprint 12 routes registered successfully.");
+} catch (error) {
+  serverLogger.error("Failed to register routes:", error.message);
+  serverLogger.error(error.stack);
 }
 
-async function loadProfile(userId) {
-  const { data: profileData, error: profileError } = await supabaseAdmin
-    .from("profiles")
-    .select("role, nome, camara_id")
-    .eq("id", userId)
-    .single();
-
-  if (profileError || !profileData) {
-    return null;
-  }
-
-  return profileData;
-}
-
-function requireSupabase(res) {
-  if (hasSupabaseConfig) return true;
-
-  res.status(500).json({
-    error:
-      "Configuração ausente. Defina SUPABASE_URL, SUPABASE_ANON_KEY e SUPABASE_SERVICE_KEY no .env.",
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    service: "web-backend",
+    sprint: "12",
+    version: "1.0.0",
   });
+});
 
-  return false;
-}
+app.use("/uploads", express.static(path.join(__dirname, "uploads"), { maxAge: "1h", etag: true }));
+app.use(express.static(path.join(__dirname, "web"), { maxAge: "1d", etag: true }));
 
-app.post("/api/auth/login", async (req, res) => {
-  if (!requireSupabase(res)) return;
+app.use((req, res) => {
+  res.status(404).json({
+    error: "Route not found",
+    method: req.method,
+    url: req.url,
+    timestamp: new Date().toISOString(),
+  });
+});
 
-  const email = String(req.body?.email || "").trim();
-  const password = String(req.body?.password || "");
+app.use((error, req, res, next) => {
+  serverLogger.error("Unhandled error:", {
+    message: error.message,
+    url: req.url,
+    method: req.method,
+  });
+  const message =
+    process.env.NODE_ENV === "production"
+      ? "Internal server error"
+      : error.message;
+  res.status(500).json({ error: message, code: "INTERNAL_SERVER_ERROR" });
+});
 
-  if (!email || !password) {
-    return res.status(400).json({ error: "Email e senha são obrigatórios." });
+const server = app.listen(PORT, () => {
+  serverLogger.log(`🚀 Web backend running on http://localhost:${PORT}`);
+  serverLogger.log(`   Environment : ${process.env.NODE_ENV || "development"}`);
+  serverLogger.log(`   Sprint scope: 12 (CRUD — auth, admin, chambers, members, sessions)`);
+
+  try {
+    startSessaoStatusScheduler();
+    serverLogger.log("🕒 Session status scheduler started.");
+  } catch (err) {
+    serverLogger.error("Failed to start session scheduler:", err.message);
   }
 
   try {
-    const { data: authData, error: authError } =
-      await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-    if (authError || !authData?.user || !authData?.session?.access_token) {
-      return res.status(401).json({ error: "Credenciais inválidas." });
-    }
-
-    const profileData = await loadProfile(authData.user.id);
-    if (!profileData) {
-      return res.status(404).json({ error: "Perfil de usuário não encontrado." });
-    }
-
-    return res.status(200).json({
-      message: "Login bem-sucedido!",
-      user: {
-        id: authData.user.id,
-        email: authData.user.email,
-        nome: profileData.nome,
-        role: profileData.role,
-        camara_id: profileData.camara_id,
-      },
-      token: authData.session.access_token,
-      refreshToken: authData.session.refresh_token || null,
-      expiresIn:
-        typeof authData.session.expires_in === "number"
-          ? authData.session.expires_in
-          : null,
-    });
-  } catch (_error) {
-    return res
-      .status(500)
-      .json({ error: "Ocorreu um erro interno no servidor." });
+    startStatsRefreshScheduler();
+    serverLogger.log("📊 Stats refresh scheduler started.");
+  } catch (err) {
+    serverLogger.error("Failed to start stats scheduler:", err.message);
   }
 });
 
-app.post("/api/auth/refresh", async (req, res) => {
-  if (!requireSupabase(res)) return;
-
-  const providedRefreshToken = String(req.body?.refreshToken || "").trim();
-
-  try {
-    if (providedRefreshToken) {
-      const supabaseTmp = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-          detectSessionInUrl: false,
-        },
-      });
-
-      const { data: refreshData, error: refreshError } =
-        await supabaseTmp.auth.refreshSession({
-          refresh_token: providedRefreshToken,
-        });
-
-      if (refreshError || !refreshData?.session || !refreshData?.user) {
-        return res
-          .status(401)
-          .json({ error: "Refresh token inválido ou expirado" });
-      }
-
-      const profileData = await loadProfile(refreshData.user.id);
-      if (!profileData) {
-        return res
-          .status(404)
-          .json({ error: "Perfil de usuário não encontrado." });
-      }
-
-      return res.status(200).json({
-        message: "Token renovado com sucesso!",
-        user: {
-          id: refreshData.user.id,
-          email: refreshData.user.email,
-          nome: profileData.nome,
-          role: profileData.role,
-          camara_id: profileData.camara_id,
-        },
-        token: refreshData.session.access_token,
-        refreshToken: refreshData.session.refresh_token || providedRefreshToken,
-        expiresIn:
-          typeof refreshData.session.expires_in === "number"
-            ? refreshData.session.expires_in
-            : null,
-      });
-    }
-
-    const authHeader = String(req.headers.authorization || "");
-    if (!authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "Token de autorização requerido" });
-    }
-
-    const currentToken = authHeader.split(" ")[1];
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser(currentToken);
-
-    if (userError || !user) {
-      return res.status(401).json({ error: "Token inválido ou expirado" });
-    }
-
-    const profileData = await loadProfile(user.id);
-    if (!profileData) {
-      return res.status(404).json({ error: "Perfil de usuário não encontrado." });
-    }
-
-    const payload = decodeJwtPayload(currentToken);
-
-    return res.status(200).json({
-      message: "Token validado com sucesso!",
-      user: {
-        id: user.id,
-        email: user.email,
-        nome: profileData.nome,
-        role: profileData.role,
-        camara_id: profileData.camara_id,
-      },
-      token: currentToken,
-      refreshToken: null,
-      expiresIn:
-        payload && typeof payload.exp === "number"
-          ? Math.max(0, payload.exp - Math.floor(Date.now() / 1000))
-          : null,
-    });
-  } catch (_error) {
-    return res
-      .status(500)
-      .json({ error: "Ocorreu um erro interno no servidor." });
-  }
-});
-
-app.post("/api/auth/logout", (_req, res) => {
-  return res.status(200).json({ message: "Logout realizado com sucesso." });
-});
-
-app.get("/api/health", (_req, res) => {
-  res.status(200).json({ status: "ok", authOnlyBackend: true });
-});
-
-const webRoot = path.join(__dirname, "web");
-app.use(express.static(webRoot));
-
-app.get("/", (_req, res) => {
-  return res.sendFile(path.join(webRoot, "index.html"));
-});
-
-app.get("*", (req, res) => {
-  if (req.path.startsWith("/api/")) {
-    return res.status(404).json({ error: "Rota não encontrada." });
-  }
-
-  // Evita fallback enganoso: se pedirem um arquivo inexistente, retorna 404.
-  if (path.extname(req.path)) {
-    return res.status(404).send("Página não encontrada.");
-  }
-
-  return res.sendFile(path.join(webRoot, "index.html"));
-});
-
-app.listen(PORT, () => {
-  console.log(`LegislaNet auth-only server running on http://localhost:${PORT}`);
+process.on("SIGTERM", () => {
+  serverLogger.log("SIGTERM received — shutting down gracefully.");
+  server.close(() => serverLogger.log("HTTP server closed."));
 });
