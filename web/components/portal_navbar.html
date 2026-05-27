@@ -1,18 +1,14 @@
-<!--
-  File: portal_navbar.html
-  Purpose: Shared public-facing navigation bar for the portal experience,
-  providing an optional back action, centered brand identity, and a dynamic
-  area for contextual controls or information.
--->
+<!-- components/portal_navbar.html -->
+<!-- Navbar modular para o portal público - Layout: [Botão Voltar] [Logo Centralizada] [Outros Botões] -->
 <nav class="navbar">
   <div class="nav-container">
-    <!-- Left area reserved for an optional back-navigation control -->
+    <!-- Lado Esquerdo: Botão Voltar (condicional) -->
     <div class="nav-left">
-      <!-- Placeholder populated dynamically when a back action is required -->
+      <!-- Placeholder para botão voltar - será preenchido via JS se necessário -->
       <div id="nav-back-button"></div>
     </div>
 
-    <!-- Centered brand link to the public entry page -->
+    <!-- Centro: Logo -->
     <a href="/index.html" class="nav-logo" id="nav-logo-link">
       <svg viewBox="0 0 44 40" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -29,9 +25,9 @@
       <span>Legisla Net</span>
     </a>
 
-    <!-- Right area reserved for dynamic buttons or contextual information -->
+    <!-- Lado Direito: Placeholder para botões e informações -->
     <div class="nav-right" id="nav-right-content">
-      <!-- Populated dynamically when additional controls are needed -->
+      <!-- Será preenchido via JS se necessário -->
     </div>
   </div>
 </nav>

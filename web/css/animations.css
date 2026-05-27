@@ -1,9 +1,7 @@
-/*
-  File: animations.css
-  Purpose: Shared animation system for the landing and portal experiences,
-  covering scroll reveals, premium interactive effects, decorative motion,
-  legacy compatibility classes, and responsive accessibility safeguards.
-*/
+/* =============================================================== */
+/* --- SISTEMA DE ANIMAÃ‡Ã•ES PROFISSIONAIS - LANDING PAGE --- */
+/* --- by Senior UI Engineer --- */
+/* =============================================================== */
 
 :root {
   --animation-timing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -11,9 +9,11 @@
   --animation-timing-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Core reveal primitives used by data-driven animation hooks */
+/* =============================================================== */
+/* --- BASE ANIMATIONS --- */
+/* =============================================================== */
 
-/* Establish a hidden pre-animation state for elements controlled via JS */
+/* Reset for all animated elements */
 [data-animate] {
   opacity: 0;
   will-change: transform, opacity;
@@ -23,7 +23,8 @@
   opacity: 1;
 }
 
-/* Upward reveal used as the default entrance pattern */
+/* Fade Up - Classic entrada de baixo */
+/* Fade Up - Classic entrada de baixo */
 [data-animate="fade-up"] {
   transform: translateY(30px);
   transition:
@@ -146,7 +147,9 @@
   transform: scaleX(1);
 }
 
-/* Declarative stagger helpers for sequenced entrances */
+/* =============================================================== */
+/* --- STAGGER DELAYS --- */
+/* =============================================================== */
 
 [data-delay="100"] {
   transition-delay: 0.1s !important;
@@ -173,7 +176,8 @@
   transition-delay: 0.8s !important;
 }
 
-/* Animated text treatments and typewriter utilities */
+/* =============================================================== */
+/* Text gradient animation */
 .text-gradient-animated {
   background: linear-gradient(
     90deg,
@@ -230,7 +234,9 @@
   }
 }
 
-/* Premium feature card interactions */
+/* =============================================================== */
+/* --- FEATURE CARDS - PREMIUM --- */
+/* =============================================================== */
 
 .feature-card-premium {
   position: relative;
@@ -247,7 +253,7 @@
   transition: all 0.4s var(--animation-timing);
 }
 
-/* Outer glow layer creates a branded border halo without affecting layout */
+/* Glow effect on hover */
 .feature-card-premium::before {
   content: "";
   position: absolute;
@@ -277,7 +283,7 @@
   border-color: transparent;
 }
 
-/* Animated icon shell paired with premium feature cards */
+/* Animated icon container */
 .icon-container {
   width: 64px;
   height: 64px;
@@ -316,7 +322,9 @@
   font-size: 1.75rem;
 }
 
-/* Global reading progress indicator */
+/* =============================================================== */
+/* --- SCROLL PROGRESS BAR --- */
+/* =============================================================== */
 
 .scroll-progress {
   position: fixed;
@@ -345,7 +353,9 @@
   }
 }
 
-/* Enhanced testimonial card treatments */
+/* =============================================================== */
+/* --- TESTIMONIALS - ENHANCED --- */
+/* =============================================================== */
 
 .testimonial-card-premium {
   position: relative;
@@ -384,7 +394,7 @@
   border-color: rgba(88, 166, 255, 0.3);
 }
 
-/* Quote glyph receives emphasis on card hover */
+/* Quote mark animated */
 .quote-mark {
   font-size: 4rem;
   font-family: Georgia, serif;
@@ -402,12 +412,14 @@
   transform: scale(1.1);
 }
 
-/* Pause auto-scrolling content while the user is interacting */
+/* Pause on hover */
 .testimonial-carousel-wrapper:hover .testimonial-carousel {
   animation-play-state: paused;
 }
 
-/* Premium call-to-action section effects */
+/* =============================================================== */
+/* --- CTA SECTION --- */
+/* =============================================================== */
 
 .cta-premium {
   position: relative;
@@ -422,7 +434,6 @@
   overflow: hidden;
 }
 
-/* Rotating conic layer adds ambient motion behind the CTA content */
 .cta-premium::before {
   content: "";
   position: absolute;
@@ -455,7 +466,9 @@
   z-index: 1;
 }
 
-/* Premium button interaction effects */
+/* =============================================================== */
+/* --- BUTTON PREMIUM --- */
+/* =============================================================== */
 
 .btn-glow {
   position: relative;
@@ -504,7 +517,7 @@
   box-shadow: 0 10px 30px rgba(88, 166, 255, 0.3);
 }
 
-/* Shine sweep accent for hover-driven call-to-action feedback */
+/* Shine sweep effect */
 .btn-shine {
   position: relative;
   overflow: hidden;
@@ -539,7 +552,9 @@
   }
 }
 
-/* Lightweight parallax helpers driven by external scripts */
+/* =============================================================== */
+/* --- PARALLAX ELEMENTS --- */
+/* =============================================================== */
 
 .parallax-layer {
   transition: transform 0.1s linear;
@@ -558,7 +573,9 @@
   --parallax-speed: 0.8;
 }
 
-/* Counter-specific motion styling */
+/* =============================================================== */
+/* --- COUNTER ANIMATION --- */
+/* =============================================================== */
 
 .counter-number {
   font-variant-numeric: tabular-nums;
@@ -569,7 +586,9 @@
   color: var(--accent-blue);
 }
 
-/* Decorative section dividers and SVG wave motion */
+/* =============================================================== */
+/* --- SECTION DIVIDERS --- */
+/* =============================================================== */
 
 .section-divider {
   position: relative;
@@ -585,7 +604,6 @@
   height: 100px;
 }
 
-/* Animating the SVG `d` attribute morphs the divider wave shape over time */
 .wave-animated path {
   animation: wave-move 8s ease-in-out infinite;
 }
@@ -600,7 +618,9 @@
   }
 }
 
-/* Ambient floating background geometry */
+/* =============================================================== */
+/* --- FLOATING SHAPES --- */
+/* =============================================================== */
 
 .floating-shapes {
   position: absolute;
@@ -680,7 +700,9 @@
   }
 }
 
-/* Reduced-motion safeguards */
+/* =============================================================== */
+/* --- ACCESSIBILITY --- */
+/* =============================================================== */
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -692,7 +714,9 @@
   }
 }
 
-/* Motion and density adjustments for smaller screens */
+/* =============================================================== */
+/* --- MOBILE OPTIMIZATIONS --- */
+/* =============================================================== */
 
 @media (max-width: 768px) {
   .orb {
@@ -723,9 +747,11 @@
   }
 }
 
-/* Legacy animation support for older landing page markup */
+/* =============================================================== */
+/* --- LEGACY SUPPORT (backward compatibility) --- */
+/* =============================================================== */
 
-/* Preserve older reveal class names used outside the data-animate system */
+/* Original fade-in classes*/
 .fade-in,
 .animate-on-load,
 .fade-in-section {
@@ -774,7 +800,7 @@
   transition-delay: 0.6s;
 }
 
-/* Legacy hero glow effect retained for older page variants */
+/* Hero glow legacy */
 .hero-glow {
   position: absolute;
   inset: 0;
@@ -811,7 +837,7 @@
   }
 }
 
-/* Legacy floating particle layer */
+/* Floating particles */
 .floating-particles {
   position: absolute;
   inset: 0;
@@ -886,7 +912,7 @@
   }
 }
 
-/* Subtle grid-dot pattern overlay for older sections */
+/* Section pattern */
 .section-pattern {
   position: relative;
 }
@@ -904,7 +930,7 @@
   pointer-events: none;
 }
 
-/* Legacy feature card hover treatment kept for compatibility */
+/* Feature card original with improvements */
 .feature-card {
   position: relative;
   background-color: var(--background-light);
@@ -954,7 +980,7 @@
   color: var(--accent-blue);
 }
 
-/* Shared legacy button hover sheen */
+/* Button effects */
 .btn-primary,
 .btn-secondary {
   position: relative;
@@ -1005,7 +1031,7 @@
   }
 }
 
-/* Preserve hover pause behavior on legacy testimonial carousels */
+/* Testimonial pause */
 .testimonial-carousel-wrapper:hover .testimonial-carousel {
   animation-play-state: paused;
 }
@@ -1032,7 +1058,9 @@
   color: var(--accent-blue);
 }
 
-/* Alternative hero background effects */
+/* =============================================================== */
+/* --- HERO AURORA EFFECT (Alternative) --- */
+/* =============================================================== */
 
 .hero-aurora {
   position: absolute;
@@ -1089,7 +1117,7 @@
   }
 }
 
-/* Radial masking keeps the hero grid concentrated near the focal area */
+/* Grid pattern overlay */
 .hero-grid {
   position: absolute;
   inset: 0;
@@ -1106,7 +1134,9 @@
   );
 }
 
-/* Premium portal card styling */
+/* =============================================================== */
+/* --- PORTAL PREMIUM CARD --- */
+/* =============================================================== */
 
 .portal-premium-card {
   position: relative;
@@ -1124,7 +1154,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-/* Mask-based border animation avoids affecting internal spacing */
+/* Animated border gradient */
 .portal-premium-card::before {
   content: "";
   position: absolute;
@@ -1163,7 +1193,7 @@
   }
 }
 
-/* Slow diagonal sheen adds subtle motion to large premium cards */
+/* Shine sweep on card */
 .portal-premium-card::after {
   content: "";
   position: absolute;
@@ -1191,7 +1221,9 @@
   }
 }
 
-/* Hexagonal icon presentation */
+/* =============================================================== */
+/* --- HEXAGONAL ICON DESIGN --- */
+/* =============================================================== */
 
 .icon-hex {
   position: relative;
@@ -1243,7 +1275,9 @@
   transform: scale(1.2);
 }
 
-/* Morphing call-to-action button style */
+/* =============================================================== */
+/* --- MORPHING CTA BUTTON --- */
+/* =============================================================== */
 
 .btn-morph {
   position: relative;
@@ -1327,7 +1361,9 @@
   box-shadow: 0 15px 40px rgba(240, 136, 51, 0.4);
 }
 
-/* Floating icon badge variant */
+/* =============================================================== */
+/* --- FLOATING ICON BADGES --- */
+/* =============================================================== */
 
 .icon-float-badge {
   position: relative;
@@ -1394,7 +1430,9 @@
   }
 }
 
-/* Outlined icon variant for feature cards */
+/* =============================================================== */
+/* --- OUTLINED ICON STYLE --- */
+/* =============================================================== */
 
 .icon-outlined {
   width: 64px;
@@ -1434,7 +1472,9 @@
   transform: scale(1.1);
 }
 
-/* Minimal icon variant with no container background */
+/* =============================================================== */
+/* --- SIMPLE ICON STYLE (No Background) --- */
+/* =============================================================== */
 
 .icon-simple {
   display: block;
@@ -1454,7 +1494,9 @@
   filter: drop-shadow(0 5px 15px rgba(88, 166, 255, 0.4));
 }
 
-/* Bold dual-call-to-action hero cards */
+/* =============================================================== */
+/* --- HERO DUAL CTA CARDS - BOLD MINIMALIST --- */
+/* =============================================================== */
 
 .hero-cards {
   display: grid;
@@ -1467,7 +1509,7 @@
   perspective: 1500px;
 }
 
-/* Card base with depth cues for large hero entry points */
+/* Card Base - Bold Minimalist */
 .hero-card {
   position: relative;
   background: linear-gradient(145deg, #1a1f28, #0f1419);
@@ -1486,7 +1528,7 @@
   transform-style: preserve-3d;
 }
 
-/* Top accent bar differentiates card intent by color */
+/* Geometric Accent Bar */
 .hero-card::before {
   content: "";
   position: absolute;
@@ -1500,17 +1542,17 @@
   transition: all 0.6s;
 }
 
-/* Chamber-oriented color variant */
+/* CÃ¢maras Accent */
 .hero-card-camara::before {
   background: linear-gradient(90deg, var(--accent-orange), #ff9d5c);
 }
 
-/* Citizen-oriented color variant */
+/* CidadÃ£os Accent */
 .hero-card-cidadao::before {
   background: linear-gradient(90deg, var(--accent-blue), #5ca3ff);
 }
 
-/* Perspective hover effect adds depth without changing document flow */
+/* 3D Tilt Hover */
 .hero-card:hover {
   transform: translateY(-16px) rotateX(5deg) scale(1.03);
   border-color: rgba(255, 255, 255, 0.15);
@@ -1525,7 +1567,7 @@
   box-shadow: 0 0 20px currentColor;
 }
 
-/* Floating icon treatment for hero cards */
+/* Icon - Minimal Floating Design */
 .hero-card-icon {
   position: relative;
   width: 100px;
@@ -1538,7 +1580,7 @@
   transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* Inner icon shell establishes the primary color context */
+/* Icon Circle */
 .hero-card-icon::before {
   content: "";
   position: absolute;
@@ -1553,7 +1595,7 @@
   transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* Outer ring pulse reinforces motion around the focal icon */
+/* Icon Outer Ring */
 .hero-card-icon::after {
   content: "";
   position: absolute;
@@ -1573,7 +1615,7 @@
   filter: drop-shadow(0 0 10px rgba(240, 136, 51, 0.4));
 }
 
-/* Alternate icon palette for the citizen-facing card */
+/* Blue Icon Variant */
 .hero-card-icon-blue::before {
   background: linear-gradient(
     135deg,
@@ -1592,7 +1634,7 @@
   filter: drop-shadow(0 0 10px rgba(88, 166, 255, 0.4));
 }
 
-/* Hover motion keeps the icon as the primary interactive focal point */
+/* Icon Hover */
 .hero-card:hover .hero-card-icon {
   transform: translateY(-12px) scale(1.1);
 }
@@ -1623,7 +1665,7 @@
   }
 }
 
-/* Hero card typography */
+/* Card Content */
 .hero-card h3 {
   font-size: 1.85rem;
   font-weight: 900;
@@ -1643,7 +1685,7 @@
   flex-grow: 1;
 }
 
-/* Strong color-coded CTA button variants */
+/* Button Variants - Bold Design */
 .btn-morph-orange,
 .btn-morph-blue {
   font-size: 1.05rem;
@@ -1708,7 +1750,7 @@
   opacity: 1;
 }
 
-/* Responsive adjustments for stacked hero card layouts */
+/* Responsive Hero Cards */
 @media (max-width: 768px) {
   .hero-cards {
     grid-template-columns: 1fr;
@@ -1744,9 +1786,12 @@
   }
 }
 
-/* Terminal-inspired hero card system isolated from the main hero title styles */
+/* ================================================================
+   TERMINAL HERO CARDS - Aplicados apenas aos terminais
+   NÃO modifica título ou outros elementos da hero section
+   ================================================================ */
 
-/* Small status badge displayed above the access terminals */
+/* Badge */
 .hero-badge {
   display: inline-flex;
   align-items: center;
@@ -1784,7 +1829,7 @@
   font-family: "JetBrains Mono", monospace;
 }
 
-/* Two-terminal layout for audience-specific entry points */
+/* Access Terminals Container */
 .access-terminals {
   display: flex;
   align-items: stretch;
@@ -1795,7 +1840,7 @@
   margin: 0 auto 20px auto;
 }
 
-/* Terminal cards styled as interactive access surfaces */
+/* Terminal Cards */
 .terminal {
   position: relative;
   flex: 1;
@@ -1828,7 +1873,7 @@
     0 0 0 1px var(--accent-blue);
 }
 
-/* Corner brackets reinforce the terminal framing language */
+/* Terminal Corners */
 .terminal-corner {
   position: absolute;
   width: 20px;
@@ -1874,7 +1919,7 @@
   opacity: 1;
 }
 
-/* Terminal chrome and identity strip */
+/* Terminal Header */
 .terminal-header {
   display: flex;
   align-items: center;
@@ -1918,7 +1963,7 @@
   font-family: "JetBrains Mono", monospace;
 }
 
-/* Terminal content area */
+/* Terminal Body */
 .terminal-body {
   padding: 28px 32px 20px;
   text-align: center;
@@ -1980,7 +2025,7 @@
   min-height: 60px;
 }
 
-/* Terminal action area and metadata */
+/* Terminal Footer */
 .terminal-footer {
   padding: 20px 32px 28px;
   display: flex;
@@ -2071,7 +2116,7 @@
   color: var(--accent-blue);
 }
 
-/* Connector graphic between terminal cards on wider layouts */
+/* Nexus Connector */
 .nexus-connector {
   display: flex;
   flex-direction: column;
@@ -2136,7 +2181,8 @@
   box-shadow: 0 0 20px rgba(88, 166, 255, 0.5);
 }
 
-/* Deprecated scroll indicator styles retained for compatibility */
+/* Scroll Indicator */
+/* Scroll Indicator - DEPRECATED (See hero-fix.css) */
 
 .scroll-text {
   font-size: 0.75rem;
@@ -2167,7 +2213,7 @@
   }
 }
 
-/* Responsive behavior for terminal layouts */
+/* Responsive */
 @media (max-width: 900px) {
   .access-terminals {
     flex-direction: column;
@@ -2207,7 +2253,7 @@
   }
 }
 
-/* Hero statistics bar */
+/* === HERO STATS BAR === */
 .hero-stats {
   display: flex;
   align-items: center;
@@ -2282,7 +2328,8 @@
   }
 }
 
-/* Digital-grid hero background system */
+/* =============================================================== */
+/* =============================================================== */
 
 .hero-digital-grid {
   position: absolute;
@@ -2293,7 +2340,7 @@
   perspective: 1000px;
 }
 
-/* Large perspective grid simulates a digital floor plane */
+/* Floor Grid */
 .grid-plane {
   position: absolute;
   width: 300%;
@@ -2332,7 +2379,7 @@
   }
 }
 
-/* Soft horizon light anchors the scene near the top focal point */
+/* Horizon Glow */
 .hero-horizon-glow {
   position: absolute;
   top: 15%;
@@ -2349,7 +2396,7 @@
   pointer-events: none;
 }
 
-/* Small particles add ambient data-like motion over the hero background */
+/* Floating Data Particles */
 .data-particle {
   position: absolute;
   width: 2px;

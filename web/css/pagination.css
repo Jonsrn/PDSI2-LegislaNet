@@ -1,11 +1,7 @@
-/*
-  File: pagination.css
-  Purpose: Shared pagination styling for list and grid views, including the
-  outer container, navigation buttons, numbered page controls, ellipsis
-  markers, and responsive size adjustments.
-*/
+/* public/css/pagination.css */
+/* Estilo de paginação profissional inspirado no carrossel de vereadores */
 
-/* Pagination container anchored below paginated content areas */
+/* === PAGINATION CONTAINER === */
 .pagination-container {
   margin-top: auto;
   padding: 24px 32px;
@@ -17,7 +13,7 @@
   transition: opacity 0.3s;
 }
 
-/* Horizontal control group for directional and numeric pagination */
+/* === CONTROLES DE PAGINAÇÃO (Estilo Carrossel + Numeração) === */
 .pagination-controls {
   display: flex;
   justify-content: center;
@@ -25,7 +21,7 @@
   gap: 1rem;
 }
 
-/* Circular previous and next navigation buttons */
+/* Botões circulares de navegação (anterior e próximo) */
 .pagination-btn {
   width: 40px;
   height: 40px;
@@ -52,14 +48,14 @@
   cursor: not-allowed;
 }
 
-/* Numeric page button group */
+/* Container da numeração de páginas */
 .pagination-pages {
   display: flex;
   gap: 6px;
   align-items: center;
 }
 
-/* Individual page number buttons */
+/* Botões individuais de página (números) */
 .pagination-page-btn {
   min-width: 32px;
   height: 32px;
@@ -90,7 +86,7 @@
   font-weight: 600;
 }
 
-/* Ellipsis placeholder used when page ranges are condensed */
+/* Ellipsis (...) */
 .pagination-ellipsis {
   min-width: 32px;
   height: 32px;
@@ -102,7 +98,7 @@
   user-select: none;
 }
 
-/* Tablet and small-screen spacing adjustments */
+/* === Ajuste para telas menores === */
 @media (max-width: 768px) {
   .pagination-container {
     padding: 16px 20px;
@@ -134,7 +130,7 @@
   }
 }
 
-/* Extra-compact pagination sizing for very small screens */
+/* === Ajuste para telas muito pequenas === */
 @media (max-width: 480px) {
   .pagination-controls {
     gap: 0.25rem;

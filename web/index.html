@@ -1,10 +1,4 @@
 <!doctype html>
-<!--
-  File: index.html
-  Purpose: Main landing page for Legisla Net, presenting product value,
-  audience entry points, feature highlights, testimonials, and shared
-  navigation/footer components.
--->
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -35,9 +29,9 @@
     />
 
     <style>
-      /* Page-specific presentation rules layered on top of shared landing styles. */
+      /* Estilos específicos da página - NÃO adicionar regras que conflitem com hero-fix.css */
 
-      /* Hero title gradient styling. */
+      /* Gradient do título (não conflita pois hero-fix não define gradient) */
       .hero h1 {
         background: linear-gradient(
           45deg,
@@ -176,21 +170,21 @@
         margin-right: auto;
       }
 
-      /* Landing-page-specific navbar layout. */
+      /* Navbar específico da landing page */
       .nav-menu-wrapper {
         display: flex;
         align-items: center;
         gap: 16px;
       }
 
-      /* Desktop navbar buttons prioritize text labels over icons. */
+      /* Desktop - esconder ícones, mostrar texto */
       #nav-right-content .btn i {
         display: none;
       }
 
-      /* Responsive layout adjustments. */
+      /* === RESPONSIVIDADE === */
 
-      /* Tablet layout refinements. */
+      /* Tablets */
       @media (max-width: 1024px) {
         .hero h1 {
           font-size: 3rem;
@@ -203,7 +197,7 @@
         }
       }
 
-      /* Mobile layout refinements. */
+      /* Mobile */
       @media (max-width: 768px) {
         .hero {
           min-height: 500px;
@@ -224,7 +218,7 @@
         .feature-card {
           padding: 20px;
         }
-        /* Mobile testimonial carousel pacing and sizing. */
+        /* Carrossel mais rápido e cards menores no mobile */
         .testimonial-carousel {
           width: calc(400% + 96px);
           animation: scroll-testimonials 20s linear infinite;
@@ -255,7 +249,7 @@
         .author-info .title {
           font-size: 0.8rem;
         }
-        /* Keeps navbar sizing stable on mobile scroll. */
+        /* Header estático no mobile - sem efeito de expansão/encolhimento */
         .navbar {
           padding: 10px 0 !important;
         }
@@ -268,7 +262,7 @@
           display: none;
         }
 
-        /* Converts navbar actions into compact icon-first buttons on mobile. */
+        /* Transformar botões em ícones no mobile - mesmas dimensões do portal_publico */
         #nav-right-content .btn {
           padding: 7px 10px !important;
           min-width: auto;
@@ -278,7 +272,7 @@
           align-items: center;
         }
 
-        /* Hides button text and reveals icons on mobile. */
+        /* Mobile: Esconder texto, mostrar ícones */
         #nav-right-content .btn span {
           display: none;
         }
@@ -289,7 +283,7 @@
           margin: 0;
         }
 
-        /* Reduces section typography for smaller screens. */
+        /* Reduzir títulos de seções no mobile */
         .section-header h2 {
           font-size: 1.75rem;
         }
@@ -312,7 +306,7 @@
         }
       }
 
-      /* Small mobile refinements. */
+      /* Mobile pequeno */
       @media (max-width: 480px) {
         .hero h1 {
           font-size: 1.875rem;
@@ -335,7 +329,7 @@
           font-size: 0.9rem;
         }
 
-        /* Further reduces section heading scale on compact screens. */
+        /* Reduzir ainda mais títulos de seções em telas muito pequenas */
         .section-header h2 {
           font-size: 1.5rem;
         }
@@ -348,7 +342,7 @@
           font-size: 1.75rem;
         }
 
-        /* Makes key buttons full-width on compact devices. */
+        /* Botão responsivo - Mobile e Tablets */
         .btn-responsive-block {
           width: 100% !important;
           justify-content: center !important;
@@ -356,14 +350,14 @@
           font-size: 1rem !important;
         }
 
-        /* Keeps icon and label aligned within responsive buttons. */
+        /* Garantir que ícone e texto fiquem juntos */
         .btn-responsive-block span {
           flex: 0 1 auto !important; /* Não ocupar todo espaço */
           text-align: left;
         }
       }
 
-      /* Additional tablet button layout adjustments. */
+      /* Tablets adjustments */
       @media (max-width: 992px) {
         .btn-responsive-block {
           width: 100% !important;
@@ -383,13 +377,12 @@
     </style>
   </head>
   <body>
-    <!-- Scroll Progress Indicator -->
+    <!-- Scroll Progress Bar -->
     <div class="scroll-progress" id="scrollProgress"></div>
 
-    <!-- Dynamic Navbar Placeholder -->
+    <!-- Navbar carregado dinamicamente -->
     <div id="navbar-placeholder"></div>
 
-    <!-- Hero Section: primary value proposition and audience entry points -->
     <header class="hero hero-sequential">
       <div class="container hero-content">
         <h1 class="text-gradient-animated" data-animate="fade-up">
@@ -399,9 +392,9 @@
           Transparência, eficiência e participação cidadã em uma só plataforma.
         </p>
 
-        <!-- Access Terminals: administrative and citizen entry paths -->
+        <!-- Dual CTA Section - Access Terminals -->
         <div class="access-terminals">
-          <!-- Administrative Access Terminal -->
+          <!-- Terminal Câmaras -->
           <div
             class="terminal terminal-gov"
             data-animate="fade-up"
@@ -440,14 +433,14 @@
               </div>
             </div>
 
-            <!-- Decorative terminal framing -->
+            <!-- Terminal Decorations -->
             <div class="terminal-corner tl"></div>
             <div class="terminal-corner tr"></div>
             <div class="terminal-corner bl"></div>
             <div class="terminal-corner br"></div>
           </div>
 
-          <!-- Visual Connector Between Access Paths -->
+          <!-- Central Nexus Indicator -->
           <div class="nexus-connector" data-animate="scale-up" data-delay="300">
             <div class="nexus-line"></div>
             <div class="nexus-core">
@@ -458,7 +451,7 @@
             <div class="nexus-line"></div>
           </div>
 
-          <!-- Public Access Terminal -->
+          <!-- Terminal Cidadãos -->
           <div
             class="terminal terminal-citizen"
             data-animate="fade-up"
@@ -496,7 +489,7 @@
               </div>
             </div>
 
-            <!-- Decorative terminal framing -->
+            <!-- Terminal Decorations -->
             <div class="terminal-corner tl"></div>
             <div class="terminal-corner tr"></div>
             <div class="terminal-corner bl"></div>
@@ -504,7 +497,7 @@
           </div>
         </div>
 
-        <!-- Scroll Cue -->
+        <!-- Scroll Indicator -->
         <div class="scroll-indicator">
           <div
             class="scroll-content animate-on-load"
@@ -518,7 +511,7 @@
           </div>
         </div>
 
-        <!-- Hero Metrics -->
+        <!-- Stats Bar -->
         <div class="hero-stats" data-animate="fade-up" data-delay="500">
           <div class="stat-item">
             <span class="stat-value">50+</span>
@@ -539,7 +532,6 @@
     </header>
 
     <main>
-      <!-- Feature Overview Section -->
       <section id="features" class="section">
         <div class="container">
           <div class="section-header" data-animate="fade-up">
@@ -603,7 +595,6 @@
         </div>
       </section>
 
-      <!-- Testimonial Carousel Section -->
       <section id="testimonials" class="section">
         <div class="container">
           <div class="section-header" data-animate="fade-up">
@@ -692,7 +683,7 @@
                 </div>
               </div>
             </div>
-            <!-- Duplicated items maintain the infinite carousel loop -->
+            <!-- Duplicados para loop infinito -->
             <div class="testimonial-card">
               <i class="fa-solid fa-quote-left"></i>
               <p class="testimonial-text">
@@ -773,15 +764,15 @@
         </div>
       </section>
 
-      <!-- Final CTA intentionally omitted -->
+      <!-- CTA Final removido, conforme solicitado -->
     </main>
 
-    <!-- Dynamic Footer Placeholder -->
+    <!-- Footer carregado dinamicamente -->
     <div id="footer-placeholder"></div>
 
     <script src="js/global.js"></script>
     <script>
-      // Configures the landing page navbar actions and links after the shared navbar loads.
+      // Configurar navbar específico da landing page
       function setupLandingNavbar() {
         const navRightContainer = document.getElementById("nav-right-content");
         if (navRightContainer) {
@@ -799,9 +790,9 @@
         }
       }
 
-      // Initializes shared components, hero animations, scroll effects, and anchor navigation.
       document.addEventListener("DOMContentLoaded", async () => {
-        // Loads shared navbar and footer components from the root-level page context.
+        // Carregar componentes (navbar e footer)
+        // Como index.html está na raiz, precisa usar caminho relativo diferente
         await loadComponent(
           "components/portal_navbar.html",
           "navbar-placeholder",
@@ -811,17 +802,17 @@
           "footer-placeholder",
         );
 
-        // Disables self-navigation on the landing page logo.
+        // Desabilitar link do logo no index.html (não redireciona para si mesmo)
         const logoLink = document.getElementById("nav-logo-link");
         if (logoLink) {
           logoLink.style.cursor = "default";
           logoLink.addEventListener("click", (e) => e.preventDefault());
         }
 
-        // Injects landing-page-specific navigation actions.
+        // Configurar navbar específico da landing page
         setupLandingNavbar();
 
-        // Reveals hero elements with a simple staggered entrance.
+        // Lógica de animação específica da página
         const heroElements = document.querySelectorAll(".animate-on-load");
         heroElements.forEach((el, index) => {
           setTimeout(
@@ -832,9 +823,9 @@
           );
         });
 
-        // Sets up scroll-triggered animation observers for legacy and data-driven elements.
+        // ========== ADVANCED SCROLL ANIMATIONS ==========
 
-        // Observes legacy fade-in elements.
+        // Observer for legacy fade-in elements
         const legacyObserver = new IntersectionObserver(
           (entries) => {
             entries.forEach((entry) => {
@@ -851,12 +842,12 @@
           .querySelectorAll(".fade-in-section, .fade-in")
           .forEach((el) => legacyObserver.observe(el));
 
-        // Observes data-animate elements with optional delay support.
+        // Observer for new data-animate elements
         const animateObserver = new IntersectionObserver(
           (entries) => {
             entries.forEach((entry) => {
               if (entry.isIntersecting) {
-                // Applies the animated class after the configured delay.
+                // Add animated class after the delay specified in data-delay
                 const delay = entry.target.dataset.delay || 0;
                 setTimeout(() => {
                   entry.target.classList.add("animated");
@@ -867,7 +858,7 @@
           },
           {
             threshold: 0.15,
-            rootMargin: "0px 0px -50px 0px", // Trigger slightly before full visibility.
+            rootMargin: "0px 0px -50px 0px", // Trigger slightly before element is fully visible
           },
         );
 
@@ -875,7 +866,7 @@
           .querySelectorAll("[data-animate]")
           .forEach((el) => animateObserver.observe(el));
 
-        // Enables smooth scrolling for in-page anchor navigation.
+        // ========== SMOOTH SCROLL FOR ANCHOR LINKS ==========
         document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
           anchor.addEventListener("click", function (e) {
             e.preventDefault();
@@ -889,13 +880,13 @@
           });
         });
 
-        // Updates navbar state and the scroll progress indicator during page scroll.
+        // ========== NAVBAR & SCROLL PROGRESS ==========
         const navbar = document.querySelector(".navbar");
         const scrollProgress = document.getElementById("scrollProgress");
 
         if (navbar || scrollProgress) {
           window.addEventListener("scroll", () => {
-            // Toggles the navbar scrolled state.
+            // Navbar scroll effect
             if (navbar) {
               if (window.scrollY > 50) {
                 navbar.classList.add("scrolled");
@@ -904,7 +895,7 @@
               }
             }
 
-            // Updates the visual page scroll progress.
+            // Scroll progress bar
             if (scrollProgress) {
               const scrollTop = window.scrollY;
               const docHeight =
@@ -916,7 +907,7 @@
         }
       });
 
-      // Loads a shared HTML component into the requested placeholder element.
+      // Função para carregar componentes (duplicada do global.js para funcionar na raiz)
       async function loadComponent(componentPath, targetElementId) {
         const targetElement = document.getElementById(targetElementId);
         if (!targetElement) return;
