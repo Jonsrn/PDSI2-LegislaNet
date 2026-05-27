@@ -1,10 +1,4 @@
 <!DOCTYPE html>
-<!--
-  File: dashboard_admin.html
-  Purpose: Administrative dashboard for super administrators to monitor,
-  search, and manage registered legislative chambers through summary
-  statistics, paginated listings, and protected management actions.
--->
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -633,15 +627,12 @@
   </head>
   <body>
     <div class="app-layout">
-      <!-- Sidebar injected by the shared layout system -->
       <div id="sidebar-placeholder"></div>
       <main class="main-content" id="mainContent">
-        <!-- Header injected by the shared layout system -->
         <div id="header-placeholder"></div>
 
         <div class="page-content-wrapper">
           <div class="content-area">
-            <!-- Search area for filtering chambers by name or municipality -->
             <section class="search-section">
               <div class="search-container">
                 <i class="fas fa-search search-icon"></i>
@@ -654,7 +645,6 @@
               </div>
             </section>
 
-            <!-- Summary metrics for registered chamber activity -->
             <section class="stats-grid">
               <div class="stat-card total">
                 <div class="stat-icon"><i class="fas fa-building"></i></div>
@@ -679,23 +669,19 @@
               </div>
             </section>
 
-            <!-- Main listing of registered chambers -->
             <section class="cameras-section">
               <div class="section-header">
                 <h2 class="section-title">Câmaras Cadastradas</h2>
               </div>
-              <!-- Chamber cards rendered dynamically from API results -->
               <div class="cameras-grid-wrapper">
                 <div class="cameras-grid" id="cameras-grid"></div>
               </div>
             </section>
           </div>
-          <!-- Pagination controls for the chamber listing -->
           <div class="pagination-container">
             <div class="pagination-controls" id="pagination-controls"></div>
           </div>
         </div>
-        <!-- Footer injected by the shared layout system -->
         <div id="footer-placeholder"></div>
       </main>
     </div>
@@ -703,13 +689,12 @@
     <script src="../js/toast.js"></script>
     <script src="../js/carregamento.js"></script>
     <script src="../js/pagination.js"></script>
-    <script src="../js/mockMode.js?v=3"></script>
     <script src="../js/global.js"></script>
     <script>
-      // Initialize the protected administrative dashboard when the DOM is ready.
       document.addEventListener("DOMContentLoaded", async () => {
-        // Enforce authentication and role validation before loading any data.
+        // --- INICIALIZAÇÃO E ESTADO COM AUTENTICAÇÃO MELHORADA ---
 
+        // 1. CHAMA A FUNÇÃO DE PROTEÇÃO DE PÁGINA COM VALIDAÇÃO DE ROLE
         try {
           await protectPage({
             allowedRoles: ["super_admin"],
@@ -730,7 +715,7 @@
         const grid = document.getElementById("cameras-grid");
         const searchInput = document.getElementById("searchInput");
 
-        // Render chamber cards and display an empty state when no results exist.
+        // --- FUNÇÕES DE RENDERIZAÇÃO ---
         const renderCamaras = (camaras) => {
           grid.style.display = "grid";
           grid.innerHTML = "";
@@ -796,7 +781,6 @@
           });
         };
 
-        // Refresh the summary counters using the aggregated API response.
         const updateStats = (stats) => {
           if (!stats) return;
           document.getElementById("stat-total").textContent = stats.total;
@@ -804,7 +788,7 @@
           document.getElementById("stat-inactive").textContent = stats.inactive;
         };
 
-        // Load paginated chamber data and synchronize the grid and pagination UI.
+        // --- FUNÇÕES DE LÓGICA ---
         const fetchAndRenderData = async (page, search) => {
           try {
             const url = `/api/admin/camaras?page=${page}&limit=${limit}&search=${encodeURIComponent(
@@ -841,7 +825,7 @@
           }
         };
 
-        // Register debounced search behavior for responsive filtering.
+        // --- EVENT LISTENERS ---
         const setupEventListeners = () => {
           searchInput.addEventListener("keyup", (e) => {
             clearTimeout(debounceTimer);
@@ -854,7 +838,7 @@
           });
         };
 
-        // Configure shared layout elements and trigger the initial data load.
+        // --- INICIALIZAÇÃO ---
         async function initializePage() {
           try {
             initLayout({
@@ -886,4 +870,3 @@
     </script>
   </body>
 </html>
-
