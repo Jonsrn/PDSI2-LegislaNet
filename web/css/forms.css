@@ -1,11 +1,5 @@
-/*
-  File: forms.css
-  Purpose: Shared form styling for application and admin views, including
-  field layout, input states, file controls, toggles, validation feedback,
-  alerts, loading behavior, and helper affordances.
-*/
+/* forms.css */
 
-/* Password field wrapper and inline visibility toggle */
 .password-group {
   position: relative;
 }
@@ -21,7 +15,6 @@
   color: var(--secondary-text);
 }
 
-/* Base form layout containers */
 .form-section {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
@@ -30,7 +23,6 @@
   flex-grow: 1;
 }
 
-/* Shared field group and input presentation */
 .form-group {
   margin-bottom: 24px;
 }
@@ -59,7 +51,6 @@
   width: 100%;
 }
 
-/* Focus styling standardizes keyboard visibility across input variants */
 .form-input:focus,
 .form-textarea:focus,
 .form-select:focus {
@@ -71,8 +62,6 @@
   resize: vertical;
   min-height: 100px;
 }
-
-/* Native select arrows are replaced with a consistent embedded icon */
 .form-select {
   appearance: none;
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%238b949e' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
@@ -81,8 +70,6 @@
   background-size: 1.5em 1.5em;
   padding-right: 2.5rem;
 }
-
-/* File input pattern keeps the native picker accessible while styling the trigger */
 .file-input-wrapper {
   position: relative;
   display: flex;
@@ -116,8 +103,6 @@
   gap: 24px;
   margin-top: 32px;
 }
-
-/* Checkbox and toggle control groups */
 .checkbox-group {
   display: flex;
   align-items: center;
@@ -192,7 +177,7 @@ input:checked + .slider:before {
   border-right: 1px solid var(--border-color);
 }
 
-/* Validation feedback states */
+/* Estilos para validação de formulários */
 .form-input-error,
 .form-select-error {
   border-color: var(--accent-red) !important;
@@ -210,7 +195,6 @@ input:checked + .slider:before {
   animation: errorSlideIn 0.3s ease-out;
 }
 
-/* Error messages animate in to make validation feedback easier to notice */
 .form-field-error::before {
   content: "⚠";
   font-size: 0.75rem;
@@ -228,7 +212,6 @@ input:checked + .slider:before {
   }
 }
 
-/* Success states mirror the error pattern with positive color semantics */
 .form-input-success,
 .form-select-success {
   border-color: var(--accent-green) !important;
@@ -250,7 +233,6 @@ input:checked + .slider:before {
   flex-shrink: 0;
 }
 
-/* Shared alert variants for form-level status messaging */
 .alert {
   padding: 12px 16px;
   border-radius: 6px;
@@ -276,7 +258,7 @@ input:checked + .slider:before {
   color: var(--accent-orange);
 }
 
-/* Form-level loading state blocks interaction and overlays a compact spinner */
+/* Loading state para formulários */
 .form-loading {
   position: relative;
   pointer-events: none;
@@ -306,14 +288,14 @@ input:checked + .slider:before {
   }
 }
 
-/* Required-field marker */
+/* Melhorias visuais para campos obrigatórios */
 .form-group label[data-required="true"]::after {
   content: " *";
   color: var(--accent-red);
   font-weight: bold;
 }
 
-/* Inline help tooltip trigger and hover content */
+/* Tooltips para ajuda */
 .form-tooltip {
   position: relative;
   display: inline-block;
@@ -352,7 +334,7 @@ input:checked + .slider:before {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
-/* Browser autofill override keeps saved credentials aligned with the dark theme */
+/* Correção para inputs com credenciais salvas do navegador */
 .form-group input[type="text"]:-webkit-autofill,
 .form-group input[type="email"]:-webkit-autofill,
 .form-group input[type="password"]:-webkit-autofill,
@@ -373,16 +355,17 @@ input:checked + .slider:before {
 .form-group input[type="password"]:-webkit-autofill:active,
 .form-group input[type="datetime-local"]:-webkit-autofill:active,
 .form-group input[type="url"]:-webkit-autofill:active {
-  /* Layered inset shadows fully repaint autofilled rounded fields */
+  /* <-- ADICIONADO AQUI */
+  /* Múltiplas sombras para cobrir completamente os cantos arredondados */
   -webkit-box-shadow: 0 0 0 1000px var(--hover-bg) inset,
     inset 0 0 0 1px var(--border-color) !important;
   -webkit-text-fill-color: var(--primary-text) !important;
   background-color: var(--hover-bg) !important;
   background-image: none !important;
   border-radius: 6px !important;
-  /* Disabling transitions prevents browser autofill flash artifacts */
+  /* Remove qualquer transição que possa causar flash */
   transition: none !important;
-  /* Background clipping keeps the repaint aligned with rounded corners */
+  /* Força o fundo a se manter nos cantos */
   -webkit-background-clip: padding-box !important;
   background-clip: padding-box !important;
 }
