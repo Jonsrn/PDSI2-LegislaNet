@@ -1,10 +1,4 @@
 <!DOCTYPE html>
-<!--
-  File: login.html
-  Purpose: Authentication entry page for platform users to sign in, submit
-  credentials to the login API, persist session data locally, and redirect
-  each user role to its appropriate application area.
--->
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -187,9 +181,7 @@
     </style>
   </head>
   <body>
-    <!-- Centered authentication container for brand identity and login form -->
     <div class="login-container">
-      <!-- Application logo and home link -->
       <a href="/" class="logo fade-in">
         <svg viewBox="0 0 44 40" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -211,12 +203,10 @@
         </svg>
         <span>Legisla Net</span>
       </a>
-      <!-- Login card containing the user authentication form -->
       <div class="login-card fade-in">
         <div class="login-header">
           <h1>Acesse sua conta</h1>
         </div>
-        <!-- Credential form for email and password submission -->
         <form id="login-form" class="login-form">
           <div class="form-group">
             <label for="email">Email</label>
@@ -262,12 +252,12 @@
     <script src="/js/global.js"></script>
 
     <script>
-      // Reference the primary login form used for authentication submission.
       const loginForm = document.getElementById("login-form");
 
-      // Password visibility behavior is handled centrally by forms.js.
+      // O listener para o toggle de senha foi removido daqui porque agora é gerenciado pelo forms.js
 
-      // Submit credentials, persist the authenticated session, and redirect by user role.
+      // CÓDIGO NOVO E EFICIENTE
+      // CÓDIGO NOVO E CORRIGIDO
       loginForm.addEventListener("submit", async (event) => {
         event.preventDefault();
 
