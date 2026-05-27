@@ -1,9 +1,4 @@
 <!doctype html>
-<!--
-  Legislative Sessions Management Page
-  Provides the authenticated chamber administrator workflow for listing,
-  filtering, paginating, editing, and deleting legislative sessions.
--->
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -32,7 +27,6 @@
     <link rel="stylesheet" href="../css/carregamento.css" />
     <link rel="stylesheet" href="../css/customSelect.css" />
     <link rel="stylesheet" href="../css/pagination.css" />
-    <script src="../js/mockMode.js?v=3"></script>
     <script src="../js/global.js"></script>
     <script src="../js/toast.js"></script>
     <script src="../js/carregamento.js"></script>
@@ -338,19 +332,16 @@
     </style>
   </head>
   <body>
-    <!-- Application shell with shared sidebar and header placeholders. -->
     <div class="app-layout">
       <div id="sidebar-placeholder"></div>
       <main class="main-content" id="mainContent">
         <div id="header-placeholder"></div>
 
-        <!-- Session management workspace with filters, cards, and pagination. -->
         <div class="page-content-wrapper">
           <div class="content-area">
             <section class="content-section fade-in">
               <div class="page-header">
                 <h2>Sessões Legislativas</h2>
-                <!-- Primary action for creating a new legislative session. -->
                 <button
                   type="button"
                   id="btn-nova-sessao"
@@ -361,7 +352,6 @@
                 </button>
               </div>
 
-              <!-- Filter controls for narrowing sessions by type, status, and search text. -->
               <div class="filters-section">
                 <div class="form-group" style="margin: 0">
                   <label>Tipo</label>
@@ -428,14 +418,12 @@
                 </button>
               </div>
 
-              <!-- Dynamic session cards are rendered here from paginated API data. -->
               <div class="sessoes-grid-wrapper">
                 <div id="sessoes-grid"></div>
               </div>
             </section>
           </div>
 
-          <!-- Pagination controls for the session card grid. -->
           <div class="pagination-container" id="pagination-container">
             <div class="pagination-controls" id="pagination-controls"></div>
           </div>
@@ -443,7 +431,6 @@
       </main>
     </div>
 
-    <!-- Delete confirmation modal for scheduled sessions. -->
     <div class="modal-overlay" id="delete-modal-overlay">
       <div class="modal-content">
         <div class="modal-header">
@@ -487,7 +474,6 @@
       </div>
     </div>
 
-    <!-- Edit modal for scheduled sessions that have not started yet. -->
     <div class="modal-overlay" id="edit-modal-overlay">
       <div class="modal-content">
         <div class="modal-header">
@@ -591,7 +577,6 @@
     </div>
 
     <script>
-      // Initialize authentication, controls, modals, layout, and the first page of sessions.
       document.addEventListener("DOMContentLoaded", async () => {
         // === NOVA AUTENTICAÇÃO COM VALIDAÇÃO DE ROLE ===
         try {
@@ -605,13 +590,11 @@
           return;
         }
 
-        // Register navigation to the new session form.
         const btnNovaSessao = document.getElementById("btn-nova-sessao");
         btnNovaSessao?.addEventListener("click", () => {
           window.location.href = "/app/nova_sessao.html";
         });
 
-        // Page-level pagination state, adjusted by viewport size.
         const SESSOES_PER_PAGE_MOBILE = 10;
         const SESSOES_PER_PAGE_DESKTOP = 40;
         const mediaSmall = window.matchMedia("(max-width: 768px)");
@@ -620,7 +603,6 @@
           : SESSOES_PER_PAGE_DESKTOP;
         let currentPage = 1;
 
-        // Initialize filter custom selects.
         // --- INICIALIZAÇÃO DOS CUSTOM SELECTS ---
         // Inicializa o seletor de TIPO e define que a função applyFilters será chamada na seleção.
         const tipoSelect = new CustomSelect({
@@ -636,7 +618,6 @@
           onSelect: () => applyFilters(),
         });
 
-        // Cache the DOM references used by filters, cards, and modals.
         // --- Referências aos outros elementos do DOM ---
         const grid = document.getElementById("sessoes-grid");
         const paginationControls = document.getElementById(
@@ -662,11 +643,9 @@
           },
         };
 
-        // Edit modal state for validation and the selected session.
         let editSubmitAttempted = false;
         let editingSessaoId = null;
 
-        // Initialize the custom session type selector inside the edit modal.
         const editTipoSelect = new CustomSelect({
           wrapperId: "edit-tipo-sessao-wrapper",
           placeholder: "Selecione um tipo...",
@@ -676,7 +655,6 @@
           },
         });
 
-        // Show validation feedback for a field in the edit modal.
         const setEditFieldError = (field, message) => {
           const errorEl = document.getElementById(`edit-${field}-sessao-error`);
           if (errorEl) {
@@ -696,7 +674,6 @@
           document.getElementById(inputId)?.classList.add("form-input-error");
         };
 
-        // Clear validation feedback for a field in the edit modal.
         const clearEditFieldError = (field) => {
           const errorEl = document.getElementById(`edit-${field}-sessao-error`);
           if (errorEl) {
@@ -718,7 +695,6 @@
             ?.classList.remove("form-input-error");
         };
 
-        // Validate editable session fields before submitting updates.
         const validateEditForm = () => {
           let isValid = true;
 
@@ -756,7 +732,6 @@
           return isValid;
         };
 
-        // Convert API date values into datetime-local input format.
         const toDatetimeLocalValue = (isoValue) => {
           const date = new Date(isoValue);
           if (!date || Number.isNaN(date.getTime())) return "";
@@ -769,13 +744,11 @@
           return `${year}-${month}-${day}T${hours}:${minutes}`;
         };
 
-        // Extract the session number prefix from the generated session name.
         const parseNumeroFromNome = (nome) => {
           const match = String(nome || "").match(/^(\d+)/);
           return match ? match[1] : "";
         };
 
-        // Load a scheduled session and populate the edit modal.
         const openEditModal = async (id) => {
           const authToken = localStorage.getItem("authToken");
           editingSessaoId = id;
@@ -822,7 +795,6 @@
           }
         };
 
-        // Validate and submit scheduled session edits.
         const handleEditConfirm = async (event) => {
           event.preventDefault();
 
@@ -885,7 +857,6 @@
           }
         };
 
-        // Fetch paginated sessions using the current filter state.
         const fetchSessoes = async (page = 1, filters = {}) => {
           renderLoadingState(grid, "Carregando sessões...");
 
@@ -935,7 +906,6 @@
           }
         };
 
-        // Recalculate pagination size when switching between mobile and desktop layouts.
         // Ajustar limite por página automaticamente ao mudar de viewport
         if (!mediaSmall._boundForSessoes) {
           mediaSmall.addEventListener("change", () => {
@@ -957,7 +927,6 @@
           mediaSmall._boundForSessoes = true;
         }
 
-        // Render session cards for the current page.
         const renderSessoes = (sessoes) => {
           const grid = document.getElementById("sessoes-grid");
           if (!grid) {
@@ -1020,7 +989,6 @@
           });
         };
 
-        // Open and close modals using current and legacy visibility classes.
         // modals.css usa `.active` para exibir o modal.
         // Mantém também `.visible` por compatibilidade caso existam estilos antigos.
         const openModal = (overlay) => {
@@ -1032,14 +1000,12 @@
           overlay.classList.remove("visible");
         };
 
-        // Populate and open the delete confirmation modal.
         const openDeleteModal = (id, nome) => {
           deleteModal.sessionName.textContent = nome;
           deleteModal.confirmBtn.dataset.id = id;
           openModal(deleteModal.overlay);
         };
 
-        // Submit a session deletion request and refresh the grid.
         const handleDeleteConfirm = async (event) => {
           const id = event.target.dataset.id;
           const authToken = localStorage.getItem("authToken");
@@ -1091,7 +1057,6 @@
           }
         };
 
-        // Apply the selected filters and reset pagination to the first page.
         const applyFilters = () => {
           const currentFilters = {
             tipo: tipoSelect.getValue(),
@@ -1102,7 +1067,6 @@
           fetchSessoes(currentPage, currentFilters);
         };
 
-        // Debounce text search before applying filters.
         let searchTimeout;
         filterSearch.addEventListener("input", () => {
           clearTimeout(searchTimeout);
