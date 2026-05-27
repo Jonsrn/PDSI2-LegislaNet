@@ -1,13 +1,15 @@
 /**
- * File: toast.js
- * Purpose: Provides a lightweight toast notification helper for displaying
- * transient success, error, warning, and informational messages.
+ * Toast notification helper.
+ *
+ * @module web/js/toast
  */
+
 /**
- * Displays a toast notification with an icon and auto-dismiss behavior.
- * @param {string} message - The message to display inside the toast.
- * @param {string} [type='info'] - The semantic toast type.
- * @param {number} [duration=5000] - Duration in milliseconds before dismissal.
+ * Shows a temporary toast notification.
+ *
+ * @param {string} message - Toast message.
+ * @param {string} [type='info'] - Toast type.
+ * @param {number} [duration=5000] - Display duration in milliseconds.
  * @returns {void}
  */
 function showToast(message, type = 'info', duration = 5000) {

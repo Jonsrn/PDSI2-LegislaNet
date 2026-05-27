@@ -1,67 +1,45 @@
 /**
- * @file Frontend authentication manager for storing JWT credentials, validating
- * sessions, protecting authenticated requests, and coordinating logout behavior.
+ * Frontend authentication manager for token storage, session checks, and
+ * authenticated requests.
+ *
+ * @module web/js/auth
  */
 
 /**
- * Manages authentication state, token validation, session warnings, and
- * authenticated API requests for the frontend.
+ * Manages browser-side authentication state and session expiry handling.
  */
 class AuthManager {
-    /**
-     * Creates an authentication manager with localStorage keys and session limits.
-     */
     constructor() {
         this.tokenKey = 'authToken';
         this.userKey = 'userData';
-        this.sessionTimeout = 24 * 60 * 60 * 1000; // 24 horas
-        this.refreshThreshold = 15 * 60 * 1000; // 15 minutos
+        this.sessionTimeout = 24 * 60 * 60 * 1000;
+        this.refreshThreshold = 15 * 60 * 1000;
         this.initialized = false;
         
-        // Bind methods
         this.init = this.init.bind(this);
         this.checkAuth = this.checkAuth.bind(this);
         this.logout = this.logout.bind(this);
     }
 
     /**
-     * Initializes authentication checks, cross-tab logout handling, and token polling.
+     * Initializes authentication checks and cross-tab logout handling.
      *
      * @returns {void}
      */
     init() {
         if (this.initialized) return;
         
-        // Verifica autenticação na inicialização
         this.checkAuth();
         
-        // Monitora mudanças no localStorage (múltiplas abas)
-        window.addEventListener('storage',
-            /**
-             * Logs out this tab when the authentication token is removed elsewhere.
-             *
-             * @param {StorageEvent} e - localStorage change event.
-             * @returns {void}
-             */
-            (e) => {
-                if (e.key === this.tokenKey && !e.newValue) {
-                    this.logout();
-                }
+        window.addEventListener('storage', (e) => {
+            if (e.key === this.tokenKey && !e.newValue) {
+                this.logout();
             }
-        );
+        });
         
-        // Verifica token periodicamente
-        setInterval(
-            /**
-             * Periodically validates the current authentication token.
-             *
-             * @returns {void}
-             */
-            () => {
-                this.checkTokenValidity();
-            },
-            5 * 60 * 1000
-        ); // A cada 5 minutos
+        setInterval(() => {
+            this.checkTokenValidity();
+        }, 5 * 60 * 1000);
         
         this.initialized = true;
     }
@@ -69,7 +47,7 @@ class AuthManager {
     /**
      * Checks whether the current browser session has valid authentication data.
      *
-     * @returns {boolean} True when a token and user record are available.
+     * @returns {boolean} True when token and user data are available.
      */
     checkAuth() {
         const token = this.getToken();
@@ -80,7 +58,6 @@ class AuthManager {
             return false;
         }
         
-        // Verifica se o token está próximo do vencimento
         if (this.isTokenNearExpiration(token)) {
             this.showTokenWarning();
         }
@@ -89,9 +66,9 @@ class AuthManager {
     }
 
     /**
-     * Reads and validates the stored JWT token.
+     * Reads and validates the stored access token.
      *
-     * @returns {string|null} The stored token, or null when missing or invalid.
+     * @returns {string|null} Stored JWT, or null when missing or invalid.
      */
     getToken() {
         try {
@@ -99,7 +76,6 @@ class AuthManager {
             
             if (!token) return null;
             
-            // Verifica formato básico
             if (!this.isValidTokenFormat(token)) {
                 this.clearAuth();
                 return null;
@@ -114,9 +90,9 @@ class AuthManager {
     }
 
     /**
-     * Reads the stored authenticated user data.
+     * Reads the stored user data.
      *
-     * @returns {Object|null} Parsed user data, or null when unavailable.
+     * @returns {object|null} Parsed user data, or null when unavailable.
      */
     getUser() {
         try {
@@ -131,10 +107,9 @@ class AuthManager {
     /**
      * Stores authentication token and user data in localStorage.
      *
-     * @param {string} token - JWT token returned by the backend.
-     * @param {Object} userData - Authenticated user profile data.
+     * @param {string} token - JWT access token.
+     * @param {object} userData - Authenticated user data.
      * @returns {void}
-     * @throws {Error} When authentication data cannot be persisted.
      */
     setAuthData(token, userData) {
         try {
@@ -150,7 +125,7 @@ class AuthManager {
     }
 
     /**
-     * Removes authentication token and user data from localStorage.
+     * Clears stored authentication data.
      *
      * @returns {void}
      */
@@ -164,9 +139,9 @@ class AuthManager {
     }
 
     /**
-     * Logs out the current user, optionally showing a confirmation message.
+     * Logs out the current user and redirects to the login page.
      *
-     * @param {boolean} [showMessage=true] - Whether to display a logout message.
+     * @param {boolean} [showMessage=true] - Whether to show a logout message.
      * @returns {void}
      */
     logout(showMessage = true) {
@@ -180,7 +155,7 @@ class AuthManager {
     }
 
     /**
-     * Redirects the browser to the login page when not already there.
+     * Redirects the browser to the login page when needed.
      *
      * @returns {void}
      */
@@ -194,10 +169,10 @@ class AuthManager {
     }
 
     /**
-     * Validates the basic structure and payload of a JWT token.
+     * Checks whether a JWT has a decodable payload.
      *
-     * @param {string} token - JWT token to validate.
-     * @returns {boolean} True when the token has a decodable three-part JWT format.
+     * @param {string} token - JWT access token.
+     * @returns {boolean} True when the token has a valid JWT-like structure.
      */
     isValidTokenFormat(token) {
         if (!token || typeof token !== 'string') return false;
@@ -206,7 +181,6 @@ class AuthManager {
         if (parts.length !== 3) return false;
         
         try {
-            // Tenta decodificar o payload
             const payload = JSON.parse(atob(parts[1]));
             return payload && typeof payload === 'object';
         } catch {
@@ -215,10 +189,10 @@ class AuthManager {
     }
 
     /**
-     * Decodes selected metadata from a JWT token payload.
+     * Extracts basic claims from a JWT payload.
      *
-     * @param {string} token - JWT token to inspect.
-     * @returns {{exp: number, iat: number, sub: string, email: string, role: string}|null} Token metadata, or null when decoding fails.
+     * @param {string} token - JWT access token.
+     * @returns {object|null} Token claims, or null when parsing fails.
      */
     getTokenInfo(token) {
         try {
@@ -238,9 +212,9 @@ class AuthManager {
     }
 
     /**
-     * Checks whether a token is within the configured expiration warning window.
+     * Checks whether a token is near expiration.
      *
-     * @param {string} token - JWT token to inspect.
+     * @param {string} token - JWT access token.
      * @returns {boolean} True when the token expires within the warning threshold.
      */
     isTokenNearExpiration(token) {
@@ -248,13 +222,13 @@ class AuthManager {
         if (!tokenInfo || !tokenInfo.exp) return false;
         
         const now = Math.floor(Date.now() / 1000);
-        const threshold = 15 * 60; // 15 minutos
+        const threshold = 15 * 60;
         
         return (tokenInfo.exp - now) <= threshold;
     }
 
     /**
-     * Checks token expiration and handles expired or nearly expired sessions.
+     * Checks token expiry and logs out expired sessions.
      *
      * @returns {void}
      */
@@ -270,21 +244,19 @@ class AuthManager {
         
         const now = Math.floor(Date.now() / 1000);
         
-        // Token expirado
         if (now >= tokenInfo.exp) {
             this.showMessage('Sessão expirada. Faça login novamente.', 'warning');
             this.logout(false);
             return;
         }
         
-        // Token próximo do vencimento
         if (this.isTokenNearExpiration(token)) {
             this.showTokenWarning();
         }
     }
 
     /**
-     * Displays a warning that the current session will expire soon.
+     * Shows a warning when the current token is near expiration.
      *
      * @returns {void}
      */
@@ -299,12 +271,11 @@ class AuthManager {
     }
 
     /**
-     * Performs a fetch request with the current bearer token attached.
+     * Performs a fetch request with the stored bearer token.
      *
-     * @param {string} url - URL to request.
-     * @param {RequestInit} [options={}] - Fetch options to merge with auth headers.
-     * @returns {Promise<Response>} The fetch response when authentication succeeds.
-     * @throws {Error} When no token is available, the session expires, or the request fails.
+     * @param {string} url - Request URL.
+     * @param {object} [options={}] - Fetch options.
+     * @returns {Promise<Response>} Fetch response.
      */
     async authenticatedFetch(url, options = {}) {
         const token = this.getToken();
@@ -326,16 +297,8 @@ class AuthManager {
                 headers: authHeaders
             });
 
-            // Token inválido ou expirado
             if (response.status === 401) {
-                const errorData = await response.json().catch(
-                    /**
-                     * Provides an empty error payload when the response body is not JSON.
-                     *
-                     * @returns {Object} Empty fallback error payload.
-                     */
-                    () => ({})
-                );
+                const errorData = await response.json().catch(() => ({}));
                 
                 if (errorData.code === 'BLACKLISTED_TOKEN' || 
                     errorData.code === 'MALFORMED_TOKEN') {
@@ -348,7 +311,6 @@ class AuthManager {
                 throw new Error('Sessão expirada');
             }
 
-            // Verifica aviso de token próximo ao vencimento
             const tokenWarning = response.headers.get('X-Token-Warning');
             if (tokenWarning) {
                 this.showTokenWarning();
@@ -365,9 +327,9 @@ class AuthManager {
     }
 
     /**
-     * Checks whether the current user has the super administrator role.
+     * Checks whether the stored user is a super admin.
      *
-     * @returns {boolean|null} True when the current user is a super administrator; otherwise false or null.
+     * @returns {boolean} True when the stored user has the super_admin role.
      */
     isSuperAdmin() {
         const user = this.getUser();
@@ -375,9 +337,9 @@ class AuthManager {
     }
 
     /**
-     * Checks whether the current user has the chamber administrator role.
+     * Checks whether the stored user is a camara admin.
      *
-     * @returns {boolean|null} True when the current user is a chamber administrator; otherwise false or null.
+     * @returns {boolean} True when the stored user has the admin_camara role.
      */
     isAdminCamara() {
         const user = this.getUser();
@@ -385,15 +347,14 @@ class AuthManager {
     }
 
     /**
-     * Displays a temporary authentication message on the page.
+     * Shows a temporary authentication message.
      *
-     * @param {string} message - Message text to display.
-     * @param {'info'|'success'|'warning'|'error'} [type='info'] - Visual message type.
-     * @param {number} [duration=5000] - Duration in milliseconds before removal.
+     * @param {string} message - Message text.
+     * @param {string} [type='info'] - Message style type.
+     * @param {number} [duration=5000] - Display duration in milliseconds.
      * @returns {void}
      */
     showMessage(message, type = 'info', duration = 5000) {
-        // Remove mensagem existente
         const existing = document.querySelector('.auth-message');
         if (existing) existing.remove();
 
@@ -419,32 +380,20 @@ class AuthManager {
 
         document.body.appendChild(messageEl);
 
-        // Remove após duração especificada
-        setTimeout(
-            /**
-             * Removes the message element after the configured display duration.
-             *
-             * @returns {void}
-             */
-            () => {
-                if (messageEl.parentNode) {
-                    messageEl.remove();
-                }
-            },
-            duration
-        );
+        setTimeout(() => {
+            if (messageEl.parentNode) {
+                messageEl.remove();
+            }
+        }, duration);
     }
 }
 
-// Instância global
 const authManager = new AuthManager();
 
-// Auto-inicializar quando DOM carregar
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', authManager.init);
 } else {
     authManager.init();
 }
 
-// Expor globalmente
 window.authManager = authManager;

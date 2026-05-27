@@ -1,13 +1,14 @@
 /**
- * File: carregamento.js
- * Purpose: Provides reusable UI state renderers for loading, empty, and error
- * feedback inside dynamic container elements.
+ * UI helpers for rendering loading, empty, and error states.
+ *
+ * @module web/js/carregamento
  */
 
 /**
- * Renders a loading state inside the provided container element.
- * @param {HTMLElement} containerElement - The container where the loading UI will be displayed.
- * @param {string} [message='Carregando...'] - The message shown below the spinner.
+ * Renders a loading state inside a container.
+ *
+ * @param {HTMLElement} containerElement - Container where the loading state is rendered.
+ * @param {string} [message='Carregando...'] - Message displayed below the spinner.
  * @returns {void}
  */
 function renderLoadingState(containerElement, message = "Carregando...") {
@@ -23,17 +24,17 @@ function renderLoadingState(containerElement, message = "Carregando...") {
             <div class="loading-spinner"></div>
             <p>${message}</p>
         </div>
-    `;
+  `;
   containerElement.innerHTML = loadingHTML;
-  // ESSENCIAL: Define o contêiner como um bloco simples durante o carregamento.
   containerElement.style.display = "block";
 }
 
 /**
- * Renders an empty state when no items are available for display.
- * @param {HTMLElement} containerElement - The target container element.
- * @param {string} [message='Nenhum item encontrado.'] - The main empty-state message.
- * @param {string} [iconClass='fa-solid fa-inbox'] - The Font Awesome icon class to display.
+ * Renders an empty state inside a container.
+ *
+ * @param {HTMLElement} containerElement - Container where the empty state is rendered.
+ * @param {string} [message='Nenhum item encontrado.'] - Main message.
+ * @param {string} [iconClass='fa-solid fa-inbox'] - Font Awesome icon class.
  * @returns {void}
  */
 function renderEmptyState(
@@ -48,14 +49,14 @@ function renderEmptyState(
             <p>${message}</p>
         </div>
     `;
-  // ESSENCIAL: Garante que o contêiner seja um bloco simples.
   containerElement.style.display = "block";
 }
 
 /**
- * Renders an error state inside the provided container element.
- * @param {HTMLElement} containerElement - The target container element.
- * @param {string} [message='Ocorreu um erro ao carregar os dados.'] - The error message to display.
+ * Renders an error state inside a container.
+ *
+ * @param {HTMLElement} containerElement - Container where the error state is rendered.
+ * @param {string} [message='Ocorreu um erro ao carregar os dados.'] - Error message.
  * @returns {void}
  */
 function renderErrorState(
@@ -69,6 +70,5 @@ function renderErrorState(
             <p style="color: var(--accent-red);">${message}</p>
         </div>
     `;
-  // ESSENCIAL: Garante que o contêiner seja um bloco simples.
   containerElement.style.display = "block";
 }

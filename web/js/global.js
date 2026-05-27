@@ -1,25 +1,21 @@
 /**
- * @file Global frontend utilities for layout loading, navigation, shared UI
- * interactions, authentication route guards, animations, and sidebar badges.
+ * Global layout, navigation, animation, authentication guard, and sidebar helpers.
+ *
+ * @module web/js/global
  */
 
 /**
- * Initializes the page layout by loading contextual components and global UI listeners.
+ * Initializes page layout components and global UI listeners.
  *
- * @param {Object} pageConfig - Page layout configuration.
- * @param {string} pageConfig.title - Header title text.
+ * @param {object} pageConfig - Page configuration.
+ * @param {string} pageConfig.title - Header title.
  * @param {string} pageConfig.icon - Font Awesome icon class for the header.
- * @param {string} pageConfig.navActive - Navigation item ID to mark as active.
- * @returns {Promise<void>} Resolves after layout components and listeners are initialized.
+ * @param {string} pageConfig.navActive - Navigation item id to mark as active.
+ * @returns {Promise<void>}
  */
 async function initLayout(pageConfig) {
   const path = window.location.pathname;
 
-  /**
-   * Ensures a footer placeholder exists in the expected layout location.
-   *
-   * @returns {HTMLElement} The existing or newly created footer placeholder.
-   */
   const ensureFooterPlaceholder = () => {
     let placeholder = document.getElementById("footer-placeholder");
     if (placeholder) return placeholder;
@@ -37,7 +33,6 @@ async function initLayout(pageConfig) {
     return placeholder;
   };
 
-  // Determina o contexto (admin, app ou portal) com base no caminho do URL
   if (path.includes("/admin/")) {
     await loadComponent(
       "../components/admin_sidebar.html",
@@ -76,24 +71,18 @@ async function initLayout(pageConfig) {
     );
   }
 
-  // Após carregar os componentes, configura os elementos dinâmicos
   setupDynamicContent(pageConfig);
   setupSidebarMobileToggle();
-  autoFixFormSectionLayout(); // Corrige o layout se necessário
+  autoFixFormSectionLayout();
   setupEventListeners();
 }
 
 /**
- * Configures mobile sidebar controls, outside-click closing, and sidebar logout handling.
+ * Adds mobile sidebar open/close controls and outside-click behavior.
  *
  * @returns {void}
  */
 function setupSidebarMobileToggle() {
-  /**
-   * Reads the current sidebar element from the DOM.
-   *
-   * @returns {Element|null} Current sidebar element, or null when unavailable.
-   */
   const getSidebar = () => document.querySelector(".sidebar");
   const sidebar = getSidebar();
   if (!sidebar) return;
@@ -112,21 +101,10 @@ function setupSidebarMobileToggle() {
     document.body.appendChild(toggleBtn);
   }
 
-  /**
-   * Updates the sidebar toggle expanded state for assistive technology.
-   *
-   * @param {boolean} expanded - Whether the sidebar is currently expanded.
-   * @returns {void}
-   */
   const setExpanded = (expanded) => {
     toggleBtn.setAttribute("aria-expanded", expanded ? "true" : "false");
   };
 
-  /**
-   * Closes the mobile sidebar and resets the page open state.
-   *
-   * @returns {void}
-   */
   const closeSidebar = () => {
     const currentSidebar = getSidebar();
     if (currentSidebar) {
@@ -136,11 +114,6 @@ function setupSidebarMobileToggle() {
     setExpanded(false);
   };
 
-  /**
-   * Toggles the mobile sidebar between open and closed states.
-   *
-   * @returns {void}
-   */
   const toggleSidebar = () => {
     const currentSidebar = getSidebar();
     if (!currentSidebar) {
@@ -160,34 +133,22 @@ function setupSidebarMobileToggle() {
     toggleBtn.dataset.bound = "true";
   }
 
-  // Item "Sair" no sidebar (logout)
   const logoutLink = sidebar.querySelector('[data-action="logout"]');
   if (logoutLink && !logoutLink.dataset.bound) {
-    logoutLink.addEventListener(
-      "click",
-      /**
-       * Handles sidebar logout clicks and falls back to local cleanup on failure.
-       *
-       * @param {MouseEvent} e - Sidebar logout click event.
-       * @returns {Promise<void>} Resolves after logout handling completes.
-       */
-      async (e) => {
-        e.preventDefault();
-        try {
-          await logout();
-        } catch (err) {
-          console.error("Erro ao executar logout:", err);
-          // fallback: limpeza local + redirect
-          localStorage.removeItem("authToken");
-          localStorage.removeItem("userData");
-          window.location.href = "/app/login.html";
-        }
-      },
-    );
+    logoutLink.addEventListener("click", async (e) => {
+      e.preventDefault();
+      try {
+        await logout();
+      } catch (err) {
+        console.error("Erro ao executar logout:", err);
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("userData");
+        window.location.href = "/app/login.html";
+      }
+    });
     logoutLink.dataset.bound = "true";
   }
 
-  // Botão de fechar (X) dentro do sidebar (mobile)
   const sidebarHeader = sidebar.querySelector(".sidebar-header");
   if (sidebarHeader) {
     let closeBtn = sidebarHeader.querySelector("#sidebarCloseBtn");
@@ -208,12 +169,6 @@ function setupSidebarMobileToggle() {
     }
   }
 
-  // Se sair do mobile, garante que o comportamento desktop (hover) não fique preso em "aberto"
-  /**
-   * Resets mobile sidebar state when leaving the mobile viewport.
-   *
-   * @returns {void}
-   */
   const handleViewportChange = () => {
     if (!isMobile.matches) {
       closeSidebar();
@@ -225,16 +180,9 @@ function setupSidebarMobileToggle() {
     sidebar.dataset.mobileToggleBound = "true";
   }
 
-  // Fechar ao clicar/tocar fora do sidebar (somente mobile)
   if (!document.body.dataset.sidebarOutsideCloseBound) {
     document.addEventListener(
       "pointerdown",
-      /**
-       * Closes the sidebar when the user taps outside it on mobile.
-       *
-       * @param {PointerEvent} e - Pointer event from the document.
-       * @returns {void}
-       */
       (e) => {
         if (!isMobile.matches) return;
         const currentSidebar = getSidebar();
@@ -256,23 +204,18 @@ function setupSidebarMobileToggle() {
   handleViewportChange();
 }
 
-// ===================================================================================
-// FUNÇÕES AUXILIARES DE CARREGAMENTO E CONFIGURAÇÃO
-// ===================================================================================
-
 /**
- * Loads an HTML component file and injects it into a target placeholder.
+ * Loads an HTML component file into a target placeholder.
  *
- * @param {string} componentPath - Relative path to the component HTML file.
- * @param {string} targetElementId - ID of the placeholder element to receive the component.
- * @returns {Promise<void>} Resolves after the component is loaded or an error state is rendered.
+ * @param {string} componentPath - Component HTML file path.
+ * @param {string} targetElementId - Target element id.
+ * @returns {Promise<void>}
  */
 async function loadComponent(componentPath, targetElementId) {
   const targetElement = document.getElementById(targetElementId);
-  if (!targetElement) return; // Não faz nada se o placeholder não existir
+  if (!targetElement) return;
 
   try {
-    // Adiciona timestamp para evitar cache durante desenvolvimento
     const urlWithCacheBuster = `${componentPath}?t=${new Date().getTime()}`;
     const response = await fetch(urlWithCacheBuster);
     if (!response.ok) {
@@ -286,18 +229,14 @@ async function loadComponent(componentPath, targetElementId) {
 }
 
 /**
- * Applies dynamic header and navigation state from the page configuration.
+ * Applies dynamic page content such as header text, icon, and active navigation.
  *
- * @param {Object} pageConfig - Page layout configuration.
- * @param {string} [pageConfig.title] - Header title text.
- * @param {string} [pageConfig.icon] - Font Awesome icon class for the header.
- * @param {string} [pageConfig.navActive] - Navigation item ID to mark as active.
+ * @param {object} pageConfig - Page configuration.
  * @returns {void}
  */
 function setupDynamicContent(pageConfig) {
   if (!pageConfig) return;
 
-  // Define o título e o ícone do cabeçalho, se existirem
   const headerTitle = document.getElementById("header-title");
   const headerIcon = document.getElementById("header-icon");
   if (headerTitle && pageConfig.title) {
@@ -307,7 +246,6 @@ function setupDynamicContent(pageConfig) {
     headerIcon.className = `fa-solid ${pageConfig.icon}`;
   }
 
-  // Define o item de navegação ativo na sidebar
   if (pageConfig.navActive) {
     const activeNavItem = document.getElementById(pageConfig.navActive);
     if (activeNavItem) {
@@ -317,108 +255,56 @@ function setupDynamicContent(pageConfig) {
 }
 
 /**
- * Registers global UI event listeners after layout components are loaded.
+ * Configures global event listeners after layout components are loaded.
  *
  * @returns {void}
  */
 function setupEventListeners() {
-  // Listener para o dropdown do perfil de usuário
   const profileBtn = document.getElementById("profileBtn");
   const profileDropdown = document.getElementById("profileDropdown");
   if (profileBtn && profileDropdown) {
-    profileBtn.addEventListener(
-      "click",
-      /**
-       * Toggles the profile dropdown without propagating the click.
-       *
-       * @param {MouseEvent} event - Profile button click event.
-       * @returns {void}
-       */
-      (event) => {
-        event.stopPropagation();
-        profileDropdown.classList.toggle("active");
-        profileBtn.classList.toggle("active");
-      },
-    );
+    profileBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      profileDropdown.classList.toggle("active");
+      profileBtn.classList.toggle("active");
+    });
   }
 
-  // Listener para fechar o dropdown ao clicar fora
-  window.addEventListener(
-    "click",
-    /**
-     * Closes the profile dropdown when the user clicks outside it.
-     *
-     * @returns {void}
-     */
-    () => {
-      if (profileDropdown && profileDropdown.classList.contains("active")) {
-        profileDropdown.classList.remove("active");
-        profileBtn.classList.remove("active");
-      }
-    },
-  );
+  window.addEventListener("click", () => {
+    if (profileDropdown && profileDropdown.classList.contains("active")) {
+      profileDropdown.classList.remove("active");
+      profileBtn.classList.remove("active");
+    }
+  });
 
-  // Listeners para os links de navegação da sidebar
   const navLinks = document.querySelectorAll("a[data-page]");
-  navLinks.forEach(
-    /**
-     * Replaces navigation links with clones to remove duplicate listeners.
-     *
-     * @param {Element} link - Navigation link to replace.
-     * @returns {void}
-     */
-    (link) => {
-    // Remove listeners antigos para evitar duplicação, se houver
-      link.replaceWith(link.cloneNode(true));
-    },
-  );
-  // Adiciona os novos listeners
-  document.querySelectorAll("a[data-page]").forEach(
-    /**
-     * Binds navigation behavior to a page link.
-     *
-     * @param {Element} link - Navigation link to bind.
-     * @returns {void}
-     */
-    (link) => {
-      link.addEventListener(
-        "click",
-        /**
-         * Navigates to the page named in the link data attribute.
-         *
-         * @param {MouseEvent} e - Navigation click event.
-         * @returns {void}
-         */
-        function (e) {
-          e.preventDefault();
-          const pageName = this.getAttribute("data-page");
-          navigateToPage(pageName);
-        },
-      );
-    },
-  );
+  navLinks.forEach((link) => {
+    link.replaceWith(link.cloneNode(true));
+  });
+  document.querySelectorAll("a[data-page]").forEach((link) => {
+    link.addEventListener("click", function (e) {
+      e.preventDefault();
+      const pageName = this.getAttribute("data-page");
+      navigateToPage(pageName);
+    });
+  });
 
-  // Animações de fade-in
   initializeFadeInObserver();
 }
 
-// ===================================================================================
-// LÓGICA DE NAVEGAÇÃO (ADAPTADA DO SEU ARQUIVO ORIGINAL)
-// ===================================================================================
-
 /**
- * Checks whether the current page belongs to the admin module.
+ * Checks whether the current page is inside the admin module.
  *
- * @returns {boolean} True when the URL path is inside the admin module.
+ * @returns {boolean} True when the current path is an admin path.
  */
 function isAdminContext() {
   return window.location.pathname.includes("/admin/");
 }
 
 /**
- * Navigates to a named application page with a short transition when possible.
+ * Navigates to an application page by route key.
  *
- * @param {string} pageName - Logical page name to resolve.
+ * @param {string} pageName - Page route key.
  * @returns {void}
  */
 function navigateToPage(pageName) {
@@ -432,39 +318,28 @@ function navigateToPage(pageName) {
 
   if (mainContent) {
     mainContent.classList.add("transitioning");
-    setTimeout(
-      /**
-       * Performs the delayed navigation after the transition class is applied.
-       *
-       * @returns {void}
-       */
-      () => {
-        window.location.href = targetUrl;
-      },
-      200,
-    );
+    setTimeout(() => {
+      window.location.href = targetUrl;
+    }, 200);
   } else {
     window.location.href = targetUrl;
   }
 }
 
 /**
- * Resolves a logical page name to an absolute application URL.
+ * Resolves the URL for a named application page.
  *
- * @param {string} pageName - Logical page name to resolve.
- * @returns {string|undefined} Absolute URL for the page, or undefined when unknown.
+ * @param {string} pageName - Page route key.
+ * @returns {string|undefined} Resolved page URL.
  */
 function getPageUrl(pageName) {
-  // CORREÇÃO: Caminhos alterados para absolutos
   const pageMap = {
-    // Admin pages
     dashboard_admin: "/admin/dashboard_admin.html",
     "nova-camara": "/admin/nova_camara.html",
     "novo-partido": "/admin/novo_partido.html",
-    partidos: "/admin/partidos.html", // ADICIONADO
-    configuracoes: "/admin/configuracoes.html", // ADICIONADO
-    relatorios: "/admin/relatorios.html", // ADICIONADO
-    // App pages
+    partidos: "/admin/partidos.html",
+    configuracoes: "/admin/configuracoes.html",
+    relatorios: "/admin/relatorios.html",
     dashboard: "/app/dashboard.html",
     cadastro: "/app/cadastro_de_pautas.html",
     nova_pauta: "/app/nova_pauta.html",
@@ -478,19 +353,14 @@ function getPageUrl(pageName) {
     painel_controle: "/app/painel_controle.html",
   };
 
-  // Adapta a chave de busca para o contexto admin
   const key =
     isAdminContext() && pageName === "dashboard" ? "dashboard_admin" : pageName;
 
   return pageMap[key];
 }
 
-// ===================================================================================
-// ANIMAÇÕES (ADAPTADO DO SEU ARQUIVO ORIGINAL)
-// ===================================================================================
-
 /**
- * Observes fade-in elements and marks them visible when they enter the viewport.
+ * Initializes the basic fade-in observer for `.fade-in` elements.
  *
  * @returns {void}
  */
@@ -499,133 +369,69 @@ function initializeFadeInObserver() {
   if (elementsToFadeIn.length === 0) return;
 
   const observer = new IntersectionObserver(
-    /**
-     * Handles visibility changes for fade-in elements.
-     *
-     * @param {IntersectionObserverEntry[]} entries - Observed element entries.
-     * @returns {void}
-     */
     (entries) => {
-      entries.forEach(
-        /**
-         * Reveals a single element once it intersects the viewport.
-         *
-         * @param {IntersectionObserverEntry} entry - Observed element entry.
-         * @returns {void}
-         */
-        (entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("visible");
-            observer.unobserve(entry.target);
-          }
-        },
-      );
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("visible");
+          observer.unobserve(entry.target);
+        }
+      });
     },
     { threshold: 0.1 },
   );
 
-  elementsToFadeIn.forEach(
-    /**
-     * Starts observing a fade-in element.
-     *
-     * @param {Element} el - Element to observe.
-     * @returns {void}
-     */
-    (el) => observer.observe(el),
-  );
+  elementsToFadeIn.forEach((el) => observer.observe(el));
 }
 
 /**
- * Initializes unified fade-in animations for load-time and scroll-time elements.
+ * Initializes unified fade-in animations for load and scroll-triggered elements.
  *
  * @returns {void}
  */
 function initUnifiedAnimations() {
-  // 1. Animações imediatas (hero sections e elementos marcados)
   const immediateElements = document.querySelectorAll(
     ".animate-on-load, [data-animate].animate-on-load",
   );
-  immediateElements.forEach(
-    /**
-     * Schedules an immediate load animation for an element.
-     *
-     * @param {Element} el - Element to animate.
-     * @param {number} index - Element index used to stagger animation timing.
-     * @returns {void}
-     */
-    (el, index) => {
+  immediateElements.forEach((el, index) => {
     setTimeout(
-      /**
-       * Applies animation classes after the staggered delay.
-       *
-       * @returns {void}
-       */
       () => {
-          el.classList.add("animated");
-          el.classList.add("visible"); // Manter compatibilidade
-        },
+        el.classList.add("animated");
+        el.classList.add("visible");
+      },
       (index + 1) * 200,
     );
-    },
-  );
+  });
 
-  // 2. Animações durante scroll (Intersection Observer)
   const observer = new IntersectionObserver(
-    /**
-     * Handles scroll-triggered animation entries.
-     *
-     * @param {IntersectionObserverEntry[]} entries - Observed animation entries.
-     * @returns {void}
-     */
     (entries) => {
-      entries.forEach(
-        /**
-         * Animates one element when it intersects the viewport.
-         *
-         * @param {IntersectionObserverEntry} entry - Observed element entry.
-         * @returns {void}
-         */
-        (entry) => {
-          if (entry.isIntersecting) {
-            // Adiciona ambas as classes para garantir compatibilidade
-            entry.target.classList.add("animated");
-            entry.target.classList.add("visible");
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("animated");
+          entry.target.classList.add("visible");
 
-            // Se tiver delay definido via data-delay
-            const delay = entry.target.getAttribute("data-delay");
-            if (delay) {
-              entry.target.style.transitionDelay = `${delay}ms`;
-            }
-
-            observer.unobserve(entry.target); // Para de observar após animar
+          const delay = entry.target.getAttribute("data-delay");
+          if (delay) {
+            entry.target.style.transitionDelay = `${delay}ms`;
           }
-        },
-      );
+
+          observer.unobserve(entry.target);
+        }
+      });
     },
     {
       threshold: 0.1,
-      rootMargin: "0px 0px -50px 0px", // Ativa um pouco antes
+      rootMargin: "0px 0px -50px 0px",
     },
   );
 
-  // Observar todos os tipos de elementos
   const scrollElements = document.querySelectorAll(
     ".fade-in, .fade-in-section, [data-animate]",
   );
-  scrollElements.forEach(
-    /**
-     * Starts observing a scroll-animated element.
-     *
-     * @param {Element} el - Element to observe.
-     * @returns {void}
-     */
-    (el) => observer.observe(el),
-  );
+  scrollElements.forEach((el) => observer.observe(el));
 }
 
-// Manter compatibilidade com código existente
 /**
- * Backward-compatible alias for unified fade-in animation initialization.
+ * Backward-compatible alias for unified fade-in animations.
  *
  * @returns {void}
  */
@@ -633,33 +439,15 @@ function initFadeInAnimations() {
   initUnifiedAnimations();
 }
 
-// Adiciona um listener global que espera o DOM carregar, mas não inicia o layout.
-// O layout será iniciado por uma chamada explícita em cada página HTML.
-document.addEventListener(
-  "DOMContentLoaded",
-  /**
-   * Shows the post-login success toast when requested by localStorage.
-   *
-   * @returns {void}
-   */
-  () => {
-  // Funções que não dependem de componentes podem ser chamadas aqui,
-  // mas a maioria agora está em setupEventListeners().
-    if (localStorage.getItem("showLoginSuccessToast") === "true") {
-      // Se a flag existir, mostra o toast
-      showToast("Login bem-sucedido!", "success");
-      // E remove a flag para não mostrar novamente ao recarregar a página
-      localStorage.removeItem("showLoginSuccessToast");
-    }
-  },
-);
-
-// ===================================================================================
-// INICIALIZADOR DE COMPONENTES DE UI (ex: Dropdowns de Tabela)
-// ===================================================================================
+document.addEventListener("DOMContentLoaded", () => {
+  if (localStorage.getItem("showLoginSuccessToast") === "true") {
+    showToast("Login bem-sucedido!", "success");
+    localStorage.removeItem("showLoginSuccessToast");
+  }
+});
 
 /**
- * Initializes status dropdown interactions found on the current page.
+ * Initializes interactive status dropdowns on the current page.
  *
  * @returns {void}
  */
@@ -667,114 +455,53 @@ function initStatusDropdowns() {
   const statusDropdowns = document.querySelectorAll(".status-dropdown");
   if (statusDropdowns.length === 0) return;
 
-  /**
-   * Closes all status dropdowns except the optional active dropdown.
-   *
-   * @param {Element|null} [exceptThisOne=null] - Dropdown that should remain open.
-   * @returns {void}
-   */
   const closeAllDropdowns = (exceptThisOne = null) => {
-    document.querySelectorAll(".status-dropdown.open").forEach(
-      /**
-       * Closes a single open dropdown when it is not excluded.
-       *
-       * @param {Element} dropdown - Open status dropdown.
-       * @returns {void}
-       */
-      (dropdown) => {
-        if (dropdown !== exceptThisOne) {
-          dropdown.classList.remove("open");
-        }
-      },
-    );
+    document.querySelectorAll(".status-dropdown.open").forEach((dropdown) => {
+      if (dropdown !== exceptThisOne) {
+        dropdown.classList.remove("open");
+      }
+    });
   };
 
-  statusDropdowns.forEach(
-    /**
-     * Wires one status dropdown and its menu items.
-     *
-     * @param {Element} dropdown - Status dropdown root element.
-     * @returns {void}
-     */
-    (dropdown) => {
+  statusDropdowns.forEach((dropdown) => {
     const badgeWrapper = dropdown.querySelector(".status-badge-wrapper");
     const dropdownMenu = dropdown.querySelector(".dropdown-menu");
 
     if (!badgeWrapper || !dropdownMenu) return;
 
-    badgeWrapper.addEventListener(
-      "click",
-      /**
-       * Toggles the status dropdown menu.
-       *
-       * @param {MouseEvent} event - Badge click event.
-       * @returns {void}
-       */
-      (event) => {
-        event.stopPropagation();
-        const wasOpen = dropdown.classList.contains("open");
-        closeAllDropdowns();
-        if (!wasOpen) {
-          dropdown.classList.add("open");
-        }
-      },
-    );
-
-    dropdownMenu.querySelectorAll(".dropdown-item").forEach(
-      /**
-       * Wires a single status menu item.
-       *
-       * @param {Element} item - Status dropdown item.
-       * @returns {void}
-       */
-      (item) => {
-        item.addEventListener(
-          "click",
-          /**
-           * Applies the selected status to the visible badge.
-           *
-           * @returns {void}
-           */
-          () => {
-            const newValue = item.getAttribute("data-value");
-            const newText = item.textContent;
-            const mainBadge = dropdown.querySelector(
-              ".status-badge-wrapper .status-badge",
-            );
-            if (mainBadge) {
-              mainBadge.className = "status-badge"; // Limpa classes antigas
-              mainBadge.classList.add(newValue);
-              mainBadge.textContent = newText.toUpperCase();
-            }
-            console.log(`Status alterado para: ${newValue}`);
-          },
-        );
-      },
-    );
-    },
-  );
-
-  window.addEventListener(
-    "click",
-    /**
-     * Closes open status dropdowns when the page is clicked.
-     *
-     * @returns {void}
-     */
-    () => {
+    badgeWrapper.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const wasOpen = dropdown.classList.contains("open");
       closeAllDropdowns();
-    },
-  );
+      if (!wasOpen) {
+        dropdown.classList.add("open");
+      }
+    });
+
+    dropdownMenu.querySelectorAll(".dropdown-item").forEach((item) => {
+      item.addEventListener("click", () => {
+        const newValue = item.getAttribute("data-value");
+        const newText = item.textContent;
+        const mainBadge = dropdown.querySelector(
+          ".status-badge-wrapper .status-badge",
+        );
+        if (mainBadge) {
+          mainBadge.className = "status-badge";
+          mainBadge.classList.add(newValue);
+          mainBadge.textContent = newText.toUpperCase();
+        }
+        console.log(`Status alterado para: ${newValue}`);
+      });
+    });
+  });
+
+  window.addEventListener("click", () => {
+    closeAllDropdowns();
+  });
 }
 
-// ===================================================================================
-// SISTEMA DE AUTENTICAÇÃO E PROTEÇÃO DE ROTAS MELHORADO
-// ===================================================================================
-
 /**
- * Route access configuration by authenticated user role.
- *
- * @type {Object<string, {module: string, defaultPage: string, allowedPaths: string[]}>}
+ * Route access configuration by user role.
  */
 const ROLE_ROUTES = {
   super_admin: {
@@ -794,41 +521,16 @@ const ROLE_ROUTES = {
   },
   vereador: {
     module: "tablet",
-    defaultPage: "/tablet/", // Será usado pelo app tablet
+    defaultPage: "/tablet/",
     allowedPaths: ["/tablet/"],
   },
 };
 
 /**
- * Checks whether the frontend is running with mocked business data.
+ * Decodes a JWT payload without signature validation.
  *
- * @returns {boolean} True when mock mode is enabled.
- */
-function isMockModeEnabled() {
-  return window.__LEGISLA_MOCK_MODE__ === true;
-}
-
-/**
- * Safely reads the locally stored authenticated user data.
- *
- * @returns {Object|null} Parsed user data, or null when missing or invalid.
- */
-function getStoredUserData() {
-  try {
-    const userData = localStorage.getItem("userData");
-    if (!userData) return null;
-    return JSON.parse(userData);
-  } catch (error) {
-    console.warn("[AUTH_GUARD] ⚠️ userData inválido no localStorage:", error);
-    return null;
-  }
-}
-
-/**
- * Decodes a JWT payload without validating the signature.
- *
- * @param {string} token - JWT token to decode.
- * @returns {Object|null} Decoded payload, or null when decoding fails.
+ * @param {string} token - JWT access token.
+ * @returns {object|null} Decoded payload, or null when parsing fails.
  */
 function decodeJwtPayload(token) {
   try {
@@ -842,26 +544,25 @@ function decodeJwtPayload(token) {
 }
 
 /**
- * Checks whether a decoded token should be refreshed soon.
+ * Checks whether a token should be refreshed soon.
  *
- * @param {Object|null} tokenPayload - Decoded JWT payload.
- * @returns {boolean} True when the token is missing, invalid, or near expiration.
+ * @param {object} tokenPayload - Decoded token payload.
+ * @returns {boolean} True when the token should be refreshed.
  */
 function shouldRefreshToken(tokenPayload) {
   if (!tokenPayload || !tokenPayload.exp) return true;
 
   const now = Math.floor(Date.now() / 1000);
   const timeUntilExpiry = tokenPayload.exp - now;
-  const thirtyMinutes = 30 * 60; // 30 minutos em segundos
+  const thirtyMinutes = 30 * 60;
 
-  // Token dura 3h (10800s), renova quando faltam 30 minutos ou menos
   return timeUntilExpiry <= thirtyMinutes;
 }
 
 /**
- * Attempts to validate or refresh the authentication token with the backend.
+ * Attempts to refresh the current Supabase session token.
  *
- * @returns {Promise<boolean>} True when token validation or refresh succeeds.
+ * @returns {Promise<boolean>} True when refresh succeeds.
  */
 async function refreshAuthToken() {
   console.log("[AUTH_GUARD] 🔄 Tentando validar/renovar token...");
@@ -885,7 +586,6 @@ async function refreshAuthToken() {
     if (response.ok) {
       const data = await response.json();
 
-      // Atualiza os dados no localStorage
       if (data.token) localStorage.setItem("authToken", data.token);
       if (data.refreshToken)
         localStorage.setItem("refreshToken", data.refreshToken);
@@ -907,9 +607,9 @@ async function refreshAuthToken() {
 }
 
 /**
- * Checks whether a role is allowed to access a route path.
+ * Checks whether a user role can access the current path.
  *
- * @param {string} userRole - Authenticated user role.
+ * @param {string} userRole - User role.
  * @param {string} currentPath - Current page path.
  * @returns {boolean} True when the role can access the path.
  */
@@ -917,21 +617,15 @@ function hasRoutePermission(userRole, currentPath) {
   const roleConfig = ROLE_ROUTES[userRole];
   if (!roleConfig) return false;
 
-  return roleConfig.allowedPaths.some(
-    /**
-     * Checks one allowed path prefix against the current path.
-     *
-     * @param {string} allowedPath - Allowed path prefix.
-     * @returns {boolean} True when current path starts with the prefix.
-     */
-    (allowedPath) => currentPath.startsWith(allowedPath),
+  return roleConfig.allowedPaths.some((allowedPath) =>
+    currentPath.startsWith(allowedPath),
   );
 }
 
 /**
- * Redirects the user to the module that matches their role.
+ * Redirects a user to the default module for their role.
  *
- * @param {string} userRole - Authenticated user role.
+ * @param {string} userRole - User role.
  * @param {string} [currentPath=window.location.pathname] - Current page path.
  * @returns {void}
  */
@@ -947,7 +641,6 @@ function redirectToCorrectModule(
     return;
   }
 
-  // Se já está na rota correta, não redireciona
   if (hasRoutePermission(userRole, currentPath)) {
     console.log(
       `[AUTH_GUARD] ✅ Usuário já está no módulo correto: ${roleConfig.module}`,
@@ -955,7 +648,6 @@ function redirectToCorrectModule(
     return;
   }
 
-  // Redireciona para o módulo correto
   console.log(
     `[AUTH_GUARD] 🔀 Redirecionando ${userRole} para: ${roleConfig.defaultPage}`,
   );
@@ -963,7 +655,7 @@ function redirectToCorrectModule(
 }
 
 /**
- * Clears local authentication data and redirects to the login page.
+ * Clears stored authentication data and redirects to login.
  *
  * @returns {void}
  */
@@ -981,14 +673,13 @@ function clearAuthAndRedirectToLogin() {
 }
 
 /**
- * Protects the current page with authentication, authorization, and optional redirects.
+ * Protects a page by validating authentication and role access.
  *
- * @param {Object} [options={}] - Authentication guard options.
- * @param {string[]|null} [options.allowedRoles=null] - Roles allowed for the page.
+ * @param {object} [options={}] - Guard options.
+ * @param {Array<string>} [options.allowedRoles] - Roles allowed for the page.
  * @param {boolean} [options.requireAuth=true] - Whether authentication is required.
- * @param {boolean} [options.autoRedirect=true] - Whether to redirect users to their module.
- * @returns {Promise<boolean>} True when access is allowed; false when redirected.
- * @throws {Error} When authentication or authorization fails without a handled redirect.
+ * @param {boolean} [options.autoRedirect=true] - Whether to redirect by role automatically.
+ * @returns {Promise<boolean>} True when access is allowed.
  */
 async function protectPage(options = {}) {
   const {
@@ -1004,58 +695,15 @@ async function protectPage(options = {}) {
     return true;
   }
 
-  // Modo híbrido: login real + dados de negócio mockados.
-  // Nesse modo a validação é local (token + role), sem refresh obrigatório.
-  if (isMockModeEnabled()) {
-    const token = localStorage.getItem("authToken");
-    const currentUser = getStoredUserData();
-
-    if (!token || !currentUser) {
-      console.warn("[AUTH_GUARD] ❌ Sessão inválida em modo mock");
-      clearAuthAndRedirectToLogin();
-      throw new Error("Não autenticado em modo mock");
-    }
-
-    window.currentUser = currentUser;
-
-    if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
-      console.error(
-        `[AUTH_GUARD] ❌ Acesso negado (mock). Role ${
-          currentUser.role
-        } não permitido. Permitidos: ${allowedRoles.join(", ")}`,
-      );
-
-      if (autoRedirect) {
-        redirectToCorrectModule(currentUser.role);
-      } else {
-        throw new Error("Acesso negado");
-      }
-      return false;
-    }
-
-    if (autoRedirect) {
-      const currentPath = window.location.pathname;
-      if (!hasRoutePermission(currentUser.role, currentPath)) {
-        redirectToCorrectModule(currentUser.role, currentPath);
-        return false;
-      }
-    }
-
-    console.log("[AUTH_GUARD] ✅ Autenticação mock validada com sucesso");
-    return true;
-  }
-
   const token = localStorage.getItem("authToken");
   const userData = localStorage.getItem("userData");
 
-  // Verifica se há token
   if (!token) {
     console.warn("[AUTH_GUARD] ❌ Token não encontrado");
     clearAuthAndRedirectToLogin();
     throw new Error("Não autenticado");
   }
 
-  // Decodifica e valida o token
   const tokenPayload = decodeJwtPayload(token);
   if (!tokenPayload) {
     console.warn("[AUTH_GUARD] ❌ Token inválido");
@@ -1063,19 +711,16 @@ async function protectPage(options = {}) {
     throw new Error("Token inválido");
   }
 
-  // Verifica se o token expirou
   const now = Math.floor(Date.now() / 1000);
   if (tokenPayload.exp && tokenPayload.exp <= now) {
     console.warn("[AUTH_GUARD] ⏰ Token expirado");
 
-    // Tenta renovar o token
     const refreshSuccess = await refreshAuthToken();
     if (!refreshSuccess) {
       clearAuthAndRedirectToLogin();
       throw new Error("Token expirado e não foi possível renovar");
     }
   }
-  // Verifica se precisa renovar em breve
   else if (shouldRefreshToken(tokenPayload)) {
     console.log("[AUTH_GUARD] 🔄 Token próximo do vencimento, renovando...");
     try {
@@ -1083,11 +728,9 @@ async function protectPage(options = {}) {
       console.log("[AUTH_GUARD] ✅ Token renovado preventivamente");
     } catch (error) {
       console.warn("[AUTH_GUARD] ⚠️ Renovação automática falhou:", error);
-      // Token ainda válido, não bloqueia acesso
     }
   }
 
-  // Valida e carrega dados do usuário
   let currentUser;
   try {
     if (userData) {
@@ -1108,7 +751,6 @@ async function protectPage(options = {}) {
     `[AUTH_GUARD] ✅ Usuário autenticado: ${currentUser.email} (${currentUser.role})`,
   );
 
-  // Verifica permissões específicas da página
   if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
     console.error(
       `[AUTH_GUARD] ❌ Acesso negado. Role ${
@@ -1124,7 +766,6 @@ async function protectPage(options = {}) {
     return false;
   }
 
-  // Auto-redirecionamento baseado no role (se habilitado)
   if (autoRedirect) {
     const currentPath = window.location.pathname;
     if (!hasRoutePermission(currentUser.role, currentPath)) {
@@ -1135,7 +776,6 @@ async function protectPage(options = {}) {
 
   console.log("[AUTH_GUARD] ✅ Autenticação e autorização bem-sucedidas");
 
-  // Iniciar monitoramento automático de token para evitar expiração em sessões longas
   startAutoTokenRefresh();
 
   return true;
@@ -1144,24 +784,18 @@ async function protectPage(options = {}) {
 let _tokenRefreshInterval = null;
 
 /**
- * Starts the periodic token refresh loop for long-running sessions.
+ * Starts the automatic token refresh loop.
  *
  * @returns {void}
  */
 function startAutoTokenRefresh() {
-  if (_tokenRefreshInterval) return; // Já iniciado
+  if (_tokenRefreshInterval) return;
 
   console.log(
     "[AUTH_GUARD] 🔄 Monitoramento automático de token iniciado (verificação a cada 5min)",
   );
 
-  // Verificar a cada 5 minutos
   _tokenRefreshInterval = setInterval(
-    /**
-     * Checks the current token and refreshes it when needed.
-     *
-     * @returns {Promise<void>} Resolves after the refresh check completes.
-     */
     async () => {
       const token = localStorage.getItem("authToken");
       if (!token) {
@@ -1171,8 +805,6 @@ function startAutoTokenRefresh() {
       }
 
       const payload = decodeJwtPayload(token);
-      // Se precisar renovar (faltando < 30min), renova
-      // Se já expirou, o refreshAuthToken também deve lidar se tiver refreshToken válido
       if (shouldRefreshToken(payload)) {
         console.log(
           "[AUTH_GUARD] ⏰ Ciclo de auto-refresh: Token precisa ser renovado",
@@ -1184,79 +816,36 @@ function startAutoTokenRefresh() {
   );
 }
 
-// ===================================================================================
-// INICIALIZAÇÃO AUTOMÁTICA E VERIFICAÇÃO DE SESSÃO
-// ===================================================================================
-
 /**
- * Initializes global authentication monitoring and cross-tab session handling.
+ * Initializes automatic token checks and cross-tab logout handling.
  *
  * @returns {void}
  */
 function initializeAuthGuard() {
   console.log("[AUTH_GUARD] 🚀 Inicializando sistema de autenticação...");
 
-  if (isMockModeEnabled()) {
-    window.addEventListener(
-      "storage",
-      /**
-       * Handles token removal across tabs while mock mode is active.
-       *
-       * @param {StorageEvent} e - localStorage change event.
-       * @returns {void}
-       */
-      (e) => {
-        if (e.key === "authToken" && !e.newValue) {
-          console.log(
-            "[AUTH_GUARD] 🔄 Token removido em outra aba (mock), redirecionando...",
-          );
-          clearAuthAndRedirectToLogin();
-        }
-      },
-    );
+  const TOKEN_CHECK_INTERVAL = 5 * 60 * 1000;
 
-    console.log("[AUTH_GUARD] ✅ Sistema de autenticação mock inicializado");
-    return;
-  }
+  setInterval(async () => {
+    const token = localStorage.getItem("authToken");
+    if (!token) return;
 
-  // Verifica token a cada 5 minutos
-  const TOKEN_CHECK_INTERVAL = 5 * 60 * 1000; // 5 minutos
+    const tokenPayload = decodeJwtPayload(token);
+    if (!tokenPayload) return;
 
-  setInterval(
-    /**
-     * Periodically refreshes the token when it is near expiration.
-     *
-     * @returns {Promise<void>} Resolves after the periodic token check completes.
-     */
-    async () => {
-      const token = localStorage.getItem("authToken");
-      if (!token) return;
-
-      const tokenPayload = decodeJwtPayload(token);
-      if (!tokenPayload) return;
-
-      // Se o token está próximo do vencimento, renova automaticamente
-      if (shouldRefreshToken(tokenPayload)) {
-        console.log("[AUTH_GUARD] 🔄 Renovação automática de token iniciada...");
-        const success = await refreshAuthToken();
-        if (!success) {
-          console.warn(
-            "[AUTH_GUARD] ⚠️ Falha na renovação automática, usuário será deslogado",
-          );
-          clearAuthAndRedirectToLogin();
-        }
+    if (shouldRefreshToken(tokenPayload)) {
+      console.log("[AUTH_GUARD] 🔄 Renovação automática de token iniciada...");
+      const success = await refreshAuthToken();
+      if (!success) {
+        console.warn(
+          "[AUTH_GUARD] ⚠️ Falha na renovação automática, usuário será deslogado",
+        );
+        clearAuthAndRedirectToLogin();
       }
-    },
-    TOKEN_CHECK_INTERVAL,
-  );
+    }
+  }, TOKEN_CHECK_INTERVAL);
 
-  // Checagem imediata ao carregar a página (importante para TV após semanas sem sessão)
-  (/**
-   * Immediately validates or refreshes persisted authentication state on load.
-   *
-   * @returns {Promise<void>} Resolves after the immediate auth check completes.
-   */
-  async () => {
+  (async () => {
     const token = localStorage.getItem("authToken");
     const refreshToken = localStorage.getItem("refreshToken");
     if (!token && !refreshToken) return;
@@ -1264,7 +853,6 @@ function initializeAuthGuard() {
     const tokenPayload = token ? decodeJwtPayload(token) : null;
     const now = Math.floor(Date.now() / 1000);
 
-    // Se não conseguimos decodificar ou já expirou / está perto de expirar, tenta renovar
     if (
       !tokenPayload ||
       !tokenPayload.exp ||
@@ -1278,39 +866,27 @@ function initializeAuthGuard() {
     }
   })();
 
-  // Escuta eventos de mudança no localStorage (múltiplas abas)
-  window.addEventListener(
-    "storage",
-    /**
-     * Handles token removal across tabs in normal authentication mode.
-     *
-     * @param {StorageEvent} e - localStorage change event.
-     * @returns {void}
-     */
-    (e) => {
-      if (e.key === "authToken" && !e.newValue) {
-        console.log(
-          "[AUTH_GUARD] 🔄 Token removido em outra aba, redirecionando...",
-        );
-        clearAuthAndRedirectToLogin();
-      }
-    },
-  );
+  window.addEventListener("storage", (e) => {
+    if (e.key === "authToken" && !e.newValue) {
+      console.log(
+        "[AUTH_GUARD] 🔄 Token removido em outra aba, redirecionando...",
+      );
+      clearAuthAndRedirectToLogin();
+    }
+  });
 
   console.log("[AUTH_GUARD] ✅ Sistema de autenticação inicializado");
 }
 
 /**
- * Protects a page when configured and initializes its layout after authentication.
+ * Initializes page authentication before loading layout components.
  *
- * @param {Object} pageConfig - Page layout and authentication configuration.
- * @param {Object} [pageConfig.auth] - Authentication guard options passed to protectPage.
- * @returns {Promise<boolean>} True when authentication and layout initialization succeed.
+ * @param {object} pageConfig - Page and authentication configuration.
+ * @returns {Promise<boolean>} True when initialization completes.
  */
 async function initPageWithAuth(pageConfig) {
   const { auth, ...layoutConfig } = pageConfig;
 
-  // Aplica proteção se configurada
   if (auth) {
     try {
       await protectPage(auth);
@@ -1320,7 +896,6 @@ async function initPageWithAuth(pageConfig) {
     }
   }
 
-  // Inicializa o layout após autenticação bem-sucedida
   if (layoutConfig && Object.keys(layoutConfig).length > 0) {
     await initLayout(layoutConfig);
   }
@@ -1328,40 +903,21 @@ async function initPageWithAuth(pageConfig) {
   return true;
 }
 
-// Inicializa o sistema de autenticação quando o DOM estiver pronto
-document.addEventListener(
-  "DOMContentLoaded",
-  /**
-   * Initializes the authentication guard when the DOM is ready.
-   *
-   * @returns {void}
-   */
-  () => {
-    initializeAuthGuard();
-  },
-);
+document.addEventListener("DOMContentLoaded", () => {
+  initializeAuthGuard();
+});
 
 /**
- * Logs out the current user, invalidates the backend token, and clears local state.
+ * Logs out the current user, invalidating the backend token when possible.
  *
- * @returns {Promise<void>} Resolves after local logout handling completes.
+ * @returns {Promise<void>}
  */
 async function logout() {
-  // --- LOG DE DEPURAÇÃO ---
   console.log("[DEBUG-FRONTEND] A função logout() foi chamada.");
-
-  if (isMockModeEnabled()) {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("userData");
-    window.location.href = "/app/login.html";
-    return;
-  }
 
   const authToken = localStorage.getItem("authToken");
 
   if (authToken) {
-    // --- LOG DE DEPURAÇÃO ---
     console.log(
       "[DEBUG-FRONTEND] Token encontrado. Enviando requisição para /api/auth/logout...",
     );
@@ -1384,29 +940,24 @@ async function logout() {
     }
   }
 
-  // Limpa os dados locais independentemente da resposta do servidor
   localStorage.removeItem("authToken");
   localStorage.removeItem("refreshToken");
   localStorage.removeItem("userData");
 
-  // Redireciona para a página de login
   window.location.href = "/app/login.html";
 }
 
 /**
- * Wraps known content sections in the standard page layout wrappers when needed.
+ * Wraps legacy page content sections in the expected layout containers when needed.
  *
  * @returns {void}
  */
 function autoFixFormSectionLayout() {
-  // Procura por containers que precisam de wrappers
   const mainContent = document.querySelector(".main-content");
   if (!mainContent) return;
 
-  // Verifica se já existe .page-content-wrapper
   if (mainContent.querySelector(".page-content-wrapper")) return;
 
-  // Lista de seletores que precisam ser envolvidos pelos wrappers
   const containerSelectors = [
     ".form-section",
     ".pautas-section",
@@ -1416,57 +967,29 @@ function autoFixFormSectionLayout() {
     ".oradores-section",
     ".vereadores-section",
     ".relatorio-section",
-    ".votacao-layout", // Adicionado para painel de votação
-    ".painel-section", // Adicionado para painel de controle
+    ".votacao-layout",
+    ".painel-section",
   ];
 
-  // Procura por qualquer um dos containers diretamente filhos de .main-content
   const containersToWrap = [];
-  containerSelectors.forEach(
-    /**
-     * Collects direct child sections matching a container selector.
-     *
-     * @param {string} selector - Section selector to search for.
-     * @returns {void}
-     */
-    (selector) => {
-      const elements = mainContent.querySelectorAll(`:scope > ${selector}`);
-      elements.forEach(
-        /**
-         * Adds one matching section to the wrapping list.
-         *
-         * @param {Element} el - Section element to wrap.
-         * @returns {void}
-         */
-        (el) => containersToWrap.push(el),
-      );
-    },
-  );
+  containerSelectors.forEach((selector) => {
+    const elements = mainContent.querySelectorAll(`:scope > ${selector}`);
+    elements.forEach((el) => containersToWrap.push(el));
+  });
 
   if (containersToWrap.length === 0) return;
 
   console.log(
     "🔧 Auto-corrigindo layout: envolvendo containers com wrappers necessários",
-    containersToWrap.map(
-      /**
-       * Reads the class name for diagnostic logging.
-       *
-       * @param {Element} el - Wrapped section element.
-       * @returns {string} Element class name.
-       */
-      (el) => el.className,
-    ),
+    containersToWrap.map((el) => el.className),
   );
 
-  // Cria os wrappers
   const pageContentWrapper = document.createElement("div");
   pageContentWrapper.className = "page-content-wrapper";
 
   const contentArea = document.createElement("div");
   contentArea.className = "content-area";
 
-  // Move todos os containers encontrados para dentro dos wrappers
-  // Inserir o wrapper ANTES do primeiro elemento encontrado para manter a ordem (logo antes do footer)
   const firstContainer = containersToWrap[0];
   if (firstContainer && firstContainer.parentNode) {
     firstContainer.parentNode.insertBefore(pageContentWrapper, firstContainer);
@@ -1474,29 +997,17 @@ function autoFixFormSectionLayout() {
     mainContent.appendChild(pageContentWrapper);
   }
 
-  containersToWrap.forEach(
-    /**
-     * Moves a section into the generated content area.
-     *
-     * @param {Element} container - Section element to move.
-     * @returns {void}
-     */
-    (container) => {
-      contentArea.appendChild(container);
-    },
-  );
+  containersToWrap.forEach((container) => {
+    contentArea.appendChild(container);
+  });
 
   pageContentWrapper.appendChild(contentArea);
 }
 
-// ===================================================================================
-// FUNÇÕES DE BADGE INTELIGENTE PARA SIDEBAR
-// ===================================================================================
-
 /**
- * Updates the control panel sidebar badge with items that need attention.
+ * Updates the control panel sidebar badge with items requiring attention.
  *
- * @returns {Promise<void>} Resolves after badge data is fetched and rendered.
+ * @returns {Promise<void>}
  */
 async function updatePainelControleBadge() {
   const badge = document.getElementById("painel-badge");
@@ -1506,82 +1017,40 @@ async function updatePainelControleBadge() {
     const authToken = localStorage.getItem("authToken");
     if (!authToken) return;
 
-    // Buscar dados que precisam de atenção no painel de controle
     const [sessoesPendentes, pautasPendentes, vereadores] = await Promise.all([
-      // Sessões que precisam de atenção (futuras sem pautas)
       fetch("/api/app/sessoes?status=pendente", {
         headers: { Authorization: `Bearer ${authToken}` },
-      }).then(
-        /**
-         * Parses pending sessions or returns an empty fallback.
-         *
-         * @param {Response} r - Fetch response.
-         * @returns {Promise<Object>|Object} Parsed JSON or fallback data object.
-         */
-        (r) => (r.ok ? r.json() : { data: [] }),
-      ),
+      }).then((r) => (r.ok ? r.json() : { data: [] })),
 
-      // Pautas pendentes de aprovação
       fetch("/api/app/pautas?status=pendente", {
         headers: { Authorization: `Bearer ${authToken}` },
-      }).then(
-        /**
-         * Parses pending agendas or returns an empty fallback.
-         *
-         * @param {Response} r - Fetch response.
-         * @returns {Promise<Object>|Object} Parsed JSON or fallback data object.
-         */
-        (r) => (r.ok ? r.json() : { data: [] }),
-      ),
+      }).then((r) => (r.ok ? r.json() : { data: [] })),
 
-      // Vereadores inativos (problema que precisa atenção)
       fetch("/api/app/vereadores", {
         headers: { Authorization: `Bearer ${authToken}` },
-      }).then(
-        /**
-         * Parses councilors or returns an empty fallback list.
-         *
-         * @param {Response} r - Fetch response.
-         * @returns {Promise<Object[]>|Object[]} Parsed JSON or fallback list.
-         */
-        (r) => (r.ok ? r.json() : []),
-      ),
+      }).then((r) => (r.ok ? r.json() : [])),
     ]);
 
-    // Calcular total de itens que precisam atenção
     let totalAtencao = 0;
 
-    // Sessões sem pautas ou problemas
     if (sessoesPendentes.data) {
       totalAtencao += sessoesPendentes.data.length;
     }
 
-    // Pautas pendentes
     if (pautasPendentes.data) {
       totalAtencao += pautasPendentes.data.length;
     }
 
-    // Vereadores inativos
-    const vereadoresInativos = vereadores.filter(
-      /**
-       * Checks whether a councilor is inactive.
-       *
-       * @param {Object} v - Councilor record.
-       * @returns {boolean} True when the councilor is inactive.
-       */
-      (v) => !v.is_active,
-    );
+    const vereadoresInativos = vereadores.filter((v) => !v.is_active);
     if (vereadoresInativos.length > 0) {
-      totalAtencao += 1; // Conta como 1 problema mesmo que sejam vários vereadores
+      totalAtencao += 1;
     }
 
-    // Atualizar badge
     console.log("Atualizando badge do painel de controle:", totalAtencao);
     if (totalAtencao > 0) {
       badge.textContent = totalAtencao > 9 ? "9+" : totalAtencao.toString();
       badge.style.display = "flex";
 
-      // Adicionar cor baseada na urgência
       if (totalAtencao >= 5) {
         badge.style.backgroundColor = "var(--accent-red)";
       } else if (totalAtencao >= 3) {
@@ -1594,45 +1063,24 @@ async function updatePainelControleBadge() {
     }
   } catch (error) {
     console.error("Erro ao atualizar badge do painel de controle:", error);
-    // Em caso de erro, esconder o badge
     badge.style.display = "none";
   }
 }
 
 /**
- * Sets up placeholder sidebar badges for features marked as coming soon.
+ * Configures static "coming soon" sidebar badges.
  *
  * @returns {void}
  */
-// Função para configurar badges "Em breve"
 function setupComingSoonBadges() {
   console.log('✨ Badges "Em breve" configurados no sidebar');
 }
 
-// Chamar a função de atualização do badge quando a página carregar
-document.addEventListener(
-  "DOMContentLoaded",
-  /**
-   * Initializes sidebar badges once the page and sidebar have had time to load.
-   *
-   * @returns {void}
-   */
-  () => {
-  // Aguardar um pouco para garantir que o sidebar foi carregado
-    setTimeout(
-      /**
-       * Performs delayed sidebar badge initialization.
-       *
-       * @returns {void}
-       */
-      () => {
-        setupComingSoonBadges();
-        updatePainelControleBadge();
-      },
-      1000,
-    );
+document.addEventListener("DOMContentLoaded", () => {
+  setTimeout(() => {
+    setupComingSoonBadges();
+    updatePainelControleBadge();
+  }, 1000);
 
-  // Atualizar badge periodicamente (a cada 5 minutos)
-    setInterval(updatePainelControleBadge, 5 * 60 * 1000);
-  },
-);
+  setInterval(updatePainelControleBadge, 5 * 60 * 1000);
+});

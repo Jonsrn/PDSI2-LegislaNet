@@ -1,12 +1,13 @@
 /**
- * File: modals.js
- * Purpose: Provides shared modal helpers for opening, closing, toggling UI
- * switches, and presenting a reusable confirmation dialog.
+ * Modal and toggle UI helpers.
+ *
+ * @module web/js/modals
  */
 
 /**
- * Opens a modal by ID and prevents background page scrolling.
- * @param {string} modalId - The ID of the modal element to open.
+ * Opens a modal by id and locks body scrolling.
+ *
+ * @param {string} modalId - Modal element id.
  * @returns {void}
  */
 function openModal(modalId) {
@@ -18,8 +19,9 @@ function openModal(modalId) {
 }
 
 /**
- * Closes a modal by ID and restores background page scrolling.
- * @param {string} modalId - The ID of the modal element to close.
+ * Closes a modal by id and restores body scrolling.
+ *
+ * @param {string} modalId - Modal element id.
  * @returns {void}
  */
 function closeModal(modalId) {
@@ -31,8 +33,9 @@ function closeModal(modalId) {
 }
 
 /**
- * Toggles the active class on a switch-like element.
- * @param {string} toggleId - The ID of the toggle element.
+ * Toggles the active state of a switch-like element.
+ *
+ * @param {string} toggleId - Toggle element id.
  * @returns {void}
  */
 function toggleSwitch(toggleId) {
@@ -43,14 +46,14 @@ function toggleSwitch(toggleId) {
 }
 
 /**
- * Displays a reusable confirmation modal and resolves with the user choice.
- * @param {string} message - The message displayed in the modal body.
- * @param {string} [title='Confirmação'] - The modal title.
- * @returns {Promise<boolean>}
+ * Shows a custom confirmation modal.
+ *
+ * @param {string} message - Message to display.
+ * @param {string} [title='Confirmação'] - Modal title.
+ * @returns {Promise<boolean>} True when confirmed, false when cancelled.
  */
 function showConfirmModal(message, title = 'Confirmação') {
     return new Promise((resolve) => {
-        // Criar modal se não existir
         let modal = document.getElementById('confirm-modal');
         if (!modal) {
             modal = document.createElement('div');
@@ -82,11 +85,9 @@ function showConfirmModal(message, title = 'Confirmação') {
             document.body.appendChild(modal);
         }
 
-        // Atualizar conteúdo
         document.getElementById('confirm-modal-title').textContent = title;
         document.getElementById('confirm-modal-message').textContent = message;
 
-        // Handlers
         const confirmBtn = document.getElementById('confirm-modal-confirm');
         const cancelBtn = document.getElementById('confirm-modal-cancel');
 
@@ -110,15 +111,10 @@ function showConfirmModal(message, title = 'Confirmação') {
         confirmBtn.addEventListener('click', handleConfirm);
         cancelBtn.addEventListener('click', handleCancel);
 
-        // Abrir modal
         openModal('confirm-modal');
     });
 }
 
-/**
- * Registers click-away behavior for modal overlays after the DOM is ready.
- * @returns {void}
- */
 document.addEventListener('DOMContentLoaded', () => {
     const modals = document.querySelectorAll('.modal-overlay');
     modals.forEach(modal => {

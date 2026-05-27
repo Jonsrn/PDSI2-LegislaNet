@@ -1,24 +1,18 @@
 /**
- * File: formValidator.js
- * Purpose: Provides a reusable form validation service with configurable
- * field rules, inline error rendering, sanitization helpers, and realtime
- * validation hooks for application forms.
+ * Browser-side form validation utilities.
+ *
+ * @module web/js/formValidator
  */
 
 /**
- * Manages validation rules, field state, and error presentation for forms.
+ * Validates form fields, renders field errors, and supports real-time validation.
  */
 class FormValidator {
-  /**
-   * Creates a new form validator instance with built-in patterns and messages.
-   * @returns {void}
-   */
   constructor() {
     this.rules = {};
     this.messages = {};
     this.errors = {};
 
-    // Padrões de validação
     this.patterns = {
       email: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
       password:
@@ -33,7 +27,6 @@ class FormValidator {
       telefone: /^[\(\)\d\s\-\+]{10,20}$/,
     };
 
-    // Mensagens de erro padrão
     this.defaultMessages = {
       required: "Este campo é obrigatório",
       email: "Formato de email inválido",
@@ -55,10 +48,11 @@ class FormValidator {
 
   /**
    * Defines validation rules for a field.
-   * @param {string} fieldName - The field identifier.
-   * @param {Object} rules - The validation rules to apply.
-   * @param {Object} [customMessages={}] - Optional message overrides for the field.
-   * @returns {FormValidator}
+   *
+   * @param {string} fieldName - Field name or id.
+   * @param {object} rules - Validation rules for the field.
+   * @param {object} [customMessages={}] - Custom messages for this field.
+   * @returns {FormValidator} Current validator instance.
    */
   setRules(fieldName, rules, customMessages = {}) {
     this.rules[fieldName] = rules;
@@ -67,12 +61,13 @@ class FormValidator {
   }
 
   /**
-   * Validates a single field value against its configured rules.
-   * @param {string} fieldName - The field identifier.
-   * @param {*} value - The value to validate.
-   * @param {boolean|Object} [showErrorOrOptions=true] - Whether to show errors or an options object.
-   * @param {Object} [maybeOptions={}] - Additional validation options.
-   * @returns {boolean}
+   * Validates a single field value.
+   *
+   * @param {string} fieldName - Field name or id.
+   * @param {*} value - Field value to validate.
+   * @param {boolean|object} [showErrorOrOptions=true] - Whether to render errors or validation options.
+   * @param {object} [maybeOptions={}] - Validation options when the third argument is boolean.
+   * @returns {boolean} True when the value passes validation.
    */
   validateField(
     fieldName,
@@ -91,18 +86,16 @@ class FormValidator {
       typeof showErrorOrOptions === "boolean"
         ? showErrorOrOptions
         : options.showError ?? true;
-    const mode = options.mode || "submit"; // 'submit' | 'realtime'
+    const mode = options.mode || "submit";
 
     const errors = [];
 
-    // Trim string values
     if (typeof value === "string") {
       value = value.trim();
     }
 
-    // Required validation
     if (rules.required && this.isEmpty(value)) {
-      // Em tempo real, não exibir “obrigatório” ao apagar; só em submit/avanço.
+      // Avoid showing required errors while a user is clearing a field in real time.
       if (mode === "realtime") {
         delete this.errors[fieldName];
         this.clearFieldError(fieldName);
@@ -111,13 +104,11 @@ class FormValidator {
       errors.push(this.messages[fieldName].required);
     }
 
-    // Se está vazio e não é obrigatório, pula outras validações
     if (this.isEmpty(value) && !rules.required) {
       this.clearFieldError(fieldName);
       return true;
     }
 
-    // Type validations
     if (rules.email && !this.patterns.email.test(value)) {
       errors.push(this.messages[fieldName].email);
     }
@@ -134,7 +125,6 @@ class FormValidator {
       errors.push(this.messages[fieldName].url);
     }
 
-    // Length validations
     if (rules.minLength && value.length < rules.minLength) {
       errors.push(
         this.messages[fieldName].minLength.replace("{min}", rules.minLength)
@@ -147,7 +137,6 @@ class FormValidator {
       );
     }
 
-    // Numeric validations
     if (rules.min !== undefined) {
       const numValue = parseFloat(value);
       if (isNaN(numValue) || numValue < rules.min) {
@@ -162,18 +151,15 @@ class FormValidator {
       }
     }
 
-    // Pattern validations
     if (rules.pattern && !rules.pattern.test(value)) {
       errors.push(this.messages[fieldName].pattern);
     }
 
-    // Custom validations
     if (rules.custom && typeof rules.custom === "function") {
       const customError = rules.custom(value);
       if (customError) errors.push(customError);
     }
 
-    // Specific patterns
     if (rules.municipio && !this.patterns.municipio.test(value)) {
       errors.push(this.messages[fieldName].municipio);
     }
@@ -196,7 +182,6 @@ class FormValidator {
       errors.push(this.messages[fieldName].telefone);
     }
 
-    // Update field state
     if (errors.length > 0) {
       this.errors[fieldName] = errors;
       if (showError) this.showFieldError(fieldName, errors[0]);
@@ -209,9 +194,10 @@ class FormValidator {
   }
 
   /**
-   * Validates all configured fields within a form.
-   * @param {string} formSelector - The selector of the form to validate.
-   * @returns {boolean}
+   * Validates all configured fields inside a form.
+   *
+   * @param {string} formSelector - CSS selector for the form element.
+   * @returns {boolean} True when every configured field is valid.
    */
   validateForm(formSelector) {
     const form = document.querySelector(formSelector);
@@ -220,14 +206,12 @@ class FormValidator {
     let isValid = true;
     this.errors = {};
 
-    // Valida todos os campos com regras definidas
     for (const fieldName in this.rules) {
       const field = form.querySelector(`[name="${fieldName}"], #${fieldName}`);
       if (!field) continue;
 
       let value = field.value;
 
-      // Tratamento especial para diferentes tipos de input
       if (field.type === "checkbox") {
         value = field.checked;
       } else if (field.type === "radio") {
@@ -246,9 +230,10 @@ class FormValidator {
   }
 
   /**
-   * Displays the first validation error for a specific field.
-   * @param {string} fieldName - The field identifier.
-   * @param {string} message - The error message to display.
+   * Shows an error message for a field.
+   *
+   * @param {string} fieldName - Field name or id.
+   * @param {string} message - Error message to render.
    * @returns {void}
    */
   showFieldError(fieldName, message) {
@@ -257,19 +242,15 @@ class FormValidator {
     );
     if (!field) return;
 
-    // Remove erro anterior
     this.clearFieldError(fieldName);
 
-    // Adiciona classe de erro ao campo
     field.classList.add("form-input-error");
 
-    // Cria elemento de erro
     const errorElement = document.createElement("div");
     errorElement.className = "form-field-error";
     errorElement.textContent = message;
     errorElement.id = `error-${fieldName}`;
 
-    // Insere erro após o campo ou após o wrapper
     const wrapper =
       field.closest(".form-group") || field.closest(".custom-select-wrapper");
     if (wrapper) {
@@ -278,15 +259,15 @@ class FormValidator {
       field.parentNode.insertBefore(errorElement, field.nextSibling);
     }
 
-    // Scroll para o primeiro erro se não estiver visível
     if (Object.keys(this.errors).length === 1) {
       this.scrollToField(field);
     }
   }
 
   /**
-   * Clears the validation error state for a specific field.
-   * @param {string} fieldName - The field identifier.
+   * Clears the error message for a field.
+   *
+   * @param {string} fieldName - Field name or id.
    * @returns {void}
    */
   clearFieldError(fieldName) {
@@ -295,10 +276,8 @@ class FormValidator {
     );
     if (!field) return;
 
-    // Remove classe de erro
     field.classList.remove("form-input-error");
 
-    // Remove elemento de erro
     const errorElement = document.getElementById(`error-${fieldName}`);
     if (errorElement) {
       errorElement.remove();
@@ -306,26 +285,26 @@ class FormValidator {
   }
 
   /**
-   * Clears all tracked validation errors from the page.
+   * Clears all tracked and rendered validation errors.
+   *
    * @returns {void}
    */
   clearAllErrors() {
     this.errors = {};
 
-    // Remove todas as classes de erro
     document.querySelectorAll(".form-input-error").forEach((el) => {
       el.classList.remove("form-input-error");
     });
 
-    // Remove todos os elementos de erro
     document.querySelectorAll(".form-field-error").forEach((el) => {
       el.remove();
     });
   }
 
   /**
-   * Scrolls the viewport to a field when it is outside the visible area.
-   * @param {HTMLElement} field - The field element to focus and reveal.
+   * Scrolls to a field and focuses it when it is outside the viewport.
+   *
+   * @param {HTMLElement} field - Field element to focus.
    * @returns {void}
    */
   scrollToField(field) {
@@ -336,16 +315,16 @@ class FormValidator {
       field.scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
-    // Foca no campo após um pequeno delay
     setTimeout(() => {
       field.focus();
     }, 300);
   }
 
   /**
-   * Determines whether a value should be treated as empty.
-   * @param {*} value - The value to inspect.
-   * @returns {boolean}
+   * Checks whether a value should be treated as empty.
+   *
+   * @param {*} value - Value to inspect.
+   * @returns {boolean} True when the value is empty.
    */
   isEmpty(value) {
     if (value === null || value === undefined) return true;
@@ -358,9 +337,10 @@ class FormValidator {
   }
 
   /**
-   * Sanitizes a string value by removing unsafe script-like content.
-   * @param {*} value - The value to sanitize.
-   * @returns {*}
+   * Sanitizes a string by removing common script injection vectors.
+   *
+   * @param {*} value - Value to sanitize.
+   * @returns {*} Sanitized string, or the original value when it is not a string.
    */
   sanitize(value) {
     if (typeof value !== "string") return value;
@@ -374,24 +354,27 @@ class FormValidator {
   }
 
   /**
-   * Returns a shallow copy of the current validation errors.
-   * @returns {Object}
+   * Returns the current validation errors.
+   *
+   * @returns {object} Current error map.
    */
   getErrors() {
     return { ...this.errors };
   }
 
   /**
-   * Indicates whether any validation errors are currently tracked.
-   * @returns {boolean}
+   * Checks whether any validation errors are currently tracked.
+   *
+   * @returns {boolean} True when errors are present.
    */
   hasErrors() {
     return Object.keys(this.errors).length > 0;
   }
 
   /**
-   * Renders a summary of validation errors inside the target container.
-   * @param {string} [container='.form-errors'] - The selector of the summary container.
+   * Renders a summary of current validation errors.
+   *
+   * @param {string} [container='.form-errors'] - Error summary container selector.
    * @returns {void}
    */
   showErrorSummary(container = ".form-errors") {
@@ -413,15 +396,9 @@ class FormValidator {
   }
 }
 
-// Instância global
 window.formValidator = new FormValidator();
 
-/**
- * Registers document-level realtime validation listeners after the DOM is ready.
- * @returns {void}
- */
 document.addEventListener("DOMContentLoaded", () => {
-  // Validação em tempo real nos inputs
   document.addEventListener("input", (e) => {
     const field = e.target;
     if (field.hasAttribute("data-validate")) {
@@ -434,7 +411,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Validação ao sair do campo
   document.addEventListener("blur", (e) => {
     const field = e.target;
     if (
