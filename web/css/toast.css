@@ -1,11 +1,4 @@
-/*
-  File: toast.css
-  Purpose: Shared toast notification styling for transient success, error,
-  warning, and informational messages, including container positioning and
-  slide-in presentation behavior.
-*/
-
-/* Fixed toast stack anchored to the top-right corner of the viewport */
+/* css/toast.css */
 #toast-container {
     position: fixed;
     top: 20px;
@@ -17,7 +10,6 @@
     pointer-events: none;
 }
 
-/* Individual toast surface with off-canvas entrance state */
 .toast {
     display: flex;
     align-items: center;
@@ -34,18 +26,15 @@
     pointer-events: auto;
 }
 
-/* Visible state slides the toast into view */
 .toast.show {
     transform: translateX(0);
 }
 
-/* Leading icon for quick status recognition */
 .toast-icon {
     font-size: 1.2rem;
     margin-right: 15px;
 }
 
-/* Semantic color variants for toast message types */
 .toast.success { background-color: var(--accent-green, #28a745); }
 .toast.error { background-color: var(--accent-red, #dc3545); }
 .toast.warning { background-color: var(--accent-orange, #ff9f0a); }

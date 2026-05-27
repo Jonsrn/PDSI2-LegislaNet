@@ -1,17 +1,11 @@
-<!--
-  File: admin_header.html
-  Purpose: Shared header component for the super administrator interface,
-  displaying the current page context and the authenticated administrator
-  identity area.
--->
+<!-- components/admin_header.html -->
+<!-- Este componente representa o cabeçalho para o painel de Super Administrador. -->
 <header class="content-header">
-    <!-- Dynamic page title area populated by the loading page -->
     <div class="header-title">
-        <!-- Icon and title values are injected by the page layout initializer -->
+        <!-- O ícone e o título serão preenchidos dinamicamente pela página que carregar o componente -->
         <i id="header-icon" class="fa-solid"></i>
         <h2 id="header-title"></h2>
     </div>
-    <!-- Super administrator identity summary -->
     <div class="user-info">
         <div class="admin-icon-badge">
             <i class="fas fa-crown"></i>

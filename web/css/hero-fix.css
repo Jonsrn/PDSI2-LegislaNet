@@ -1,11 +1,9 @@
-/*
-  File: hero-fix.css
-  Purpose: Late-loading override stylesheet for the portal hero section,
-  ensuring critical content remains visible, correctly layered, and properly
-  sized across desktop and mobile breakpoints.
-*/
+/* ================================================================
+   HERO FIX - Força visibilidade do título e stats
+   Carrega por último para sobrescrever tudo
+   ================================================================ */
 
-/* Force the hero container to remain fully visible and unclipped */
+/* CRITICAL: Força hero sem clipping */
 header.hero,
 .hero {
   overflow: visible !important;
@@ -20,7 +18,7 @@ header.hero,
   padding-bottom: 32px !important;
 }
 
-/* Keep the main hero content above decorative background layers */
+/* Força hero-content visível */
 .hero .hero-content,
 .hero-content {
   position: relative !important;
@@ -31,7 +29,7 @@ header.hero,
   padding: 20px 20px 20px !important;
 }
 
-/* Stabilize the main heading layout while animation timing stays in JavaScript */
+/* CRITICAL: Força h1 layout - animações controladas por JS */
 .hero h1,
 header.hero h1 {
   position: relative !important;
@@ -46,7 +44,7 @@ header.hero h1 {
   text-align: center !important;
 }
 
-/* Preserve supporting paragraph visibility and readable measure */
+/* Força parágrafo layout */
 .hero p {
   position: relative !important;
   z-index: 101 !important;
@@ -58,7 +56,7 @@ header.hero h1 {
   line-height: 1.7 !important;
 }
 
-/* Keep the badge explicitly visible even when upstream styles hide it */
+/* Badge visível */
 .hero-badge {
   position: relative !important;
   z-index: 101 !important;
@@ -67,14 +65,14 @@ header.hero h1 {
   opacity: 1 !important;
 }
 
-/* Ensure the terminal card group remains part of the visible hero stack */
+/* Terminais layout */
 .access-terminals {
   position: relative !important;
   z-index: 101 !important;
   display: flex !important;
 }
 
-/* Preserve the hero stats bar layout and placement */
+/* CRITICAL: Stats bar layout */
 .hero .hero-content .hero-stats,
 .hero-content .hero-stats,
 .hero-stats {
@@ -89,7 +87,7 @@ header.hero h1 {
   max-width: 800px !important;
 }
 
-/* Keep the scroll indicator visible within normal document flow */
+/* Scroll indicator visível */
 .scroll-indicator {
   position: relative !important;
   left: auto !important;
@@ -111,7 +109,7 @@ header.hero h1 {
   gap: 8px;
 }
 
-/* Force decorative hero backgrounds behind all interactive content */
+/* Garante que backgrounds fiquem ATRÁS */
 .hero-aurora,
 .hero-grid,
 .hero-glow,
@@ -124,7 +122,7 @@ header.hero h1 {
   pointer-events: none !important;
 }
 
-/* Restore terminal metadata icons when inherited styles suppress them */
+/* Força ícones do terminal-meta visíveis */
 .terminal-meta i {
   display: inline-block !important;
   visibility: visible !important;
@@ -139,22 +137,20 @@ header.hero h1 {
 
 .terminal-citizen .terminal-meta i {
   color: var(--accent-blue) !important;
-}
-
-/* Terminal sizing adjustments */
-/* Constrain card height and distribute content more predictably */
+} /* === TERMINAL SIZING ADJUSTMENTS === */
+/* Distribuição melhor do conteúdo dos cards */
 .terminal {
   max-width: 520px !important;
   display: flex !important;
   flex-direction: column !important;
-  /* Fixed height preserves the intended hero card rhythm */
+  /* FIX: Forçar altura original de 450px e conter o conteúdo */
   height: 450px !important;
   min-height: 450px !important;
-  overflow: hidden !important;
+  overflow: hidden !important; /* Segurança para não vazar */
 }
 
 .terminal-body {
-  /* Reduced vertical padding helps longer copy fit within the fixed card height */
+  /* Reduzir padding vertical drasticamente para caber o texto maior */
   padding: 16px 24px 8px !important;
   flex-grow: 1 !important;
   display: flex !important;
@@ -170,9 +166,9 @@ header.hero h1 {
 }
 
 .terminal-icon {
-  width: 48px !important;
+  width: 48px !important; /* Ícone levemente menor */
   height: 48px !important;
-  margin-bottom: 12px !important;
+  margin-bottom: 12px !important; /* Menos margem */
 }
 
 .terminal-icon i {
@@ -189,7 +185,7 @@ header.hero h1 {
 .terminal-desc {
   font-size: 0.9rem !important;
   min-height: auto !important;
-  line-height: 1.4 !important;
+  line-height: 1.4 !important; /* Entrelinha mais compacta */
   margin-bottom: 4px !important;
   text-align: center !important;
   max-width: 90% !important;
@@ -201,7 +197,7 @@ header.hero h1 {
   justify-content: center !important;
   max-width: 320px !important;
   margin: 0 auto !important;
-  /* Height is capped to keep the footer action area compact */
+  /* Altura controlada para caber */
   min-height: 50px !important;
   max-height: 54px !important;
   display: flex !important;
@@ -209,7 +205,7 @@ header.hero h1 {
   line-height: 1.1 !important;
 }
 
-/* High-resolution adjustments for large desktop displays */
+/* === RESPONSIVIDADE QHD (2K/4K) === */
 @media (min-width: 2000px) {
   .hero .hero-content,
   .hero-content {
@@ -265,20 +261,20 @@ header.hero h1 {
   }
 }
 
-/* Mobile-specific overrides for hero content and terminal layouts */
+/* === RESPONSIVIDADE MOBILE === */
 @media (max-width: 768px) {
-  /* Hide dense navigation shortcuts on small screens */
+  /* Remove menu de atalhos do header em telas pequenas */
   .nav-menu,
   .nav-menu-wrapper {
     display: none !important;
   }
 
-  /* Keep the right-side header area aligned to its remaining content */
+  /* Mantém apenas logo e login */
   .nav-right {
     justify-content: flex-end !important;
   }
 
-  /* Increased selector specificity ensures these heading overrides win */
+  /* MOBILE: Título - especificidade alta para vencer regra base */
   body .hero h1,
   html body .hero h1,
   .hero-content h1 {
@@ -292,13 +288,13 @@ header.hero h1 {
     margin-bottom: 8px !important;
   }
 
-  /* Reduce top spacing in the mobile hero */
+  /* Hero container em mobile */
   body .hero,
   body header.hero {
     padding-top: 60px !important;
   }
 
-  /* Stack terminal cards vertically on mobile */
+  /* Cards empilhados */
   .access-terminals {
     flex-direction: column !important;
     gap: 20px !important;
@@ -306,11 +302,11 @@ header.hero h1 {
 
   .terminal {
     max-width: 100% !important;
-    height: auto !important;
+    height: auto !important; /* No mobile também height auto */
     min-height: auto !important;
   }
 
-  /* Reduce the stats bar footprint on mobile */
+  /* Stats menores */
   .hero-stats {
     padding: 16px 20px !important;
     gap: 16px !important;
@@ -324,13 +320,12 @@ header.hero h1 {
     font-size: 0.7rem !important;
   }
 
-  /* Hide the connector graphic once cards are stacked */
+  /* Nexus escondido em mobile */
   .nexus-connector {
     display: none !important;
   }
 }
 
-/* Extra-small screen refinements */
 @media (max-width: 480px) {
   .hero h1 {
     font-size: 2rem !important;
