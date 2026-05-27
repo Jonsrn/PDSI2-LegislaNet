@@ -1,10 +1,4 @@
 <!DOCTYPE html>
-<!--
-  File: dashboard.html
-  Purpose: Main dashboard for chamber administrators to monitor daily agenda
-  activity, review key status metrics, access common operational pages, and
-  inspect recent legislative updates from a single screen.
--->
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -308,25 +302,20 @@
       }
     </style>
 
-    <script src="../js/mockMode.js?v=3"></script>
     <script src="../js/global.js"></script>
     <script src="../js/carregamento.js"></script>
   </head>
   <body>
     <div class="app-layout">
-      <!-- Sidebar injected by the shared layout system -->
       <div id="sidebar-placeholder"></div>
 
       <main class="main-content" id="mainContent">
-        <!-- Header injected by the shared layout system -->
         <div id="header-placeholder"></div>
 
         <div class="page-content-wrapper">
           <div class="content-area">
-            <!-- Main dashboard container for metrics, shortcuts, and recent activity -->
             <section class="content-section fade-in">
               <div class="dashboard-wrapper">
-                <!-- Daily summary metrics populated from agenda data -->
                 <section
                   class="dashboard-section dashboard-section--resumo"
                   aria-labelledby="resumo-title"
@@ -356,7 +345,6 @@
                   </div>
                 </section>
 
-                <!-- Quick navigation shortcuts to core chamber workflows -->
                 <section
                   class="dashboard-section dashboard-section--atalhos"
                   aria-labelledby="atalhos-title"
@@ -398,7 +386,6 @@
                   </div>
                 </section>
 
-                <!-- Recent agenda activity feed rendered from the latest records -->
                 <section
                   class="dashboard-section dashboard-section--atividades"
                   aria-labelledby="atividades-title"
@@ -418,9 +405,7 @@
     </div>
 
     <script>
-      // Initialize the protected dashboard after the DOM is ready.
       document.addEventListener("DOMContentLoaded", async () => {
-        // Enforce authentication and chamber-admin authorization before loading data.
         try {
           await protectPage({
             allowedRoles: ["admin_camara"],
@@ -441,26 +426,22 @@
         await loadDashboard();
       });
 
-      // Safely update dashboard text nodes by element identifier.
       function setText(id, value) {
         const el = document.getElementById(id);
         if (el) el.textContent = value;
       }
 
-      // Normalize status labels for consistent comparison logic.
       function normalizeStatus(status) {
         if (!status || typeof status !== "string") return "";
         return status.toLowerCase().trim();
       }
 
-      // Parse date-like values and return null when invalid.
       function parseDateSafe(value) {
         if (!value) return null;
         const date = new Date(value);
         return Number.isNaN(date.getTime()) ? null : date;
       }
 
-      // Build a local date key used for same-day comparisons.
       function localDateKey(date) {
         const y = date.getFullYear();
         const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -468,14 +449,12 @@
         return `${y}-${m}-${d}`;
       }
 
-      // Format dates for Brazilian Portuguese display.
       function formatDatePtBR(value) {
         const date = parseDateSafe(value);
         if (!date) return "N/A";
         return date.toLocaleDateString("pt-BR");
       }
 
-      // Resolve the most relevant activity timestamp for an agenda item.
       function getPautaActivityDate(pauta) {
         return (
           pauta.updated_at ||
@@ -486,7 +465,6 @@
         );
       }
 
-      // Map agenda status labels to their badge CSS classes.
       function getStatusClass(status) {
         const s = normalizeStatus(status);
         if (s === "em votação" || s === "em votacao" || s === "em_votacao") {
@@ -496,7 +474,6 @@
         return "pendente";
       }
 
-      // Escape dynamic content before injecting it into HTML output.
       function escapeHtml(text = "") {
         return String(text)
           .replace(/&/g, "&amp;")
@@ -506,7 +483,6 @@
           .replace(/'/g, "&#039;");
       }
 
-      // Fetch dashboard data, compute headline metrics, and refresh the activity feed.
       async function loadDashboard() {
         const atividadesContainer = document.getElementById(
           "atividades-container"
@@ -579,7 +555,6 @@
         }
       }
 
-      // Render the recent activity list or an empty state when no records are available.
       function renderAtividades(container, pautas) {
         if (!container) return;
 
