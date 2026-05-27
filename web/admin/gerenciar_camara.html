@@ -1,9 +1,4 @@
 <!doctype html>
-<!--
-  Chamber management page for Legisla Net administrators.
-  Provides a tabbed interface to update chamber details, administrator and TV
-  credentials, council member records, social links, and streaming settings.
--->
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -865,14 +860,12 @@
   </head>
   <body>
     <div class="app-layout">
-      <!-- Shared application shell: sidebar, dynamic page header, and footer placeholders. -->
       <div id="sidebar-placeholder"></div>
       <main class="main-content" id="mainContent">
         <div id="header-placeholder"></div>
         <div class="background-logo-container"></div>
 
         <section class="form-section fade-in">
-          <!-- Tab navigation for chamber data, council member management, and media settings. -->
           <div class="tabs-nav">
             <button class="tab-item active" data-tab="info">
               Informações Gerais e Admin
@@ -882,12 +875,10 @@
           </div>
 
           <div class="tabs-content">
-            <!-- Chamber profile and credential management form. -->
             <div class="tab-pane active" id="info">
               <form id="form-info-gerais">
                 <input type="hidden" id="adminUserId" />
                 <input type="hidden" id="tvUserId" />
-                <!-- Core chamber identity, status, location, and logo fields. -->
                 <h3 class="form-section-title">Dados da Câmara</h3>
                 <div class="form-group toggle-group">
                   <label class="toggle-switch"
@@ -933,7 +924,6 @@
                   </div>
                 </div>
 
-                <!-- Chamber administrator login credentials. -->
                 <h3 class="form-section-title" style="margin-top: 32px">
                   Credenciais do Administrador da Câmara
                 </h3>
@@ -957,7 +947,6 @@
                   />
                 </div>
 
-                <!-- Optional TV user credentials for broadcasting workflows. -->
                 <h3 class="form-section-title" style="margin-top: 24px">
                   Credenciais da TV (opcional)
                 </h3>
@@ -988,7 +977,6 @@
               </form>
             </div>
 
-            <!-- Council member data grid with create, edit, status, and removal actions. -->
             <div class="tab-pane" id="vereadores">
               <div class="management-header">
                 <h3>Vereadores</h3>
@@ -1000,11 +988,9 @@
               <div class="item-grid" id="vereadores-grid"></div>
             </div>
 
-            <!-- Public social media links and YouTube live streaming configuration. -->
             <div class="tab-pane" id="midias">
               <form id="form-midias-sociais">
                 <h3 class="form-section-title">Links e Mídias Sociais</h3>
-                <!-- Public website and social profile links displayed by the platform. -->
                 <div class="form-group">
                   <label for="link_facebook">Link do Facebook</label>
                   <input
@@ -1041,7 +1027,6 @@
                     value=""
                   />
                 </div>
-                <!-- YouTube channel and RTMP fields used for live stream setup. -->
                 <div class="form-group">
                   <label for="youtube_stream_key"
                     >Chave de Transmissão do YouTube</label
@@ -1098,7 +1083,6 @@
       </main>
     </div>
 
-    <!-- Modal used to create or edit council member records. -->
     <div class="modal-overlay" id="vereadorModal">
       <div class="modal-container">
         <div class="modal-header">
@@ -1110,7 +1094,6 @@
         <div class="modal-body">
           <form id="vereadorForm">
             <input type="hidden" id="vereadorId" />
-            <!-- Required council member identity and account fields. -->
             <div class="form-group">
               <label for="nome_parlamentar" data-required="true"
                 >Nome Parlamentar</label
@@ -1162,7 +1145,6 @@
                 <div class="custom-options"></div>
               </div>
             </div>
-            <!-- Mutually exclusive leadership role toggles. -->
             <div class="form-group">
               <label>Cargos</label>
               <div class="toggle-group-modal">
@@ -1182,7 +1164,6 @@
                 </div>
               </div>
             </div>
-            <!-- Council member profile photo upload. -->
             <div class="form-group">
               <label data-required="true">Foto do Vereador</label>
               <div class="file-input-wrapper">
@@ -1332,16 +1313,13 @@
       </div>
     </div>
 
-    <!-- Client-side dependencies for layout, validation, custom controls, and feedback. -->
     <script src="../js/formValidator.js"></script>
-    <script src="../js/mockMode.js?v=3"></script>
     <script src="../js/global.js"></script>
     <script src="../js/forms.js"></script>
     <script src="../js/modals.js"></script>
     <script src="../js/customSelect.js"></script>
     <script src="../js/toast.js"></script>
     <script src="../js/carregamento.js"></script>
-    <!-- Page controller: loads data, wires forms, and coordinates modal workflows. -->
     <script>
       document.addEventListener("DOMContentLoaded", async () => {
         const authToken = localStorage.getItem("authToken");

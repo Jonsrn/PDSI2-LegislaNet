@@ -1,11 +1,4 @@
 <!DOCTYPE html>
-<!--
-  File: nova_camara.html
-  Purpose: Multi-step administrative form for super administrators to create
-  a new legislative chamber, configure administrator credentials, register
-  council members, define media channels, and review the submission before
-  finalizing the record.
--->
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -441,16 +434,12 @@
   </head>
   <body>
     <div class="app-layout">
-      <!-- Sidebar injected by the shared layout system -->
       <div id="sidebar-placeholder"></div>
       <main class="main-content" id="mainContent">
-        <!-- Header injected by the shared layout system -->
         <div id="header-placeholder"></div>
         <div class="page-content-wrapper">
           <div class="content-area">
-            <!-- Main multi-step form container for chamber onboarding -->
             <section class="form-section fade-in">
-              <!-- Step indicator for the chamber creation workflow -->
               <div class="stepper-wrapper">
                 <ul class="stepper-list">
                   <li class="stepper-item active" data-step="0">
@@ -471,10 +460,7 @@
                   </li>
                 </ul>
               </div>
-
-              <!-- Wizard form that groups chamber, council member, media, and review data -->
               <form id="nova-camara-form" novalidate>
-                <!-- Step 1: Core chamber data and administrator access credentials -->
                 <div class="form-step active">
                   <h2>1. Informações da Câmara</h2>
                   <p class="form-description">
@@ -622,8 +608,6 @@
                     </button>
                   </div>
                 </div>
-
-                <!-- Step 2: Dynamic council member registration cards -->
                 <div class="form-step">
                   <h2>2. Cadastro de Vereadores</h2>
                   <p class="form-description">
@@ -651,8 +635,6 @@
                     </button>
                   </div>
                 </div>
-
-                <!-- Step 3: Public communication, social media, and streaming settings -->
                 <div class="form-step">
                   <h2>3. Mídias Sociais e Contato</h2>
                   <p class="form-description">
@@ -756,8 +738,6 @@
                     </button>
                   </div>
                 </div>
-
-                <!-- Step 4: Final review before submission -->
                 <div class="form-step">
                   <h2>4. Revisão e Confirmação</h2>
                   <p class="form-description">
@@ -794,29 +774,19 @@
           </div>
         </div>
 
-        <!-- Footer injected by the shared layout system -->
         <div id="footer-placeholder"></div>
       </main>
     </div>
-    <script src="../js/mockMode.js?v=3"></script>
     <script src="../js/global.js"></script>
     <script src="../js/formValidator.js"></script>
     <script>
-      // Initialize the protected chamber creation workflow after the DOM is ready.
-      document.addEventListener("DOMContentLoaded", async () => {
-        // Enforce authentication and role authorization before enabling the form.
-        try {
-          await protectPage({
-            allowedRoles: ["super_admin"],
-            requireAuth: true,
-            autoRedirect: true,
-          });
-        } catch (error) {
-          console.error("[AUTH] Falha na autenticação:", error);
+      document.addEventListener("DOMContentLoaded", () => {
+        const authToken = localStorage.getItem("authToken");
+        if (!authToken) {
+          alert("Acesso negado. Por favor, faça o login como Super Admin.");
+          window.location.href = "/app/login.html";
           return;
         }
-
-        const authToken = localStorage.getItem("authToken");
 
         let currentStep = 0;
         let partidosFromDB = [];
@@ -829,7 +799,6 @@
           "vereadores-container"
         );
 
-        // Synchronize the visual stepper with the current wizard position.
         const updateStepper = () => {
           stepperItems.forEach((item, index) => {
             item.classList.remove("active", "completed");
@@ -839,7 +808,6 @@
           });
         };
 
-        // Display the requested step and hide the remaining wizard sections.
         const showStep = (stepIndex) => {
           steps.forEach((step, index) =>
             step.classList.toggle("active", index === stepIndex)
@@ -847,7 +815,6 @@
           updateStepper();
         };
 
-        // Register validation rules for chamber fields, credentials, and council members.
         const setupValidation = () => {
           formValidator
             .setRules("municipio", {
@@ -1025,7 +992,6 @@
           setupCredentialRealtimeValidation();
         };
 
-        // Validate the first step, including the required chamber crest upload.
         const validateStep1 = () => {
           formValidator.clearAllErrors();
 
@@ -1095,7 +1061,6 @@
           return isValid;
         };
 
-        // Populate the custom state selector with Brazilian federative units.
         const populateEstados = () => {
           const estados = {
             AC: "Acre",
@@ -1166,7 +1131,6 @@
           });
         };
 
-        // Fill the review step with the current form summary before submission.
         const populateReviewStep = () => {
           const municipio = document.getElementById("municipio").value;
           const estadoValue = document.getElementById("estado").value;
@@ -1187,7 +1151,6 @@
           ).textContent = `${savedVereadores} vereador(es)`;
         };
 
-        // Load party options from the API for council member assignment.
         const loadPartidosFromDB = async () => {
           try {
             const response = await fetch("/api/partidos", {
@@ -1204,7 +1167,6 @@
           }
         };
 
-        // Refresh every dynamic party selector with the latest loaded options.
         const updateAllPartidoSelects = () => {
           vereadoresContainer
             .querySelectorAll(".vereador-partido-select-wrapper")
@@ -1247,7 +1209,6 @@
             });
         };
 
-        // Add a new editable council member card, respecting the configured limit.
         const addVereadorCard = () => {
           const qtdPermitida = parseInt(
             document.getElementById("qtd-vereadores").value,
@@ -1341,7 +1302,6 @@
           updateAllPartidoSelects();
         };
 
-        // Validate and collapse a council member card after server-side checks.
         const handleSaveVereador = async (card) => {
           const button = card.querySelector(".btn-save-vereador");
           const vereadorId = card.dataset.id.replace("vereador-", "");
@@ -1508,7 +1468,6 @@
           }
         };
 
-        // Build the compact summary displayed for a saved council member card.
         const updateVereadorSummary = (card) => {
           const vereadorId = card.dataset.id.replace("vereador-", "");
           const nome = card.querySelector(".vereador-nome").value;
@@ -1540,10 +1499,10 @@
                         ${badges}
                         <button type="button" class="btn btn-secondary btn-edit-vereador" style="margin-left: 16px;">Editar</button>
                     </div>
-                    </div>`;
+                </div>`;
         };
 
-        // Prevent duplicate assignment of unique leadership roles across saved council members.
+        // FUNÇÃO ADICIONADA PARA CHECAGEM DE CONFLITO DE CARGO
         const handleCargoConflictCheck = (
           currentCard,
           cargo,
@@ -1598,7 +1557,6 @@
           return true; // Nenhum conflito encontrado
         };
 
-        // Assemble the multipart payload and submit the completed chamber registration.
         const handleFinalSubmit = async (event) => {
           event.preventDefault();
           if (
@@ -1782,7 +1740,6 @@
           }
         };
 
-        // Wire navigation, dynamic card actions, custom selects, and file input events.
         const setupNavigationAndEvents = () => {
           document
             .getElementById("btn-step1-next")
@@ -1873,7 +1830,7 @@
               return;
             }
 
-            // Apply exclusive role-selection rules within each council member card.
+            // BLOCO 'if (toggleBtn)' MODIFICADO PARA INCLUIR A LÓGICA DE CONFLITO
             const toggleBtn = e.target.closest(
               ".cargo-presidente-checkbox, .cargo-vice-checkbox"
             );
@@ -1975,7 +1932,6 @@
           });
         };
 
-        // Configure shared layout elements, validation, and initial data sources.
         async function initializePage() {
           try {
             initLayout({
@@ -1999,4 +1955,3 @@
     </script>
   </body>
 </html>
-

@@ -1,10 +1,4 @@
 <!DOCTYPE html>
-<!--
-  File: partidos.html
-  Purpose: Administrative management page for super administrators to browse,
-  paginate, edit, and remove registered political parties, including modal
-  workflows for updating party details and confirming deletions.
--->
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -195,17 +189,13 @@
   </head>
   <body>
     <div class="app-layout">
-      <!-- Sidebar injected by the shared layout system -->
       <div id="sidebar-placeholder"></div>
       <main class="main-content" id="mainContent">
-        <!-- Header injected by the shared layout system -->
         <div id="header-placeholder"></div>
 
-        <!-- Main content area for the party management listing -->
         <section class="content-section fade-in">
           <div class="page-content-wrapper">
             <div class="content-area">
-              <!-- Page header with title and shortcut to create a new party -->
               <div class="page-header">
                 <h2>Partidos Políticos Cadastrados</h2>
                 <a
@@ -216,21 +206,18 @@
                   <span class="btn-text">Adicionar Partido</span></a
                 >
               </div>
-              <!-- Dynamic grid populated with paginated party cards -->
               <div id="partidos-grid"></div>
             </div>
-            <!-- Pagination controls for navigating through the party dataset -->
             <div class="pagination-container">
               <div class="pagination-controls" id="pagination-controls"></div>
             </div>
           </div>
         </section>
-        <!-- Footer injected by the shared layout system -->
         <div id="footer-placeholder"></div>
       </main>
     </div>
 
-    <!-- Modal for editing an existing party record -->
+    <!-- Modal Editar -->
     <div class="modal-overlay" id="edit-modal-overlay">
       <div class="modal-content">
         <div class="modal-header">
@@ -290,7 +277,7 @@
       </div>
     </div>
 
-    <!-- Modal for confirming party deletion -->
+    <!-- Modal Deletar -->
     <div class="modal-overlay" id="delete-modal-overlay">
       <div class="modal-content">
         <div class="modal-header">
@@ -323,23 +310,9 @@
 
     <script src="../js/pagination.js"></script>
     <script src="../js/carregamento.js"></script>
-    <script src="../js/mockMode.js?v=3"></script>
     <script src="../js/global.js"></script>
     <script>
-      // Initialize the protected party management page after the DOM is ready.
       document.addEventListener("DOMContentLoaded", async () => {
-        // Enforce authentication and role authorization before loading party data.
-        try {
-          await protectPage({
-            allowedRoles: ["super_admin"],
-            requireAuth: true,
-            autoRedirect: true,
-          });
-        } catch (error) {
-          console.error("[AUTH] Falha na autenticação:", error);
-          return;
-        }
-
         const authToken = localStorage.getItem("authToken");
         if (!authToken) {
           alert("Acesso negado. Por favor, faça o login como Super Admin.");
@@ -373,7 +346,6 @@
           confirmBtn: document.getElementById("confirm-delete-btn"),
         };
 
-        // Load a paginated set of parties and refresh the list and pagination UI.
         const fetchPartidos = async (page = 1) => {
           renderLoadingState(grid, "Carregando partidos...");
 
@@ -405,7 +377,7 @@
           }
         };
 
-        // Recalculate page size when the responsive breakpoint changes.
+        // Ajusta automaticamente a quantidade por página quando muda o breakpoint (ex.: DevTools/rotação)
         isMobile.addEventListener("change", () => {
           const next = getPartidosPerPage();
           if (next === PARTIDOS_PER_PAGE) return;
@@ -414,7 +386,6 @@
           fetchPartidos(currentPage);
         });
 
-        // Render the current page of parties as action cards or an empty state.
         const renderPartidos = (partidos) => {
           if (!partidos || partidos.length === 0) {
             renderEmptyState(grid, "Nenhum partido cadastrado.", "fa-flag");
@@ -455,11 +426,9 @@
           });
         };
 
-        // Toggle modal visibility using the shared overlay pattern.
         const openModal = (overlay) => overlay.classList.add("visible");
         const closeModal = (overlay) => overlay.classList.remove("visible");
 
-        // Populate and display the edit modal with the selected party data.
         const openEditModal = (id, nome, sigla, logoUrl) => {
           editModal.id.value = id;
           editModal.name.value = nome;
@@ -471,14 +440,12 @@
           openModal(editModal.overlay);
         };
 
-        // Populate and display the deletion confirmation modal.
         const openDeleteModal = (id, nome) => {
           deleteModal.partyName.textContent = nome;
           deleteModal.confirmBtn.dataset.id = id; // Armazena o ID no botão
           openModal(deleteModal.overlay);
         };
 
-        // Submit party updates, including optional logo replacement.
         const handleUpdateSubmit = async (event) => {
           event.preventDefault();
           const id = editModal.id.value;
@@ -514,7 +481,6 @@
           }
         };
 
-        // Confirm and process party removal from the administrative listing.
         const handleDeleteConfirm = async (event) => {
           const id = event.target.dataset.id;
           const submitButton = event.target;
@@ -544,7 +510,7 @@
           }
         };
 
-        // Delegate card actions for edit and delete buttons within the grid.
+        // --- Event Listeners ---
         grid.addEventListener("click", (event) => {
           const button = event.target.closest("button");
           if (!button) return;
@@ -562,7 +528,6 @@
         editModal.form.addEventListener("submit", handleUpdateSubmit);
         deleteModal.confirmBtn.addEventListener("click", handleDeleteConfirm);
 
-        // Refresh the logo preview when a replacement file is selected.
         editModal.logoInput.addEventListener("change", () => {
           const file = editModal.logoInput.files[0];
           if (file) {
@@ -585,7 +550,6 @@
           });
         });
 
-        // Configure shared layout elements before the initial data request.
         await initLayout({
           title: "Gerenciar Partidos",
           icon: "fa-flag",
@@ -599,4 +563,3 @@
     </script>
   </body>
 </html>
-

@@ -1,10 +1,4 @@
 <!DOCTYPE html>
-<!--
-  File: novo_partido.html
-  Purpose: Administrative page for super administrators to register new
-  political parties, including party identity data, optional logo upload,
-  validation, and immediate global availability across the platform.
--->
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -139,13 +133,10 @@
   </head>
   <body>
     <div class="app-layout">
-      <!-- Sidebar injected by the shared layout system -->
       <div id="sidebar-placeholder"></div>
       <main class="main-content" id="mainContent">
-        <!-- Header injected by the shared layout system -->
         <div id="header-placeholder"></div>
 
-        <!-- Main form section for creating and saving party records -->
         <section class="form-section fade-in">
           <h2>Cadastrar Novos Partidos</h2>
           <p class="form-description">
@@ -153,7 +144,6 @@
             salvos aqui ficam disponíveis globalmente para todas as câmaras.
           </p>
 
-          <!-- Dynamic form container for one party card at a time -->
           <form id="novo-partido-form" novalidate>
             <div id="partidos-container" class="dynamic-container"></div>
             <button
@@ -166,38 +156,28 @@
           </form>
         </section>
 
-        <!-- Footer injected by the shared layout system -->
         <div id="footer-placeholder"></div>
       </main>
     </div>
 
-    <script src="../js/mockMode.js?v=3"></script>
     <script src="../js/global.js"></script>
     <script src="../js/formValidator.js"></script>
 
     <script>
-      // Initialize the protected party registration page when the DOM is ready.
-      document.addEventListener("DOMContentLoaded", async () => {
-        // Enforce authentication and role authorization before exposing admin actions.
-        try {
-          await protectPage({
-            allowedRoles: ["super_admin"],
-            requireAuth: true,
-            autoRedirect: true,
-          });
-        } catch (error) {
-          console.error("[AUTH] Falha na autenticação:", error);
+      document.addEventListener("DOMContentLoaded", () => {
+        const authToken = localStorage.getItem("authToken");
+
+        if (!authToken) {
+          alert("Acesso negado. Por favor, faça o login como Super Admin.");
+          window.location.href = "/app/login.html";
           return;
         }
-
-        const authToken = localStorage.getItem("authToken");
 
         let partidoCounter = 0;
         const form = document.getElementById("novo-partido-form");
         const partidosContainer = document.getElementById("partidos-container");
         const addPartidoBtn = document.getElementById("add-partido-btn");
 
-        // Create a new dynamic party form card and attach field-specific validation rules.
         const addPartidoCard = () => {
           if (
             partidosContainer.querySelector(".dynamic-card:not(.is-collapsed)")
@@ -258,7 +238,6 @@
           addPartidoBtn.disabled = true;
         };
 
-        // Validate, submit, and collapse a party card after successful persistence.
         const handleSavePartido = async (card) => {
           const button = card.querySelector(".btn-save-partido");
           const nomeInput = card.querySelector(".partido-nome");
@@ -358,7 +337,7 @@
           }
         };
 
-        // Wire click handlers for dynamic card actions through event delegation.
+        // --- DELEGAÇÃO DE EVENTOS ---
         addPartidoBtn.addEventListener("click", addPartidoCard);
 
         form.addEventListener("click", (e) => {
@@ -375,7 +354,6 @@
           }
         });
 
-        // Update file input labels and logo previews when a new image is selected.
         form.addEventListener("change", (e) => {
           if (e.target.classList.contains("form-file-input")) {
             const buttonLabel =
@@ -401,7 +379,7 @@
           }
         });
 
-        // Configure the shared administrative layout for this page.
+        // --- INICIALIZAÇÃO DO SCRIPT ---
         async function initializePage() {
           try {
             initLayout({
@@ -420,4 +398,3 @@
     </script>
   </body>
 </html>
-
