@@ -1,14 +1,10 @@
 /**
- * File: forms.js
- * Purpose: Provides shared form interactions, including file input label
- * updates and password visibility toggling for password-group controls.
+ * Form UI helpers for file-name display and password visibility toggles.
+ *
+ * @module web/js/forms
  */
-/**
- * Initializes shared form behaviors after the DOM is fully loaded.
- * @returns {void}
- */
+
 document.addEventListener("DOMContentLoaded", function () {
-  // --- LÓGICA DO INPUT DE ARQUIVO (JÁ EXISTENTE) ---
   const fileInput = document.getElementById("file-input");
   if (fileInput) {
     fileInput.addEventListener("change", function () {
@@ -21,7 +17,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // --- NOVA LÓGICA AUTOMÁTICA PARA MOSTRAR/OCULTAR SENHA ---
   const passwordToggles = document.querySelectorAll(
     ".password-toggle, .password-toggle-btn"
   );
@@ -41,8 +36,9 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 /**
- * Toggles the visibility state of a password input and updates its icon.
- * @param {string} inputId - The ID of the input element to toggle.
+ * Toggles password visibility for an input and updates its icon state.
+ *
+ * @param {string} inputId - Password input element id.
  * @returns {void}
  */
 function togglePassword(inputId) {

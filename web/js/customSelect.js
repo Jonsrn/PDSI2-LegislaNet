@@ -1,24 +1,23 @@
 /**
- * File: customSelect.js
- * Purpose: Provides a reusable custom select component with support for
- * manual instantiation, dynamic option population, selection callbacks,
- * and automatic initialization through data attributes.
+ * Modular custom select component for form controls.
+ *
+ * @module web/js/customSelect
  */
 
 /**
- * Manages a custom select UI backed by a hidden input element.
+ * Replaces a native hidden input/select pattern with a custom dropdown UI.
  */
 class CustomSelect {
   /**
-   * Creates a new custom select instance and resolves its DOM dependencies.
-   * @param {Object} config - Component configuration options.
-   * @param {string} config.wrapperId - The ID of the wrapper element.
-   * @param {string} [config.hiddenInputSelector] - Selector for the hidden input element.
-   * @param {string} [config.triggerSelector] - Selector for the trigger element.
+   * Creates a custom select bound to an existing wrapper element.
+   *
+   * @param {object} config - Custom select configuration.
+   * @param {string} config.wrapperId - ID of the wrapper element.
+   * @param {string} [config.hiddenInputSelector] - Selector for the hidden input.
+   * @param {string} [config.triggerSelector] - Selector for the dropdown trigger.
    * @param {string} [config.optionsSelector] - Selector for the options container.
-   * @param {string} [config.placeholder] - Placeholder text shown when no option is selected.
+   * @param {string} [config.placeholder] - Placeholder displayed when no option is selected.
    * @param {Function} [config.onSelect] - Callback invoked after an option is selected.
-   * @returns {void}
    */
   constructor(config) {
     console.log("CustomSelect constructor chamado com config:", config);
@@ -57,12 +56,12 @@ class CustomSelect {
   }
 
   /**
-   * Initializes event listeners and restores the current selected value.
+   * Initializes DOM listeners and applies any existing hidden input value.
+   *
    * @returns {void}
    */
   init() {
     console.log("CustomSelect init() chamado");
-    // Event listener para abrir/fechar dropdown
     this.trigger.addEventListener("click", (e) => {
       console.log("CustomSelect trigger clicado");
       e.stopPropagation();
@@ -75,15 +74,12 @@ class CustomSelect {
       }
     });
 
-    // Listener de seleção das opções (funciona com opções no HTML e com populateOptions)
     this.bindOptionsListener();
 
-    // Se já houver valor no hidden input, refletir no trigger
     if (this.hiddenInput && this.hiddenInput.value) {
       this.setValue(this.hiddenInput.value);
     }
 
-    // Event listener global para fechar dropdowns ao clicar fora
     if (!CustomSelect.globalListenerAdded) {
       document.addEventListener("click", (e) => {
         if (!e.target.closest(".custom-select-wrapper")) {
@@ -95,7 +91,8 @@ class CustomSelect {
   }
 
   /**
-   * Closes every open custom select dropdown in the document.
+   * Closes all open custom select dropdowns.
+   *
    * @returns {void}
    */
   closeAllDropdowns() {
@@ -105,7 +102,8 @@ class CustomSelect {
   }
 
   /**
-   * Closes every open custom select dropdown using the static helper.
+   * Closes all open custom select dropdowns without an instance reference.
+   *
    * @returns {void}
    */
   static closeAllDropdownsStatic() {
@@ -115,7 +113,8 @@ class CustomSelect {
   }
 
   /**
-   * Binds the delegated click listener used to handle option selection.
+   * Binds click handling for option selection.
+   *
    * @returns {void}
    */
   bindOptionsListener() {
@@ -146,12 +145,9 @@ class CustomSelect {
   }
 
   /**
-   * Replaces the current option list with the provided option set.
-   * @param {Array<Object>} options - The options to render.
-   * @param {string|number} options[].value - The value stored in the hidden input.
-   * @param {string} options[].text - The visible option label.
-   * @param {string} [options[].image] - Optional image URL displayed with the option.
-   * @param {string} [options[].alt] - Optional alternative text for the image.
+   * Replaces the dropdown options with a new option list.
+   *
+   * @param {Array<object>} options - Options to render.
    * @returns {void}
    */
   populateOptions(options) {
@@ -168,7 +164,6 @@ class CustomSelect {
       optionElement.className = "custom-option";
       optionElement.dataset.value = option.value;
 
-      // Se tem imagem, adicionar
       if (option.image) {
         optionElement.innerHTML = `<img src="${option.image}" alt="${
           option.alt || ""
@@ -180,25 +175,23 @@ class CustomSelect {
       this.optionsContainer.appendChild(optionElement);
     });
 
-    // Re-binda o listener (já que o innerHTML foi recriado)
     delete this.optionsContainer.dataset.bound;
     this.bindOptionsListener();
   }
 
   /**
-   * Applies the selected option to the hidden input and trigger UI.
-   * @param {Object} option - The option to select.
-   * @param {string|number} option.value - The value stored in the hidden input.
-   * @param {string} option.text - The visible option label.
-   * @param {string} [option.image] - Optional image URL displayed in the trigger.
-   * @param {string} [option.alt] - Optional alternative text for the image.
+   * Selects an option, updates the hidden input, and refreshes the trigger UI.
+   *
+   * @param {object} option - Selected option data.
+   * @param {string} option.value - Option value.
+   * @param {string} option.text - Option label.
+   * @param {string} [option.image] - Optional image URL.
+   * @param {string} [option.alt] - Optional image alt text.
    * @returns {void}
    */
   selectOption(option) {
-    // Atualizar valor do input hidden
     this.hiddenInput.value = option.value;
 
-    // Atualizar visual do trigger
     if (option.image) {
       this.trigger.innerHTML = `<img src="${option.image}" alt="${
         option.alt || ""
@@ -207,7 +200,6 @@ class CustomSelect {
       this.trigger.innerHTML = `<span>${option.text}</span>`;
     }
 
-    // Atualizar classes de seleção
     this.optionsContainer.querySelectorAll(".custom-option").forEach((opt) => {
       opt.classList.remove("selected");
     });
@@ -218,16 +210,15 @@ class CustomSelect {
       selectedElement.classList.add("selected");
     }
 
-    // Fechar dropdown
     this.optionsContainer.classList.remove("open");
 
-    // Callback customizado
     this.onSelect(option);
   }
 
   /**
-   * Selects an option by its stored value.
-   * @param {string|number} value - The option value to apply.
+   * Selects an option by value or resets the component when no match exists.
+   *
+   * @param {string} value - Option value to select.
    * @returns {void}
    */
   setValue(value) {
@@ -235,7 +226,6 @@ class CustomSelect {
       `[data-value="${value}"]`
     );
     if (option) {
-      // Encontrar a opção correspondente e selecionar
       const optionData = {
         value: value,
         text: option.textContent,
@@ -249,7 +239,8 @@ class CustomSelect {
   }
 
   /**
-   * Clears the current selection and restores the placeholder state.
+   * Clears the current selection and restores the placeholder.
+   *
    * @returns {void}
    */
   reset() {
@@ -261,16 +252,15 @@ class CustomSelect {
   }
 
   /**
-   * Rebinds option listeners and reapplies the current visual selection.
+   * Rebinds option listeners and reapplies visual selection after DOM changes.
+   *
    * @returns {void}
    */
   reinitialize() {
-    // Permite reconfigurar após inserir/remover opções no DOM
     if (!this.optionsContainer) return;
     delete this.optionsContainer.dataset.bound;
     this.bindOptionsListener();
 
-    // Reaplicar seleção visual se já houver valor
     if (this.hiddenInput && this.hiddenInput.value) {
       const currentValue = this.hiddenInput.value;
       const optionElement = this.optionsContainer.querySelector(
@@ -286,20 +276,16 @@ class CustomSelect {
   }
 
   /**
-   * Returns the currently selected value.
-   * @returns {string}
+   * Returns the current hidden input value.
+   *
+   * @returns {string} Current selected value.
    */
   getValue() {
     return this.hiddenInput.value;
   }
 }
 
-/**
- * Automatically initializes custom selects declared with data attributes.
- * @returns {void}
- */
 document.addEventListener("DOMContentLoaded", () => {
-  // Auto-inicializar selects com data-custom-select
   document.querySelectorAll("[data-custom-select]").forEach((wrapper) => {
     const config = JSON.parse(wrapper.dataset.customSelect || "{}");
     config.wrapperId = wrapper.id;
@@ -307,5 +293,4 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// Export the class for manual usage in page scripts.
 window.CustomSelect = CustomSelect;
