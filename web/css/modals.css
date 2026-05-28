@@ -1,11 +1,5 @@
-/*
-  File: modals.css
-  Purpose: Shared modal styling for overlays, dialog containers, headers,
-  bodies, footers, and responsive behavior across application and admin
-  interfaces.
-*/
+/* modals.css */
 
-/* Overlay layer that centers dialogs and controls visibility transitions */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -22,13 +16,11 @@
     transition: opacity 0.3s, visibility 0.3s;
 }
 
-/* Active state reveals the modal without removing it from the DOM */
 .modal-overlay.active {
     opacity: 1;
     visibility: visible;
 }
 
-/* Shared modal surface for both legacy and current container class names */
 .modal-content, .modal-container {
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
@@ -40,12 +32,10 @@
     transition: transform 0.3s;
 }
 
-/* Slight scale animation reinforces modal entrance */
 .modal-overlay.active .modal-content, .modal-overlay.active .modal-container {
     transform: scale(1);
 }
 
-/* Standard modal header layout */
 .modal-header {
     display: flex;
     justify-content: space-between;
@@ -54,13 +44,11 @@
     padding: 0; /* Ajuste para unificar */
 }
 
-/* Shared title styling across header markup variants */
 .modal-header h2, .modal-title {
     font-size: 1.5rem;
     font-weight: 600;
 }
 
-/* Close button remains visually lightweight until interaction */
 .modal-close {
     background: none;
     border: none;
@@ -75,7 +63,6 @@
     color: var(--primary-text);
 }
 
-/* Body and footer spacing are normalized across modal implementations */
 .modal-body {
     padding: 0; /* Ajuste para unificar */
 }
@@ -89,7 +76,7 @@
     border-top: 1px solid var(--border-color); /* Adicionado para consistência */
 }
 
-/* Responsive sizing for smaller screens */
+/* Responsividade do Modal */
 @media (max-width: 768px) {
     .modal-content, .modal-container {
         width: 95%;
@@ -98,7 +85,6 @@
     }
 }
 
-/* Confirmation dialogs use a more readable body text treatment */
 .modal-body.confirm-text {
     color: var(--secondary-text);
     font-size: 1rem;
