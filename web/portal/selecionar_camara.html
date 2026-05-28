@@ -1,9 +1,4 @@
 <!doctype html>
-<!--
-  Chamber Selection Portal Page
-  Presents a searchable, paginated list of public municipal chambers and
-  stores the selected chamber before redirecting visitors to its public portal.
--->
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -547,19 +542,15 @@
     </style>
   </head>
   <body>
-    <!-- Dynamic portal navigation loaded by the shared layout system. -->
     <!-- Navbar carregado dinamicamente -->
     <div id="navbar-placeholder"></div>
 
-    <!-- Legacy back link kept hidden because navigation is handled in the navbar. -->
     <a href="../index.html" class="back-link">
       <i class="fas fa-arrow-left"></i>
       Voltar ao início
     </a>
 
-    <!-- Main chamber selection experience. -->
     <div class="selection-container">
-      <!-- Introductory heading and page context for public visitors. -->
       <div class="selection-header fade-in">
         <a href="../index.html" class="logo">
           <svg viewBox="0 0 44 40" xmlns="http://www.w3.org/2000/svg">
@@ -589,7 +580,6 @@
         </p>
       </div>
 
-      <!-- Search field used to filter public chambers by city or chamber name. -->
       <div class="search-container fade-in">
         <i class="fas fa-search search-icon"></i>
         <input
@@ -601,27 +591,23 @@
         />
       </div>
 
-      <!-- Loading state shown while chamber data is being fetched. -->
       <div id="loadingIndicator" class="loading-indicator">
         <div class="loading-spinner"></div>
         <p>Carregando câmaras...</p>
       </div>
 
-      <!-- Dynamic chamber card grid populated from the public chambers API. -->
       <div class="camaras-grid-wrapper fade-in">
         <div id="camarasContainer" class="camaras-grid">
           <!-- Câmaras serão carregadas dinamicamente -->
         </div>
       </div>
 
-      <!-- Empty state displayed when search returns no matching chambers. -->
       <div id="noResults" class="no-results" style="display: none">
         <i class="fas fa-search"></i>
         <h3>Nenhuma câmara encontrada</h3>
         <p>Tente buscar pelo nome da cidade ou câmara municipal.</p>
       </div>
 
-      <!-- Pagination controls for multi-page chamber results. -->
       <div
         class="pagination-container"
         id="pagination-container"
@@ -631,15 +617,12 @@
       </div>
     </div>
 
-    <!-- Dynamic portal footer loaded by the shared layout system. -->
     <!-- Footer carregado dinamicamente -->
     <div id="footer-placeholder"></div>
 
-    <script src="../js/mockMode.js?v=3"></script>
     <script src="../js/global.js"></script>
     <script src="../js/pagination.js"></script>
     <script>
-      // Configures page-specific content inside the shared portal navbar.
       // Função para configurar elementos específicos do navbar para esta página
       function setupSelecionarCamaraNavbar() {
         // Adicionar botão voltar no lado esquerdo
@@ -657,7 +640,6 @@
       }
 
       document.addEventListener("DOMContentLoaded", async () => {
-        // Page bootstrap: load shared layout, initialize animation, and fetch data.
         // Carregar componentes modularizados (navbar e footer)
         await initLayout({});
 
@@ -706,7 +688,6 @@
 
         let searchTimeout = null;
 
-        // Fetches public chambers, then renders cards and pagination state.
         // Função para carregar câmaras do backend
         async function loadCamaras(page = 1, search = "") {
           showLoading(true);
@@ -787,7 +768,6 @@
           showLoading(false);
         }
 
-        // Renders chamber cards and binds selection behavior.
         // Função para renderizar câmaras
         function renderCamaras(camaras) {
           if (camaras.length === 0) {
@@ -856,7 +836,6 @@
           }, 100);
         }
 
-        // Builds pagination controls and reloads the selected result page.
         // Função para configurar paginação
         function setupPagination(pagination, search) {
           if (pagination.totalPages <= 1) {
@@ -878,7 +857,6 @@
           });
         }
 
-        // Hides stale result UI before a new fetch begins.
         // Função para esconder resultados e paginação
         function hideResultsAndPagination() {
           camarasContainer.style.display = "none";
@@ -886,7 +864,6 @@
           showNoResults(false);
         }
 
-        // Persists the selected chamber and redirects to its public portal.
         // Função para selecionar câmara
         function selectCamara(camaraId, camaraNome) {
           console.log("🏛️ Câmara selecionada:", {
@@ -902,17 +879,16 @@
             console.log("✅ Dados salvos no localStorage");
 
             // Redirecionar para o portal público
-            const targetUrl = `/portal/portal_publico.html?camara=${encodeURIComponent(camaraId)}`;
+            const targetUrl = `portal_publico.html?camara=${encodeURIComponent(camaraId)}`;
             console.log("🔄 Redirecionando para:", targetUrl);
 
-            window.location.assign(targetUrl);
+            window.location.href = targetUrl;
           } catch (error) {
             console.error("❌ Erro ao selecionar câmara:", error);
             alert("Erro ao selecionar câmara. Tente novamente.");
           }
         }
 
-        // Toggles the fetch loading indicator and result grid visibility.
         // Funções de UI
         function showLoading(show) {
           loadingIndicator.style.display = show ? "block" : "none";
@@ -921,7 +897,6 @@
           }
         }
 
-        // Toggles the empty search state and result grid visibility.
         function showNoResults(show) {
           noResults.style.display = show ? "block" : "none";
           if (show) {
@@ -932,7 +907,6 @@
           }
         }
 
-        // Logs responsive grid measurements for layout troubleshooting.
         // Função para debug do layout do grid
         function debugGridLayout() {
           const container = document.querySelector(".selection-container");
@@ -997,7 +971,6 @@
           console.log("=== FIM DEBUG ===");
         }
 
-        // Escapes text before injecting dynamic API values into HTML strings.
         // Função para escapar HTML
         function escapeHtml(text) {
           const map = {
@@ -1015,4 +988,3 @@
     </script>
   </body>
 </html>
-
