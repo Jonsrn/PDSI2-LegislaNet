@@ -1,10 +1,4 @@
 <!DOCTYPE html>
-<!--
-  File: nova_sessao.html
-  Purpose: Administrative form for chamber users to create a new legislative
-  session, define its type, number, and scheduled date, validate required
-  inputs, and submit the record with its default initial status.
--->
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -34,26 +28,20 @@
     <link rel="stylesheet" href="../css/customSelect.css" />
 
     <script src="../js/toast.js"></script>
-    <script src="../js/mockMode.js?v=3"></script>
     <script src="../js/global.js"></script>
     <script src="../js/carregamento.js"></script>
     <script src="../js/customSelect.js"></script>
   </head>
   <body>
     <div class="app-layout">
-      <!-- Sidebar injected by the shared layout system -->
       <div id="sidebar-placeholder"></div>
       <main class="main-content" id="mainContent">
-        <!-- Header injected by the shared layout system -->
         <div id="header-placeholder"></div>
 
-        <!-- Main form section for creating a new session record -->
         <section class="form-section fade-in">
-          <!-- Session creation form with scheduling fields and primary actions -->
           <form id="sessao-form" novalidate>
             <h2>Cadastrar Nova Sessão</h2>
 
-            <!-- Session type selector powered by the shared custom select component -->
             <div class="form-group" style="margin-top: 24px">
               <label for="tipo-sessao">Tipo de Sessão</label>
               <div class="custom-select-wrapper" id="tipo-sessao-wrapper">
@@ -83,7 +71,6 @@
               ></div>
             </div>
 
-            <!-- Numeric session identifier used to compose the final session name -->
             <div class="form-group">
               <label for="numero-sessao">Número da Sessão</label>
               <input
@@ -104,7 +91,6 @@
               >
             </div>
 
-            <!-- Date and time scheduling for the new session -->
             <div class="form-group">
               <label for="data-sessao">Data da Sessão</label>
               <input
@@ -119,7 +105,6 @@
               ></div>
             </div>
 
-            <!-- Read-only initial status shown for user confirmation -->
             <div class="form-group">
               <label for="status-sessao">Status</label>
               <select id="status-sessao" class="form-select" disabled>
@@ -130,7 +115,6 @@
               >
             </div>
 
-            <!-- Form actions for cancellation and submission -->
             <div class="form-actions">
               <button type="button" class="btn btn-secondary" id="cancel-btn">
                 Cancelar
@@ -145,9 +129,8 @@
     </div>
 
     <script>
-      // Initialize the protected session-creation page when the DOM is ready.
       document.addEventListener("DOMContentLoaded", async () => {
-        // Enforce authentication and chamber-admin authorization before enabling the form.
+        // === NOVA AUTENTICAÇÃO COM VALIDAÇÃO DE ROLE ===
         try {
           await protectPage({
             allowedRoles: ["admin_camara"],
@@ -170,7 +153,6 @@
 
         let submitAttempted = false;
 
-        // Configure the shared custom selector used for session type selection.
         const tipoSelect = new CustomSelect({
           wrapperId: "tipo-sessao-wrapper",
           placeholder: "Selecione um tipo...",
@@ -180,7 +162,6 @@
           },
         });
 
-        // Display a validation message and visual error state for a field.
         const setFieldError = (fieldId, message) => {
           const errorEl = document.getElementById(`${fieldId}-error`);
           if (errorEl) {
@@ -197,7 +178,6 @@
           }
         };
 
-        // Clear the validation state associated with a field.
         const clearFieldError = (fieldId) => {
           const errorEl = document.getElementById(`${fieldId}-error`);
           if (errorEl) {
@@ -216,7 +196,6 @@
           }
         };
 
-        // Validate all required form inputs before attempting submission.
         const validateForm = () => {
           let isValid = true;
 
@@ -254,7 +233,7 @@
           return isValid;
         };
 
-        // Restrict session scheduling to the current date or later.
+        // Configura data mínima para hoje
         const dataSessaoInput = document.getElementById("data-sessao");
         dataSessaoInput.min = new Date().toISOString().split("T")[0];
 
@@ -268,7 +247,6 @@
           .getElementById("tipo-sessao-wrapper")
           ?.addEventListener("click", () => clearFieldError("tipo-sessao"));
 
-        // Submit the new session to the API after successful validation.
         form.addEventListener("submit", async (e) => {
           e.preventDefault();
 
@@ -327,7 +305,6 @@
           }
         });
 
-        // Confirm cancellation before leaving the page with unsaved changes.
         document.getElementById("cancel-btn").addEventListener("click", () => {
           if (confirm("Deseja cancelar? Os dados não salvos serão perdidos.")) {
             window.location.href = "/app/dashboard.html";

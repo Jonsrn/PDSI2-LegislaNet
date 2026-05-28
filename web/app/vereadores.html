@@ -1,10 +1,4 @@
 <!doctype html>
-<!--
-  File: vereadores.html
-  Purpose: Administrative management page for chamber users to list, create,
-  edit, activate, and deactivate council members, including modal workflows
-  for profile updates, party assignment, and leadership role transfers.
--->
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -323,25 +317,20 @@
   </head>
   <body>
     <div class="app-layout">
-      <!-- Sidebar injected by the shared layout system -->
       <div id="sidebar-placeholder"></div>
       <main class="main-content" id="mainContent">
-        <!-- Header injected by the shared layout system -->
         <div id="header-placeholder"></div>
         <div class="background-logo-container"></div>
 
         <div class="page-content-wrapper">
           <div class="content-area">
-            <!-- Main council member management area with list and creation action -->
             <section class="content-section fade-in">
-              <!-- Page header with shortcut to open the creation modal -->
               <div class="page-header">
                 <button id="add-vereador-btn" class="btn btn-primary">
                   <i class="fa-solid fa-plus" aria-hidden="true"></i>
                   <span class="btn-text">Novo Vereador</span>
                 </button>
               </div>
-              <!-- Dynamic grid populated with council member cards -->
               <div class="item-grid" id="vereadores-grid"></div>
             </section>
           </div>
@@ -349,7 +338,6 @@
       </main>
     </div>
 
-    <!-- Primary modal for creating and editing council member records -->
     <div class="modal-overlay" id="vereadorModal">
       <div class="modal-container">
         <div class="modal-header">
@@ -480,7 +468,7 @@
       </div>
     </div>
 
-    <!-- Confirmation modal for transferring exclusive leadership roles -->
+    <!-- Modal de confirmação de troca de cargo -->
     <div class="modal-overlay" id="cargoConfirmModal">
       <div class="modal-container">
         <div class="modal-header">
@@ -534,7 +522,6 @@
       </div>
     </div>
 
-    <script src="../js/mockMode.js?v=3"></script>
     <script src="../js/global.js"></script>
     <script src="../js/forms.js"></script>
     <script src="../js/modals.js"></script>
@@ -542,20 +529,7 @@
     <script src="../js/toast.js"></script>
     <script src="../js/carregamento.js"></script>
     <script>
-      // Initialize the protected council member management page when the DOM is ready.
       document.addEventListener("DOMContentLoaded", async () => {
-        // Enforce authentication and chamber-admin authorization before loading data.
-        try {
-          await protectPage({
-            allowedRoles: ["admin_camara"],
-            requireAuth: true,
-            autoRedirect: true,
-          });
-        } catch (error) {
-          console.error("[AUTH] Falha na autenticação:", error);
-          return;
-        }
-
         const authToken = localStorage.getItem("authToken");
         if (!authToken) {
           window.location.href = "/app/login.html";
@@ -593,11 +567,9 @@
         }
       });
 
-      // Track submit state and modal mode for validation behavior.
       let submitAttempted = false;
       let isEditingModal = false;
 
-      // Register live validation and file input feedback inside the council member form.
       function setupVereadorFormUX() {
         const form = document.getElementById("vereadorForm");
         if (!form) return;
@@ -631,7 +603,6 @@
         });
       }
 
-      // Update the file input label with the currently selected image name.
       function updateFotoFileName() {
         const fotoInput = document.getElementById("foto_url_vereador");
         const nameEl = document.getElementById("foto_url_vereador_name");
@@ -641,7 +612,6 @@
           : "Nenhum arquivo selecionado.";
       }
 
-      // Display a validation message and visual error state for a form field.
       function setFieldError(fieldId, message) {
         const errorEl = document.getElementById(`${fieldId}-error`);
         if (errorEl) {
@@ -667,7 +637,6 @@
         document.getElementById(fieldId)?.classList.add("form-input-error");
       }
 
-      // Clear the validation state associated with a form field.
       function clearFieldError(fieldId) {
         const errorEl = document.getElementById(`${fieldId}-error`);
         if (errorEl) {
@@ -693,7 +662,6 @@
         document.getElementById(fieldId)?.classList.remove("form-input-error");
       }
 
-      // Clear all validation messages for the council member form.
       function clearAllVereadorErrors() {
         [
           "nome_parlamentar",
@@ -704,12 +672,10 @@
         ].forEach(clearFieldError);
       }
 
-      // Validate email format for council member access credentials.
       function validateEmail(email) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
       }
 
-      // Validate password strength according to the page requirements.
       function validatePassword(password) {
         const value = String(password || "");
         if (value.length < 8) return false;
@@ -717,7 +683,7 @@
         return /[A-Za-z]/.test(value) && /\d/.test(value);
       }
 
-      // Perform live format-only validation without enforcing required fields.
+      // Validação "live" apenas de formato (sem required), e limpa ao ficar vazio.
       function validateVereadorFieldLive(fieldId) {
         if (fieldId === "nome_parlamentar") {
           const value = document.getElementById(fieldId)?.value || "";
@@ -789,7 +755,6 @@
         return true;
       }
 
-      // Validate all required council member fields before form submission.
       function validateVereadorForm() {
         let isValid = true;
 
@@ -887,7 +852,6 @@
         return isValid;
       }
 
-      // Wire close and cancel actions for the primary council member modal.
       function setupModalEvents() {
         const closeBtn = document.getElementById("modal-close-btn");
         const cancelBtn = document.getElementById("modal-cancel-btn");
@@ -907,10 +871,10 @@
         });
       }
 
-      // Store the currently loaded council member list for role-conflict checks.
+      // Variável global para armazenar os vereadores
       let currentVereadores = [];
 
-      // Enforce mutual exclusivity between president and vice-president selections.
+      // Função para configurar lógica de cargos mutuamente exclusivos
       function setupCargoToggleLogic() {
         const presidenteCheckbox = document.getElementById("is_presidente");
         const viceCheckbox = document.getElementById("is_vice_presidente");
@@ -942,7 +906,6 @@
         }
       }
 
-      // Validate whether the selected leadership role is already assigned to another council member.
       async function validateCargoUnico() {
         console.log("🔍 validateCargoUnico() chamada");
         const presidenteCheckbox = document.getElementById("is_presidente");
@@ -1029,7 +992,6 @@
         }
       }
 
-      // Display the confirmation modal required to transfer an exclusive role.
       function showCargoConfirmModal(
         message,
         cargoSelecionado,
@@ -1110,7 +1072,6 @@
         closeBtn.addEventListener("click", cancelHandler);
       }
 
-      // Provide fallback global closeModal behavior when not supplied elsewhere.
       if (typeof closeModal === "undefined") {
         window.closeModal = function (modalId) {
           const modal = document.getElementById(modalId);
@@ -1121,7 +1082,6 @@
         };
       }
 
-      // Provide fallback global openModal behavior when not supplied elsewhere.
       if (typeof openModal === "undefined") {
         window.openModal = function (modalId) {
           const modal = document.getElementById(modalId);
@@ -1132,7 +1092,6 @@
         };
       }
 
-      // Load council members from the API and render them as management cards.
       async function loadVereadores(token) {
         const grid = document.getElementById("vereadores-grid");
         if (!grid) {
@@ -1261,10 +1220,9 @@
         }
       }
 
-      // Hold the shared party selector instance used inside the modal form.
+      // Variável global para o custom select de partidos
       let partidoCustomSelect;
 
-      // Initialize and populate the custom party selector from the API.
       async function initPartidoCustomSelect(token) {
         try {
           // Verificar se o elemento existe
@@ -1315,7 +1273,6 @@
         }
       }
 
-      // Reset and open the modal in creation mode for a new council member.
       function openAddVereadorModal() {
         document.getElementById("vereadorForm").reset();
         document.getElementById("vereadorId").value = "";
@@ -1354,7 +1311,6 @@
         setupCargoToggleLogic();
       }
 
-      // Populate and open the modal in edit mode for an existing council member.
       function openEditVereadorModal(vereador) {
         document.getElementById("vereadorForm").reset();
         document.getElementById("vereadorId").value = vereador.id;
@@ -1401,7 +1357,7 @@
         setupCargoToggleLogic();
       }
 
-      // Submit council member data, including optional role transfer and photo upload.
+      // FUNÇÃO 'handleVereadorFormSubmit' ATUALIZADA COM AS VALIDAÇÕES
       async function handleVereadorFormSubmit(e, token) {
         e.preventDefault();
 
@@ -1504,7 +1460,6 @@
         }
       }
 
-      // Toggle the active status of a council member after confirmation.
       async function handleToggleActivation(event, token) {
         const button = event.currentTarget;
         const vereadorId = button.dataset.vereadorId;
@@ -1539,4 +1494,3 @@
     </script>
   </body>
 </html>
-

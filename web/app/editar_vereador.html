@@ -1,9 +1,4 @@
 <!DOCTYPE html>
-<!--
-  Edit Councilor Page
-  Provides the chamber administration workflow for updating a councilor profile,
-  including role status, party affiliation, and profile photo replacement.
--->
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -20,7 +15,6 @@
 
 </head>
 <body>
-    <!-- Application shell with shared sidebar and header placeholders. -->
     <div class="app-layout">
         <div id="sidebar-placeholder"></div>
 
@@ -28,13 +22,10 @@
         <main class="main-content" id="mainContent">
             <div id="header-placeholder"></div>
 
-            <!-- Councilor edit workspace with profile fields and photo controls. -->
             <section class="form-section fade-in">
-                <!-- Main edit form for councilor profile data. -->
                 <form onsubmit="return false;">
                     <h2>Editar vereador</h2>
                     
-                    <!-- Councilor role flag used to mark the chamber president. -->
                     <div class="form-group toggle-group">
                         <label class="toggle-switch">
                             <input type="checkbox">
@@ -43,13 +34,11 @@
                         <span>Presidente</span>
                     </div>
 
-                    <!-- Councilor identity field. -->
                     <div class="form-group">
                         <label for="nome">Nome</label>
                         <input type="text" id="nome" class="form-input" value="MARCILENE BARROS">
                     </div>
 
-                    <!-- Councilor party affiliation field. -->
                     <div class="form-group">
                         <label for="partido">Partido</label>
                         <select id="partido" class="form-select">
@@ -60,7 +49,6 @@
                         </select>
                     </div>
 
-                    <!-- Current profile photo preview and replacement upload. -->
                     <div class="form-group">
                         <label for="file-input">Foto</label>
                         <img src="https://i.imgur.com/AsaIqWc.jpeg" alt="Foto atual de Marcilene Barros" class="current-photo">
@@ -71,7 +59,6 @@
                         </div>
                     </div>
 
-                    <!-- Form action for submitting the councilor update. -->
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Atualizar vereador</button>
                     </div>
@@ -80,11 +67,9 @@
         </main>
     </div>
 
-    <script src="../js/mockMode.js?v=4"></script>
     <script src="../js/global.js"></script>
     <script src="../js/forms.js"></script>
     <script>
-        // Initialize shared layout elements for the councilor edit page.
         document.addEventListener('DOMContentLoaded', () => {
         initLayout({
             title: 'Editar Vereador',
