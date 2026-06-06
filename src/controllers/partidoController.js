@@ -3,16 +3,14 @@ const createLogger = require('../utils/logger');
 const logger = createLogger('PARTIDO_CONTROLLER');
 
 /**
- * Controller actions for partido lookup routes.
+ * Lists parties using the caller's Supabase session.
  *
- * @module controllers/partidoController
- */
-
-/**
- * Lists partidos visible to the authenticated user with optional search and pagination.
+ * Supports pagination and optional case-insensitive search by party name or
+ * acronym. The default limit is intentionally high so selector-style clients can
+ * load the full list without extra requests.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * @param {import("express").Request} req - Express request with Bearer token and optional `page`, `limit`, and `search` query parameters.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const getAllPartidos = async (req, res) => {

@@ -1,20 +1,20 @@
 const { createClient } = require("@supabase/supabase-js");
 const createLogger = require("../utils/logger");
-const upsertAndEmitVotacaoAoVivo = () => { logger.log("Mock de upsertAndEmitVotacaoAoVivo para Sprint 12"); };
+const { upsertAndEmitVotacaoAoVivo } = require("./votacaoAoVivoController");
 
 const logger = createLogger("PAUTA_CONTROLLER");
 
 /**
- * Controller actions for agenda items, voting status, and public/tablet
- * notifications.
+ * Agenda item controller.
  *
- * @module controllers/pautaController
+ * Handles authenticated agenda item listing, creation, updates, status changes,
+ * deletion safeguards, voting result calculation, and real-time notifications.
  */
 
 /**
- * Logs warnings through the configured logger when available.
+ * Logs warnings without assuming the logger implementation exposes `warn`.
  *
- * @param {...*} args - Warning values to log.
+ * @param {...any} args - Warning values to log.
  * @returns {void}
  */
 const warnSeguro = (...args) => {
@@ -30,12 +30,13 @@ const warnSeguro = (...args) => {
 };
 
 /**
- * Authenticates a request using its Supabase bearer token and returns the
- * associated profile data.
+ * Authenticates a request with a Supabase Bearer token and loads its profile.
  *
- * @param {object} req - Express request object.
- * @returns {Promise<object>} Authenticated user and profile metadata.
- * @throws {Error} When the token is missing, invalid, or the profile cannot be found.
+ * Uses a user-scoped Supabase client to validate the token and the service role
+ * client to load profile data without RLS restrictions.
+ *
+ * @param {import("express").Request} req - Express request with Authorization header.
+ * @returns {Promise<{id: string, email: string, role: string, camara_id: string|null, profile: object}>} Authenticated user context.
  */
 const authenticateToken = async (req) => {
   const authHeader = req.headers["authorization"];
@@ -92,11 +93,15 @@ const authenticateToken = async (req) => {
 };
 
 /**
- * Lists agenda items visible to the authenticated user with filtering,
- * pagination, and duplicate-check support.
+ * GET /api/pautas
+ * Lists agenda items visible to the authenticated user.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * Supports pagination, status/session/author/search filters, chamber scoping for
+ * chamber admins and councilors, duplicate checks by `nome` and `sessao_id`, and
+ * a schema fallback when `updated_at` is unavailable.
+ *
+ * @param {import("express").Request} req - Express request with query filters.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const getAllPautas = async (req, res) => {
@@ -156,7 +161,7 @@ const getAllPautas = async (req, res) => {
                     camara_id,
                     camaras (nome_camara)
                 )
-    `;
+            `;
 
     const applyFilters = (q) => {
       if (
@@ -175,6 +180,7 @@ const getAllPautas = async (req, res) => {
       }
 
       if (typeof autor === "string" && autor.trim()) {
+        // Match the typed author value case-insensitively without wildcard expansion.
         q = q.ilike("autor", autor.trim());
       }
 
@@ -193,8 +199,10 @@ const getAllPautas = async (req, res) => {
           .order("created_at", { ascending: false }),
       );
 
+    // Prefer `updated_at` when the deployed schema supports it.
     let query = buildBaseQuery(selectWithUpdatedAt);
 
+    // Duplicate checks use the same chamber/filter rules as normal listing.
     if (req.query.nome && req.query.sessao_id) {
       logger.log(
         `🔍 Verificando duplicidade: "${req.query.nome}" na sessão ${req.query.sessao_id}`,
@@ -212,7 +220,7 @@ const getAllPautas = async (req, res) => {
         duplicataError = error;
       }
 
-      // Fall back when the schema does not include updated_at.
+      // Retry without `updated_at` for older schemas.
       if (
         duplicataError &&
         /updated_at/i.test(duplicataError.message || duplicataError.details)
@@ -252,7 +260,7 @@ const getAllPautas = async (req, res) => {
       count = result.count;
     }
 
-    // Fall back when the schema does not include updated_at.
+    // Retry without `updated_at` for older schemas.
     if (
       pautasError &&
       /updated_at/i.test(pautasError.message || pautasError.details)
@@ -330,10 +338,14 @@ const getAllPautas = async (req, res) => {
 };
 
 /**
- * Lists distinct agenda authors visible to the authenticated user's camara scope.
+ * GET /api/pautas/autores
+ * Lists distinct agenda item authors visible to the authenticated user.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * Chamber admins and councilors are scoped to sessions from their own chamber.
+ * The query is paged defensively to avoid fetching too many rows at once.
+ *
+ * @param {import("express").Request} req - Express request with Authorization header.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const getAutoresPautas = async (req, res) => {
@@ -442,10 +454,13 @@ const getAutoresPautas = async (req, res) => {
 };
 
 /**
- * Retrieves a single agenda item by id within the authenticated user's scope.
+ * GET /api/pautas/:id
+ * Fetches a single agenda item with session and vote details.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * Chamber admins and councilors can only access agenda items from their chamber.
+ *
+ * @param {import("express").Request} req - Express request with agenda item ID.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const getPautaById = async (req, res) => {
@@ -517,11 +532,15 @@ const getPautaById = async (req, res) => {
 };
 
 /**
- * Creates one or more agenda items, including an optional symbolic voting item
- * and attached file metadata.
+ * POST /api/pautas
+ * Creates one or two agenda items for a session.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * When `votacao_simbolica` is true, a secondary symbolic-vote agenda item is
+ * created with the same attachment. The tablet backend is notified best-effort
+ * after successful creation.
+ *
+ * @param {import("express").Request} req - Express request with agenda item fields and optional attachment.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const createPauta = async (req, res) => {
@@ -704,6 +723,7 @@ const createPauta = async (req, res) => {
     });
     logger.log("🎉 === CADASTRO DE PAUTA(S) CONCLUÍDO COM SUCESSO ===");
 
+    // Notify the tablet backend without blocking the successful creation response.
     const http = require("http");
     pautas.forEach((pauta) => {
       const payload = JSON.stringify({
@@ -780,10 +800,14 @@ const createPauta = async (req, res) => {
 };
 
 /**
+ * PUT /api/pautas/:id/resultado
  * Updates the stored voting result for an agenda item.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * Validates the allowed result values and enforces chamber ownership for chamber
+ * admins and councilors.
+ *
+ * @param {import("express").Request} req - Express request with agenda item ID and `resultado_votacao`.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const updateResultadoVotacao = async (req, res) => {
@@ -938,11 +962,16 @@ const updateResultadoVotacao = async (req, res) => {
 };
 
 /**
- * Updates agenda status, recalculates voting results when finalized, and emits
- * tablet/public notification events.
+ * PUT /api/pautas/:id/status
+ * Updates agenda item status and emits related live voting notifications.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * Moving to `Em Votação` marks the item as live when the schema supports
+ * `ao_vivo`; moving away clears that flag. Finalizing an item calculates the
+ * voting result and sends best-effort updates to tablets, TVs, and the public
+ * portal.
+ *
+ * @param {import("express").Request} req - Express request with agenda item ID and `status`.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const updatePautaStatus = async (req, res) => {
@@ -1031,7 +1060,7 @@ const updatePautaStatus = async (req, res) => {
 
     logger.log("💾 Atualizando status no banco de dados...");
 
-    // Keep live-vote state aligned with the agenda status.
+    // Agenda items in voting are treated as live; all other statuses are not.
     const updatePayload = { status };
     if (status === "Em Votação") {
       updatePayload.ao_vivo = true;
@@ -1054,7 +1083,7 @@ const updatePautaStatus = async (req, res) => {
       )
       .single();
 
-    // Fall back when older schemas do not include the ao_vivo column.
+    // Compatibility fallback for databases that do not have `ao_vivo` yet.
     if (updateError) {
       const msg = (updateError?.message || "").toLowerCase();
       const missingAoVivoColumn =
@@ -1090,6 +1119,7 @@ const updatePautaStatus = async (req, res) => {
         .json({ error: "Erro ao atualizar status da pauta" });
     }
 
+    // Finalized agenda items calculate and persist their voting result.
     if (status === "Finalizada") {
       logger.log("🗳️ Pauta finalizada - iniciando contagem de votos...");
       await _calcularResultadoVotacao(supabase, id, logger);
@@ -1105,6 +1135,7 @@ const updatePautaStatus = async (req, res) => {
       }
     }
 
+    // Status-change notifications are best-effort and do not block the update.
     try {
       const appRef = req.app;
       const notificationPayload = {
@@ -1131,6 +1162,7 @@ const updatePautaStatus = async (req, res) => {
       };
 
       const req = http.request(options, (res) => {
+        // Drain response data so the HTTP socket can close cleanly.
         res.on("data", () => {});
         res.on("end", () => {});
 
@@ -1144,6 +1176,7 @@ const updatePautaStatus = async (req, res) => {
         }
       });
 
+      // Avoid holding the request if the tablet backend is offline.
       req.setTimeout(2500, () => {
         try {
           warnSeguro("⚠️ Timeout ao notificar tablet backend");
@@ -1162,7 +1195,7 @@ const updatePautaStatus = async (req, res) => {
       req.write(postData);
       req.end();
 
-      // Notify tablet clients to close any active voting screen after finalization.
+      // Finalization closes any open tablet voting screen.
       if (
         status === "Finalizada" &&
         pautaAtualizada?.sessoes?.camara_id &&
@@ -1216,7 +1249,7 @@ const updatePautaStatus = async (req, res) => {
           "📡 Emitindo notificação para portal público: pauta finalizada",
         );
 
-        // Prefer updated_at when the schema supports it.
+        // Prefer `updated_at` when available for public portal payloads.
         let pautaCompleta = null;
         try {
           const resp = await supabase
@@ -1308,6 +1341,7 @@ const updatePautaStatus = async (req, res) => {
               timestamp: new Date().toISOString(),
             });
 
+          // Emit the legacy event name for clients that still listen for it.
           global.io
             .to(`tv-camara-${pautaCompleta.sessoes.camara_id}`)
             .emit("votacao-finalizada", { pautaId: pautaCompleta.id });
@@ -1319,7 +1353,7 @@ const updatePautaStatus = async (req, res) => {
             `📺 Notificação de encerramento emitida para TVs da câmara ${pautaCompleta.sessoes.camara_id}`,
           );
 
-          // Clear live voting state so public clients do not remain marked as live.
+          // Clear live-voting state so the public portal does not remain live.
           try {
             upsertAndEmitVotacaoAoVivo(appRef, {
               camaraId: pautaCompleta.sessoes.camara_id,
@@ -1387,10 +1421,14 @@ const updatePautaStatus = async (req, res) => {
 };
 
 /**
- * Deletes an agenda item after permission checks and blocks deletion when votes exist.
+ * DELETE /api/pautas/:id
+ * Deletes an agenda item when it has no registered votes.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * Deletion is blocked for agenda items outside the user's chamber and for any
+ * item that already has votes.
+ *
+ * @param {import("express").Request} req - Express request with agenda item ID.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const deletePauta = async (req, res) => {
@@ -1531,10 +1569,15 @@ const deletePauta = async (req, res) => {
 };
 
 /**
- * Updates an agenda item while enforcing vote, session-date, and camara-scope rules.
+ * PUT /api/pautas/:id
+ * Updates an agenda item while preserving voting integrity rules.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * Editing is denied after the session date, except when moving an item to a new
+ * session and the item has no votes. Finalized items with votes cannot be
+ * edited, and session moves must stay within the user's chamber.
+ *
+ * @param {import("express").Request} req - Express request with agenda item ID, optional fields, and optional attachment.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const updatePauta = async (req, res) => {
@@ -1664,7 +1707,7 @@ const updatePauta = async (req, res) => {
     const agora = new Date();
     const dataSessao = new Date(pautaAtual.sessoes.data_sessao);
 
-    // Allow moving a past-session agenda item only when it has no votes.
+    // Moving to another session is allowed after the original date only without votes.
     const isRemanejamento = sessao_id && sessao_id !== pautaAtual.sessao_id;
     const temVotos = pautaAtual.votos && pautaAtual.votos.length > 0;
 
@@ -1712,6 +1755,7 @@ const updatePauta = async (req, res) => {
     }
     logger.log("✅ Validação de status/votos aprovada");
 
+    // Session moves must target a future session in the same chamber.
     if (sessao_id && sessao_id !== pautaAtual.sessao_id) {
       logger.log(
         `🔄 Validando mudança de sessão: ${pautaAtual.sessao_id} → ${sessao_id}`,
@@ -1754,6 +1798,7 @@ const updatePauta = async (req, res) => {
       logger.log(`✅ Nova sessão aprovada: "${novaSessao.nome}"`);
     }
 
+    // Only update fields explicitly provided by the client.
     const dadosParaAtualizar = {};
     if (nome !== undefined) dadosParaAtualizar.nome = nome.trim();
     if (descricao !== undefined)
@@ -1833,11 +1878,15 @@ const updatePauta = async (req, res) => {
 };
 
 /**
- * Calculates and stores the final voting result for an agenda item.
+ * Calculates and stores the voting result for an agenda item.
  *
- * @param {object} supabase - Supabase client used for vote and agenda updates.
- * @param {string} pautaId - Agenda item identifier.
- * @param {object} logger - Logger used for calculation diagnostics.
+ * The president vote is excluded from the initial simple-majority count and is
+ * used only as the tie-breaker. Ties without a decisive president vote are
+ * treated as rejected.
+ *
+ * @param {import("@supabase/supabase-js").SupabaseClient} supabase - Supabase client.
+ * @param {string} pautaId - Agenda item ID.
+ * @param {{log: Function, error: Function}} logger - Logger used for diagnostics.
  * @returns {Promise<void>}
  */
 const _calcularResultadoVotacao = async (supabase, pautaId, logger) => {
@@ -1868,7 +1917,7 @@ const _calcularResultadoVotacao = async (supabase, pautaId, logger) => {
 
     const votoPresidente = votos.find((v) => v.era_presidente_no_voto);
 
-    // Count regular votes separately because the president only breaks ties.
+    // Exclude the president from the initial count; abstentions do not affect majority.
     const votosNaoPresidentes = votos.filter((v) => !v.era_presidente_no_voto);
     const votosSim = votosNaoPresidentes.filter((v) => v.voto === "SIM").length;
     const votosNao = votosNaoPresidentes.filter((v) => v.voto === "NÃO").length;

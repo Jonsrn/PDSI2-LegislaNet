@@ -3,16 +3,20 @@ const createLogger = require("../utils/logger");
 const logger = createLogger("CAMARA_CONTROLLER");
 
 /**
- * Controller actions for camara profile retrieval and updates.
+ * Chamber controller.
  *
- * @module controllers/camaraController
+ * Fetches chamber details and updates chamber records, including related admin,
+ * TV, YouTube webhook, and livestream synchronization workflows.
  */
 
 /**
- * Retrieves a camara by id, including its administrator and optional TV account data.
+ * Fetches a chamber by ID with its administrator and optional TV credentials.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * The administrator profile is required to include admin auth data. TV data is
+ * best-effort and omitted when unavailable.
+ *
+ * @param {import("express").Request} req - Express request with chamber ID route parameter.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const getCamaraById = async (req, res) => {
@@ -87,11 +91,15 @@ const getCamaraById = async (req, res) => {
 };
 
 /**
- * Updates camara data, optional crest metadata, TV credentials, and YouTube
- * webhook subscriptions when livestream channel settings change.
+ * Updates a chamber and related operational integrations.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * Undefined fields are ignored so partial updates do not overwrite existing
+ * values. When the YouTube channel changes, webhook subscriptions are refreshed
+ * and livestream detection is forced once. Optional TV credential changes are
+ * processed best-effort and do not fail the chamber update.
+ *
+ * @param {import("express").Request} req - Express request with chamber ID, update body, and optional crest upload.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const updateCamara = async (req, res) => {
@@ -121,6 +129,7 @@ const updateCamara = async (req, res) => {
     });
   }
 
+  // Preserve existing database values by excluding undefined fields.
   const updateData = Object.entries({
     nome_camara,
     municipio,
@@ -148,7 +157,7 @@ const updateCamara = async (req, res) => {
       .json({ error: "Nenhum dado válido para atualização fornecido." });
   }
 
-  // Keep the previous YouTube channel id to update webhook subscriptions if needed.
+  // Store the previous channel ID so webhook subscriptions can be reconciled.
   let oldYoutubeChannelId = null;
   try {
     const { data: currentCamara } = await supabaseAdmin
@@ -211,7 +220,7 @@ const updateCamara = async (req, res) => {
             id,
           );
 
-          // Force an immediate livestream check after channel changes.
+          // Force an immediate check so an already-live channel updates the portal.
           await livestreamService.checkCamaraLivestreams(
             id,
             newYoutubeChannelId,
@@ -227,6 +236,7 @@ const updateCamara = async (req, res) => {
         logger.log("ℹ️ Canal do YouTube removido/vazio - sem nova subscrição.");
       }
     }
+    // TV credential updates are best-effort and should not block chamber edits.
     try {
       const tvEmail = req.body.tv_email;
       const tvSenha = req.body.tv_senha;
@@ -260,6 +270,7 @@ const updateCamara = async (req, res) => {
             logger.log("Credenciais da TV atualizadas com sucesso.");
           }
         } else {
+          // A new TV user requires an email; a password alone is ignored.
           if (!tvEmail) {
             logger.log(
               "Senha da TV informada, mas não existe TV e nenhum email foi fornecido; ignorando.",

@@ -3,16 +3,18 @@ const createLogger = require("../utils/logger");
 const logger = createLogger("VEREADOR_CONTROLLER");
 
 /**
- * Controller actions for vereador administration and camara-scoped vereador management.
+ * Councilor controller.
  *
- * @module controllers/vereadorController
+ * Manages councilor listing and lifecycle operations across Supabase Auth,
+ * profiles, and councilor records, including role conflict checks and mandate
+ * date transitions.
  */
 
 /**
- * Lists all vereadores for a specific camara.
+ * Lists all councilors for a specific chamber.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * @param {import("express").Request} req - Express request with `camaraId` route parameter.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const getVereadoresByCamara = async (req, res) => {
@@ -46,10 +48,14 @@ const getVereadoresByCamara = async (req, res) => {
 };
 
 /**
- * Creates a vereador auth user, profile, and vereador record.
+ * Creates a councilor auth user, profile, and councilor record.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * When president or vice-president roles are assigned, the chamber is checked to
+ * ensure only one active councilor holds each role. If a later insert fails, the
+ * created Auth user is removed to avoid orphaned credentials.
+ *
+ * @param {import("express").Request} req - Express request with `camaraId`, councilor fields, and optional photo upload.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const createVereador = async (req, res) => {
@@ -71,7 +77,6 @@ const createVereador = async (req, res) => {
   let createdAuthUserId = null;
 
   try {
-    // Validate role conflicts only for offices being assigned.
     const cargosParaValidar = [];
     if (is_presidente === true) cargosParaValidar.push("presidente");
     if (is_vice_presidente === true) cargosParaValidar.push("vice_presidente");
@@ -126,7 +131,6 @@ const createVereador = async (req, res) => {
         `ℹ️ NENHUM CARGO SENDO ATRIBUÍDO: Pulando validação de conflitos`,
       );
     }
-
     const { data: authData, error: authError } =
       await supabaseAdmin.auth.admin.createUser({
         email,
@@ -187,10 +191,14 @@ const createVereador = async (req, res) => {
 };
 
 /**
- * Updates vereador data, optional credentials, role flags, and matching profile name.
+ * Updates a councilor, their profile name, and optional Auth credentials.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * Role conflict checks run only when assigning president or vice-president.
+ * Active-status transitions update mandate dates: deactivation sets `data_saida`
+ * and reactivation starts a new mandate.
+ *
+ * @param {import("express").Request} req - Express request with councilor ID, updated fields, and optional photo upload.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const updateVereador = async (req, res) => {
@@ -260,7 +268,6 @@ const updateVereador = async (req, res) => {
       logger.log(`❌ Nenhuma credencial fornecida para atualizar`);
     }
 
-    // Validate role conflicts only for offices being assigned.
     const cargosParaValidar = [];
     if (is_presidente === true) cargosParaValidar.push("presidente");
     if (is_vice_presidente === true) cargosParaValidar.push("vice_presidente");
@@ -326,7 +333,6 @@ const updateVereador = async (req, res) => {
       );
     }
 
-    // Track mandate transitions when the active status changes.
     const { data: estadoAtual, error: estadoError } = await supabaseAdmin
       .from("vereadores")
       .select("is_active")
@@ -400,10 +406,13 @@ const updateVereador = async (req, res) => {
 };
 
 /**
- * Deletes a vereador by removing the auth user first, then profile and record.
+ * Deletes a councilor, prioritizing Auth removal before profile/record cleanup.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * Removing Auth first prevents orphaned login credentials if later database
+ * cleanup fails.
+ *
+ * @param {import("express").Request} req - Express request with councilor ID.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const deleteVereador = async (req, res) => {
@@ -467,10 +476,10 @@ const deleteVereador = async (req, res) => {
 };
 
 /**
- * Lists active vereadores for the authenticated user's camara.
+ * Lists active councilors from the authenticated user's chamber.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * @param {import("express").Request} req - Express request with authenticated profile.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const getVereadoresAtivos = async (req, res) => {
@@ -503,10 +512,10 @@ const getVereadoresAtivos = async (req, res) => {
 };
 
 /**
- * Lists all vereadores from the authenticated user's own camara.
+ * Lists all councilors from the authenticated user's own chamber.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * @param {import("express").Request} req - Express request with authenticated profile.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const getVereadoresDaPropriaCamara = async (req, res) => {
@@ -544,10 +553,13 @@ const getVereadoresDaPropriaCamara = async (req, res) => {
 };
 
 /**
- * Creates a vereador in the authenticated user's own camara.
+ * Creates a councilor in the authenticated user's own chamber.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * Creates Auth, profile, and councilor records, rolling back the Auth user if a
+ * later step fails.
+ *
+ * @param {import("express").Request} req - Express request with councilor fields and optional photo upload.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const createVereadorNaPropriaCamara = async (req, res) => {
@@ -641,10 +653,13 @@ const createVereadorNaPropriaCamara = async (req, res) => {
 };
 
 /**
- * Updates a vereador from the authenticated user's own camara.
+ * Updates a councilor from the authenticated user's own chamber.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * Enforces same-chamber ownership, optional Auth credential updates, role
+ * conflict checks, and mandate date transitions.
+ *
+ * @param {import("express").Request} req - Express request with councilor ID, update fields, and optional photo upload.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const updateVereadorDaPropriaCamara = async (req, res) => {
@@ -696,7 +711,6 @@ const updateVereadorDaPropriaCamara = async (req, res) => {
       }
     }
 
-    // Validate role conflicts only for offices being assigned.
     const cargosParaValidar = [];
     if (is_presidente === true) cargosParaValidar.push("presidente");
     if (is_vice_presidente === true) cargosParaValidar.push("vice_presidente");
@@ -764,7 +778,6 @@ const updateVereadorDaPropriaCamara = async (req, res) => {
       updateData.foto_url = foto_url;
     }
 
-    // Track mandate transitions when the active status changes.
     if (vereadorInfo && is_active !== undefined) {
       const estaDesativando =
         vereadorInfo.is_active === true && is_active === false;
@@ -820,10 +833,10 @@ const updateVereadorDaPropriaCamara = async (req, res) => {
 };
 
 /**
- * Removes a vereador from the authenticated user's own camara.
+ * Removes a councilor from the authenticated user's own chamber.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * @param {import("express").Request} req - Express request with councilor ID and authenticated profile.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const deleteVereadorDaPropriaCamara = async (req, res) => {

@@ -4,21 +4,14 @@ const auditLogger = require('../utils/auditLogger');
 const logger = createLogger('ADMIN_SERVICE');
 
 /**
- * Administrative service methods for partido and camara management.
- *
- * @module services/adminService
- */
-
-/**
- * Encapsulates administrative data operations and related audit logging.
+ * Service methods for administrative party and chamber management.
  */
 class AdminService {
     /**
-     * Checks whether a partido already exists by name or acronym.
-     *
-     * @param {string} nome - Partido name to check.
-     * @param {string} sigla - Partido acronym to check.
-     * @returns {Promise<object>} Existence flag and matching partido when found.
+     * Checks whether a party already exists by name or acronym.
+     * @param {string} nome - Party name to check.
+     * @param {string} sigla - Party acronym to check.
+     * @returns {Promise<{exists: boolean, existing: object|null}>} Match status and the first matching row.
      */
     async checkPartidoExists(nome, sigla) {
         try {
@@ -44,12 +37,13 @@ class AdminService {
     }
 
     /**
-     * Creates a partido after duplicate validation and optional logo upload.
+     * Creates a party, uploads an optional logo, and records an audit event.
      *
-     * @param {object} partidoData - Partido fields to create.
-     * @param {object} user - User performing the operation.
-     * @param {object|null} [logoFile=null] - Optional Multer logo file.
-     * @returns {Promise<object>} Created partido record.
+     * If the database insert fails after logo upload, the uploaded file is removed.
+     * @param {{nome: string, sigla: string}} partidoData - Party payload.
+     * @param {object} user - User performing the administrative action.
+     * @param {object|null} [logoFile=null] - Optional Multer file for the party logo.
+     * @returns {Promise<object>} Created party row.
      */
     async createPartido(partidoData, user, logoFile = null) {
         const { nome, sigla } = partidoData;
@@ -102,6 +96,7 @@ class AdminService {
             if (createError) {
                 logger.error('Error creating partido:', createError.message);
                 
+                // Remove the uploaded logo when the party insert fails.
                 if (logo_url) {
                     await supabaseAdmin.storage
                         .from('logos-partidos')
@@ -133,13 +128,12 @@ class AdminService {
     }
 
     /**
-     * Updates a partido and optionally replaces its logo.
-     *
-     * @param {string} partidoId - Partido identifier.
-     * @param {object} updateData - Partido fields to update.
-     * @param {object} user - User performing the operation.
-     * @param {object|null} [newLogoFile=null] - Optional replacement logo file.
-     * @returns {Promise<object>} Updated partido record.
+     * Updates an existing party, including optional logo replacement and audit logging.
+     * @param {string} partidoId - Party identifier.
+     * @param {{nome: string, sigla: string}} updateData - Updated party fields.
+     * @param {object} user - User performing the administrative action.
+     * @param {object|null} [newLogoFile=null] - Optional Multer file for the replacement logo.
+     * @returns {Promise<object>} Updated party row.
      */
     async updatePartido(partidoId, updateData, user, newLogoFile = null) {
         const { nome, sigla } = updateData;
@@ -197,6 +191,7 @@ class AdminService {
                     
                 logo_url = urlData.publicUrl;
 
+                // Best-effort cleanup for the previous logo.
                 if (currentPartido.logo_url) {
                     try {
                         const oldFileName = currentPartido.logo_url.split('/logos-partidos/').pop();
@@ -248,11 +243,10 @@ class AdminService {
     }
 
     /**
-     * Deletes a partido after verifying it exists and is not in use.
-     *
-     * @param {string} partidoId - Partido identifier.
-     * @param {object} user - User performing the operation.
-     * @returns {Promise<object>} Deletion result with the deleted partido.
+     * Deletes a party after confirming it is not assigned to any councilors.
+     * @param {string} partidoId - Party identifier.
+     * @param {object} user - User performing the administrative action.
+     * @returns {Promise<{success: boolean, deleted: object}>} Deleted party details.
      */
     async deletePartido(partidoId, user) {
         try {
@@ -323,14 +317,13 @@ class AdminService {
     }
 
     /**
-     * Lists camaras with pagination, search, and status filtering.
-     *
+     * Lists chambers with pagination plus optional search and active-status filters.
      * @param {object} [options={}] - Pagination and filter options.
      * @param {number} [options.page=1] - Page number.
      * @param {number} [options.limit=10] - Page size.
-     * @param {string} [options.search=''] - Search term.
-     * @param {string} [options.status='all'] - Status filter: active, inactive, or all.
-     * @returns {Promise<object>} Paginated camara data.
+     * @param {string} [options.search=''] - Search term matched against city, name, and state.
+     * @param {'active'|'inactive'|'all'} [options.status='all'] - Active-status filter.
+     * @returns {Promise<{data: object[], pagination: object}>} Paginated chamber data.
      */
     async getCamarasWithPagination(options = {}) {
         const {
@@ -396,10 +389,9 @@ class AdminService {
     }
 
     /**
-     * Checks whether an email already exists in Supabase Auth.
-     *
+     * Checks whether an email address already exists in Supabase Auth.
      * @param {string} email - Email address to check.
-     * @returns {Promise<object>} Existence flag.
+     * @returns {Promise<{exists: boolean}>} Email existence status.
      */
     async checkEmailExists(email) {
         try {
