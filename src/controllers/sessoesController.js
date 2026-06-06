@@ -4,16 +4,23 @@ const createLogger = require("../utils/logger");
 const logger = createLogger("SESSOES_CONTROLLER");
 
 /**
- * Controller actions for managing legislative sessions.
+ * Session controller.
  *
- * @module controllers/sessoesController
+ * Creates, lists, updates, deletes, and exposes selectable sessions for the
+ * authenticated user's chamber. Authentication and authorization are handled by
+ * route middleware.
  */
 
 /**
- * Creates a session with annual duplicate protection.
+ * POST /api/sessoes
+ * Creates a session with generated naming and annual duplicate protection.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * The backend builds the session name from `numero`, `tipo`, and the year of
+ * `data_sessao`. Timezone-less dates are interpreted as UTC-3 for compatibility
+ * with Brazil-local input.
+ *
+ * @param {import("express").Request} req - Express request with authenticated profile and session data.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const createSessao = async (req, res) => {
@@ -21,7 +28,7 @@ const createSessao = async (req, res) => {
   const { numero, tipo, data_sessao, status = "Agendada" } = req.body;
 
   try {
-    // Treat timezone-less datetime-local values as Brasília time.
+    // Assume UTC-3 when the client sends a local datetime without a timezone.
     let dataSessaoIso = data_sessao;
     if (
       data_sessao &&
@@ -48,7 +55,7 @@ const createSessao = async (req, res) => {
       process.env.SUPABASE_SERVICE_KEY,
     );
 
-    // Use the year range plus name prefix to support legacy names without "de ANO".
+    // The annual session number resets each year, so duplicates are checked per year.
     const inicioAno = new Date(ano, 0, 1, 0, 0, 0, 0);
     const inicioProximoAno = new Date(ano + 1, 0, 1, 0, 0, 0, 0);
 
@@ -116,10 +123,13 @@ const createSessao = async (req, res) => {
 };
 
 /**
- * Lists sessions for the authenticated user's camara with optional filters.
+ * GET /api/sessoes
+ * Lists sessions for the authenticated user's chamber.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * Supports pagination plus optional status, type, and name search filters.
+ *
+ * @param {import("express").Request} req - Express request with authenticated profile and optional filters.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const getAllSessoes = async (req, res) => {
@@ -170,10 +180,11 @@ const getAllSessoes = async (req, res) => {
 };
 
 /**
- * Retrieves a session by id within the authenticated user's camara.
+ * GET /api/sessoes/:id
+ * Fetches one session from the authenticated user's chamber.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * @param {import("express").Request} req - Express request with session ID and authenticated profile.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const getSessaoById = async (req, res) => {
@@ -214,10 +225,14 @@ const getSessaoById = async (req, res) => {
 };
 
 /**
- * Updates a scheduled future session and prevents annual duplicates.
+ * PUT /api/sessoes/:id
+ * Updates a future scheduled session.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * Updates are allowed only while the session is still `Agendada` and scheduled
+ * in the future. Duplicate protection uses the generated session name and year.
+ *
+ * @param {import("express").Request} req - Express request with session ID and update fields.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const updateSessao = async (req, res) => {
@@ -248,7 +263,6 @@ const updateSessao = async (req, res) => {
       return res.status(500).json({ error: "Erro ao verificar a sessão." });
     }
 
-    // Only scheduled future sessions can be edited.
     const agora = new Date();
     const dataSessaoAtual = new Date(sessaoExistente.data_sessao);
 
@@ -275,7 +289,7 @@ const updateSessao = async (req, res) => {
       });
     }
 
-    // Treat timezone-less datetime-local values as Brasília time.
+    // Assume UTC-3 when the client sends a local datetime without a timezone.
     let dataSessaoIso = data_sessao;
     if (
       data_sessao &&
@@ -359,10 +373,14 @@ const updateSessao = async (req, res) => {
 };
 
 /**
- * Deletes a scheduled future session and its linked agenda items.
+ * DELETE /api/sessoes/:id
+ * Deletes a future scheduled session and its linked agenda items.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * Deletion is allowed only for sessions that are still `Agendada` and have not
+ * reached their scheduled start time.
+ *
+ * @param {import("express").Request} req - Express request with session ID and authenticated profile.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const deleteSessao = async (req, res) => {
@@ -392,7 +410,6 @@ const deleteSessao = async (req, res) => {
       return res.status(500).json({ error: "Erro ao verificar a sessão." });
     }
 
-    // Only scheduled future sessions can be deleted.
     const agora = new Date();
     const dataSessao = new Date(sessaoExistente.data_sessao);
 
@@ -417,6 +434,7 @@ const deleteSessao = async (req, res) => {
       });
     }
 
+    // Manually cascade linked agenda items before deleting the session.
     const { error: deletePautasError } = await supabaseAdmin
       .from("pautas")
       .delete()
@@ -449,10 +467,11 @@ const deleteSessao = async (req, res) => {
 };
 
 /**
+ * GET /api/sessoes/opcoes
  * Lists sessions for select inputs and filters.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * @param {import("express").Request} req - Express request with authenticated profile.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const getSessoesOpcoes = async (req, res) => {
@@ -483,11 +502,14 @@ const getSessoesOpcoes = async (req, res) => {
 };
 
 /**
- * Lists available scheduled sessions, including a short grace period for
- * recently started sessions.
+ * GET /api/sessoes/disponiveis
+ * Lists scheduled sessions available for agenda item creation.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * The cutoff includes a four-hour grace period for sessions that started late or
+ * were recently delayed, while still requiring status `Agendada`.
+ *
+ * @param {import("express").Request} req - Express request with authenticated user/profile.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const getSessoesDisponiveis = async (req, res) => {
