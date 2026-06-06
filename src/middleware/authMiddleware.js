@@ -5,17 +5,10 @@ const authCache = require("../utils/authCache");
 const logger = createLogger("AUTH_MIDDLEWARE");
 
 /**
- * Middleware utilities for authenticating Supabase users and enforcing
- * role-based route permissions.
+ * Decodes a JWT payload without validating the signature.
  *
- * @module middleware/authMiddleware
- */
-
-/**
- * Decodes the payload section of a JWT without verifying its signature.
- *
- * @param {string} token - JWT access token.
- * @returns {object|null} Decoded payload, or null when the token cannot be parsed.
+ * @param {string} token - JWT string.
+ * @returns {object|null} Decoded payload, or null when parsing fails.
  */
 const decodeJwtPayload = (token) => {
   try {
@@ -29,11 +22,15 @@ const decodeJwtPayload = (token) => {
 };
 
 /**
- * Creates an Express middleware that authenticates the bearer token and checks
- * whether the user's profile role is allowed to access the route.
+ * Creates Express middleware that validates authentication and required roles.
  *
- * @param {Array<string>} allowedRoles - Roles permitted to access the route.
- * @returns {Function} Express middleware that attaches `user` and `profile` to the request.
+ * The middleware rejects blacklisted tokens, uses an auth cache when available,
+ * validates Supabase user/profile data on cache misses, enforces the
+ * `min_token_iat` single-session rule, and injects `req.user` and `req.profile`
+ * for downstream handlers.
+ *
+ * @param {string[]} allowedRoles - Roles allowed to access the route.
+ * @returns {import("express").RequestHandler} Permission middleware.
  */
 const hasPermission = (allowedRoles) => {
   return async (req, res, next) => {
@@ -51,14 +48,13 @@ const hasPermission = (allowedRoles) => {
 
     const token = authHeader.split(" ")[1];
 
-    // Avoid exposing token details outside development logs.
+    // Avoid exposing token contents outside development logs.
     if (process.env.NODE_ENV === "development") {
       logger.log(`Token extraído: Bearer ${token.substring(0, 10)}...`);
     } else {
       logger.log("Token extraído: Bearer ****...");
     }
 
-    // Reject tokens invalidated during logout or session replacement.
     if (tokenManager.isBlacklisted(token)) {
       logger.error(
         `FALHA: Tentativa de uso de token na blacklist (deslogado).`,
@@ -66,7 +62,6 @@ const hasPermission = (allowedRoles) => {
       return res.status(401).json({ error: "Token inválido ou expirado." });
     }
 
-    // Reuse validated authentication data when available.
     const cachedAuth = authCache.get(token);
     if (cachedAuth) {
       const { user, profile } = cachedAuth;
@@ -133,7 +128,6 @@ const hasPermission = (allowedRoles) => {
         `-> SUCESSO no Passo 2: Perfil encontrado. Role: '${profile.role}'. IAT Mínimo: ${profile.min_token_iat}`,
       );
 
-      // Enforce single-session invalidation based on the profile's minimum token issue time.
       const tokenPayload = decodeJwtPayload(token);
       const iatDoToken = tokenPayload ? tokenPayload.iat : null;
       const iatMinimoDoPerfil = profile.min_token_iat;
@@ -144,6 +138,7 @@ const hasPermission = (allowedRoles) => {
         logger.warn(
           `FALHA: Token antigo detectado (sessão invalidada por novo login). IAT do token: ${tokenPayload?.iat}, IAT mínimo exigido: ${profile.min_token_iat}`,
         );
+        // Blacklist stale tokens so they cannot be reused after a newer login.
         tokenManager.blacklistToken(token);
         return res
           .status(401)
