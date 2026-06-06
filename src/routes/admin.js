@@ -17,11 +17,15 @@ const { uploadImage, uploadMultiple } = require('../middleware/imageUploadMiddle
 const multer = require('multer');
 
 /**
- * Super-admin routes for camara, partido, and vereador administration.
+ * Super-admin routes for chamber, party, email, and councilor administration.
  *
- * @module routes/admin
+ * All routes use admin rate limiting, request sanitization, super-admin
+ * authorization, and audit logging before route-specific validation.
  */
 
+/**
+ * In-memory Multer configuration for bounded multipart uploads.
+ */
 const storage = multer.memoryStorage();
 const upload = multer({ 
     storage: storage,
@@ -36,7 +40,6 @@ router.use(sanitizeRequest);
 router.use(isSuperAdmin);
 router.use(adminAuditLog);
 
-// Camara routes.
 router.get('/camaras', 
     paginationValidation,
     handleValidationErrors,
@@ -56,7 +59,6 @@ router.post('/camaras',
     adminController.createCamaraCompleta
 );
 
-// Partido routes.
 router.get('/partidos/check', adminController.checkPartidoExists);
 
 router.post('/partidos',
