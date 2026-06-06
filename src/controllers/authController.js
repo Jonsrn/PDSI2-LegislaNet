@@ -4,6 +4,13 @@ const tokenManager = require("../utils/tokenManager");
 const createLogger = require("../utils/logger");
 const logger = createLogger("AUTH_CONTROLLER");
 
+/**
+ * Authentication controller for web users.
+ *
+ * Handles Supabase login/logout, token refresh, session invalidation through
+ * `min_token_iat`, authenticated profile lookup, and councilor profile access.
+ */
+
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
@@ -14,17 +21,10 @@ const supabase = createClient(
 );
 
 /**
- * Authentication controller actions for login, logout, token refresh, and
- * authenticated profile lookups.
+ * Decodes a JWT payload without validating the signature.
  *
- * @module controllers/authController
- */
-
-/**
- * Decodes the payload section of a JWT without verifying its signature.
- *
- * @param {string} token - JWT access token.
- * @returns {object|null} Decoded payload, or null when the token cannot be parsed.
+ * @param {string} token - JWT string.
+ * @returns {object|null} Decoded payload, or null when parsing fails.
  */
 const decodeJwtPayload = (token) => {
   try {
@@ -38,11 +38,14 @@ const decodeJwtPayload = (token) => {
 };
 
 /**
- * Authenticates a user with Supabase, updates the minimum token issue time,
- * and returns session/profile data.
+ * Authenticates a web user with Supabase and starts a single active session.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * After login, the access token `iat` is stored in the profile as
+ * `min_token_iat` so older sessions can be rejected by authentication
+ * middleware.
+ *
+ * @param {import("express").Request} req - Express request with `email` and `password`.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const handleLogin = async (req, res) => {
@@ -82,6 +85,7 @@ const handleLogin = async (req, res) => {
     const accessToken = session.access_token;
     const refreshToken = session.refresh_token;
 
+    // Use the token issue time as the minimum valid session timestamp.
     const payload = decodeJwtPayload(accessToken);
     if (!payload || !payload.iat) {
       logger.error(
@@ -103,7 +107,6 @@ const handleLogin = async (req, res) => {
       `Atualizando min_token_iat para o usuário ${user.id} com o novo timestamp: ${newIat}`
     );
 
-    // Store the minimum accepted JWT issue time to invalidate older sessions.
     const { error: updateError } = await supabaseAdmin
       .from("profiles")
       .update({ min_token_iat: newIat })
@@ -156,10 +159,10 @@ const handleLogin = async (req, res) => {
 };
 
 /**
- * Logs out the current user by blacklisting the provided bearer token.
+ * Logs out a user by blacklisting the provided access token locally.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * @param {import("express").Request} req - Express request with optional Bearer token.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const handleLogout = async (req, res) => {
@@ -183,10 +186,10 @@ const handleLogout = async (req, res) => {
 };
 
 /**
- * Returns the authenticated vereador profile with camara and partido details.
+ * Returns the authenticated councilor profile with chamber and party details.
  *
- * @param {object} req - Express request object populated by authentication middleware.
- * @param {object} res - Express response object.
+ * @param {import("express").Request} req - Authenticated request populated with `user`.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const getVereadorProfile = async (req, res) => {
@@ -248,10 +251,14 @@ const getVereadorProfile = async (req, res) => {
 };
 
 /**
- * Returns the authenticated user's basic account, profile, and camara data.
+ * GET /api/me
+ * Returns the authenticated user's Supabase identity, application profile, and
+ * chamber summary when the profile is tied to a chamber.
  *
- * @param {object} req - Express request object with an Authorization bearer token.
- * @param {object} res - Express response object.
+ * Expects an `Authorization: Bearer <token>` header.
+ *
+ * @param {import("express").Request} req - Express request with Bearer token.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const getMe = async (req, res) => {
@@ -263,6 +270,7 @@ const getMe = async (req, res) => {
 
     const token = authHeader.split(" ")[1];
 
+    // Validate the token with a Supabase client scoped to the user token.
     const supabaseUser = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_ANON_KEY,
@@ -312,11 +320,15 @@ const getMe = async (req, res) => {
 };
 
 /**
- * Refreshes a Supabase session when a refresh token is provided, or validates
- * the current access token for legacy clients.
+ * Refreshes a web session or validates the current access token for compatibility.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * When `refreshToken` is provided, Supabase performs a real session refresh and
+ * the resulting access token is checked against the user's `min_token_iat`.
+ * Without a refresh token, the endpoint preserves legacy behavior by validating
+ * the current access token and returning its remaining lifetime.
+ *
+ * @param {import("express").Request} req - Express request with optional `refreshToken` body and optional Bearer token.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const handleRefreshToken = async (req, res) => {
@@ -325,6 +337,7 @@ const handleRefreshToken = async (req, res) => {
   try {
     const providedRefreshToken = req.body?.refreshToken;
 
+    // A provided refresh token allows renewal even when the access token expired.
     if (providedRefreshToken) {
       const supabaseTmp = createClient(
         process.env.SUPABASE_URL,
@@ -368,12 +381,13 @@ const handleRefreshToken = async (req, res) => {
         return res.status(404).json({ error: "Perfil de usuário não encontrado." });
       }
 
+      // Restrict refreshes to roles expected on the web backend.
       const allowedRoles = ["super_admin", "admin_camara", "tv"];
       if (!allowedRoles.includes(profileData.role)) {
         return res.status(403).json({ error: "Acesso negado" });
       }
 
-      // Preserve single-session enforcement based on the minimum accepted token iat.
+      // Preserve the single-session rule based on the minimum accepted `iat`.
       if (
         !tokenPayload ||
         typeof tokenPayload.iat !== "number" ||
@@ -402,7 +416,7 @@ const handleRefreshToken = async (req, res) => {
       });
     }
 
-    // Legacy fallback: validate the current access token without refreshing it.
+    // Compatibility fallback: validate the current access token without renewal.
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       logger.error("❌ Token de autorização ausente ou mal formatado");
