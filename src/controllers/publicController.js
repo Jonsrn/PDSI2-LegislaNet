@@ -3,17 +3,20 @@ const createLogger = require("../utils/logger");
 const logger = createLogger("PUBLIC_CONTROLLER");
 
 /**
- * Public controller actions for camara discovery, public agenda data, voting
- * results, and vereador statistics.
+ * Public controller for chamber, councilor, session, agenda item, and voting data.
  *
- * @module controllers/publicController
+ * All endpoints expose only active/public chamber data and shape responses for
+ * the public portal.
  */
 
 /**
- * Lists active camaras for public selection with search and pagination.
+ * Lists active chambers for public selection.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * Supports pagination and search by chamber name or municipality. Count fields
+ * are loaded best-effort per chamber and fall back to zero on count failures.
+ *
+ * @param {import("express").Request} req - Express request with optional `page`, `limit`, and `search` query parameters.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const getCamarasPublicas = async (req, res) => {
@@ -131,10 +134,13 @@ const getCamarasPublicas = async (req, res) => {
 };
 
 /**
- * Retrieves public information and basic statistics for an active camara.
+ * Returns public profile information and summary statistics for one chamber.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * Only active chambers are returned. Recent agenda item count is best-effort and
+ * scoped to items created in the last 30 days with voting/finalized statuses.
+ *
+ * @param {import("express").Request} req - Express request with chamber ID.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const getCamaraPublicInfo = async (req, res) => {
@@ -222,10 +228,10 @@ const getCamaraPublicInfo = async (req, res) => {
 };
 
 /**
- * Lists upcoming scheduled sessions for an active camara.
+ * Lists the next scheduled sessions for an active chamber.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * @param {import("express").Request} req - Express request with chamber ID.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const getSessoesFuturas = async (req, res) => {
@@ -287,11 +293,11 @@ const getSessoesFuturas = async (req, res) => {
 };
 
 /**
- * Calculates how many finalized agenda items a vereador has voted on.
+ * Counts finalized agenda items voted by a councilor in a chamber.
  *
- * @param {string} vereadorId - Vereador identifier.
- * @param {string} camaraId - Camara identifier.
- * @returns {Promise<number>} Total finalized agenda votes for the vereador.
+ * @param {string} vereadorId - Councilor ID.
+ * @param {string} camaraId - Chamber ID.
+ * @returns {Promise<number>} Total finalized agenda items with a councilor vote.
  */
 const calcularVotacoes = async (vereadorId, camaraId) => {
   try {
@@ -361,14 +367,14 @@ const calcularVotacoes = async (vereadorId, camaraId) => {
 };
 
 /**
- * Calculates attendance statistics for a vereador.
+ * Calculates attendance for a councilor.
  *
- * A vereador is considered present in a past session when they voted on at
+ * A councilor is considered present in a past session when they voted in at
  * least one finalized agenda item from that session.
  *
- * @param {string} vereadorId - Vereador identifier.
- * @param {string} camaraId - Camara identifier.
- * @returns {Promise<object>} Attendance totals and percentage.
+ * @param {string} vereadorId - Councilor ID.
+ * @param {string} camaraId - Chamber ID.
+ * @returns {Promise<{sessoes_presentes: number, total_sessoes: number, percentual: number}>} Attendance summary.
  */
 const calcularPresenca = async (vereadorId, camaraId) => {
   try {
@@ -494,13 +500,13 @@ const calcularPresenca = async (vereadorId, camaraId) => {
 };
 
 /**
- * Calculates vereador statistics using the fastest available data source.
+ * Loads councilor statistics with the fastest available source.
  *
- * Tries the materialized view first, then the RPC function, then the fallback
- * query implementation.
+ * Attempts the materialized view first, then an RPC function, then a direct
+ * fallback query that always works but is slower.
  *
- * @param {string} camaraId - Camara identifier.
- * @returns {Promise<object>} Map of vereador id to statistics.
+ * @param {string} camaraId - Chamber ID.
+ * @returns {Promise<object>} Statistics keyed by councilor ID.
  */
 const calcularEstatisticasOtimizadas = async (camaraId) => {
   try {
@@ -567,13 +573,13 @@ const calcularEstatisticasOtimizadas = async (camaraId) => {
 };
 
 /**
- * Calculates vereador statistics directly through Supabase queries.
+ * Calculates councilor statistics with direct Supabase queries.
  *
- * Sessions are filtered by each vereador's mandate period and only sessions
- * with finalized agenda items that received votes are counted.
+ * This fallback filters attendance by each councilor mandate period and counts
+ * only past sessions that have finalized agenda items with votes.
  *
- * @param {string} camaraId - Camara identifier.
- * @returns {Promise<object>} Map of vereador id to statistics.
+ * @param {string} camaraId - Chamber ID.
+ * @returns {Promise<object>} Statistics keyed by councilor ID.
  */
 const calcularEstatisticasAlternativa = async (camaraId) => {
   try {
@@ -669,6 +675,7 @@ const calcularEstatisticasAlternativa = async (camaraId) => {
       }
     });
 
+    // Count only sessions with at least one finalized agenda item that has votes.
     const { data: sessoesComVotos } = await supabaseAdmin
       .from("sessoes")
       .select(
@@ -747,10 +754,10 @@ const calcularEstatisticasAlternativa = async (camaraId) => {
 };
 
 /**
- * Lists active vereadores for a camara with party data and calculated statistics.
+ * Lists active councilors for an active chamber with party and statistics data.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * @param {import("express").Request} req - Express request with chamber ID.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const getVereadores = async (req, res) => {
@@ -848,10 +855,13 @@ const getVereadores = async (req, res) => {
 };
 
 /**
- * Lists the latest finalized votes for an active camara.
+ * Returns the latest finalized public votes for an active chamber.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * Prefers `updated_at` ordering and falls back to `created_at` for older
+ * schemas.
+ *
+ * @param {import("express").Request} req - Express request with chamber ID.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const getVotacoesRecentes = async (req, res) => {
@@ -874,7 +884,6 @@ const getVotacoesRecentes = async (req, res) => {
       });
     }
 
-    // Prefer updated_at when the schema supports it.
     let pautas = null;
     try {
       const resp = await supabaseAdmin
@@ -985,10 +994,10 @@ const getVotacoesRecentes = async (req, res) => {
 };
 
 /**
- * Retrieves public information for a specific agenda item.
+ * Returns public details for one agenda item from an active chamber.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * @param {import("express").Request} req - Express request with agenda item ID.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const getPautaPublica = async (req, res) => {
@@ -1046,10 +1055,10 @@ const getPautaPublica = async (req, res) => {
 };
 
 /**
- * Lists public votes for an agenda item with vote totals.
+ * Returns public votes and aggregate vote counts for one agenda item.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * @param {import("express").Request} req - Express request with agenda item ID.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const getVotosPublicos = async (req, res) => {
@@ -1153,10 +1162,12 @@ const getVotosPublicos = async (req, res) => {
 };
 
 /**
- * Lists public agenda items for an active camara with pagination.
+ * Lists public agenda items for an active chamber with pagination.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
+ * Finalized agenda items are enriched with vote totals when available.
+ *
+ * @param {import("express").Request} req - Express request with chamber ID and optional pagination query.
+ * @param {import("express").Response} res - Express response.
  * @returns {Promise<void>}
  */
 const getAllPautasPublicas = async (req, res) => {

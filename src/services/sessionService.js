@@ -5,31 +5,23 @@ import logger from "../utils/logger.js";
 const TABLE_NAME = "auth_sessions";
 
 /**
- * Authentication session persistence helpers.
- *
- * @module services/sessionService
- */
-
-/**
- * Creates a SHA-256 hash of a refresh token for safe storage.
- *
+ * Creates a SHA-256 hash for secure refresh-token storage.
  * @param {string} token - Plaintext refresh token.
- * @returns {string} Token hash.
+ * @returns {string} Hex-encoded token hash.
  */
 function hashRefreshToken(token) {
   return createHash("sha256").update(token).digest("hex");
 }
 
 /**
- * Creates a new authentication session record.
- *
+ * Creates an authentication session with a hashed refresh token.
  * @param {object} sessionData - Session data.
  * @param {string} sessionData.profile_id - User profile UUID.
- * @param {string} sessionData.refresh_token - Refresh token received from Supabase.
+ * @param {string} sessionData.refresh_token - Supabase refresh token.
  * @param {string} [sessionData.ip] - Client IP address.
  * @param {string} [sessionData.user_agent] - Client user agent.
- * @param {string} [sessionData.device_type] - Device type, such as web_admin, portal, or tv.
- * @returns {Promise<object>} Created session record.
+ * @param {string} [sessionData.device_type] - Device type, such as "web_admin", "portal", or "tv".
+ * @returns {Promise<object>} Created session row.
  */
 async function createSession({
   profile_id,
@@ -69,7 +61,6 @@ async function createSession({
 
 /**
  * Finds an active session by plaintext refresh token.
- *
  * @param {string} refreshToken - Plaintext refresh token.
  * @returns {Promise<object|null>} Matching active session, or null when not found.
  */
@@ -91,8 +82,7 @@ async function findSessionByRefreshToken(refreshToken) {
 }
 
 /**
- * Revokes a session by id.
- *
+ * Revokes a session by ID.
  * @param {string} sessionId - Session UUID.
  * @returns {Promise<boolean>} True when the session is revoked successfully.
  */
@@ -111,9 +101,8 @@ async function revokeSessionById(sessionId) {
 
 /**
  * Revokes a session by plaintext refresh token.
- *
  * @param {string} refreshToken - Plaintext refresh token.
- * @returns {Promise<boolean>} True when the session is revoked successfully.
+ * @returns {Promise<boolean>} True when the matching session is revoked successfully.
  */
 async function revokeSessionByRefreshToken(refreshToken) {
   const refreshTokenHash = hashRefreshToken(refreshToken);
@@ -130,10 +119,9 @@ async function revokeSessionByRefreshToken(refreshToken) {
 }
 
 /**
- * Lists sessions for a user profile.
- *
+ * Lists all sessions for a user profile.
  * @param {string} profileId - User profile UUID.
- * @returns {Promise<Array<object>>} Session records for the profile.
+ * @returns {Promise<Array<object>>} Session rows ordered by most recent use.
  */
 async function listSessionsForProfile(profileId) {
   const { data, error } = await supabaseAdmin
@@ -151,14 +139,13 @@ async function listSessionsForProfile(profileId) {
 
 /**
  * Rotates a refresh token by revoking the old session and creating a new one.
- *
  * @param {string} oldRefreshToken - Refresh token to revoke.
- * @param {string} newRefreshToken - Replacement refresh token to store.
- * @param {string} profileId - User profile id.
+ * @param {string} newRefreshToken - New refresh token to store.
+ * @param {string} profileId - User profile UUID.
  * @param {string} ip - Request IP address.
  * @param {string} userAgent - Request user agent.
- * @param {string} deviceType - Device type.
- * @returns {Promise<object>} Created replacement session.
+ * @param {string} deviceType - Device type associated with the session.
+ * @returns {Promise<object>} Newly created session row.
  */
 async function rotateRefreshToken(
   oldRefreshToken,

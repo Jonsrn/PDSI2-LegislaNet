@@ -1,16 +1,19 @@
+/**
+ * Security middleware utilities.
+ *
+ * Provides rate limiting, request sanitization, reusable validators, validation
+ * error handling, and admin audit logging.
+ */
+
 const rateLimit = require("express-rate-limit");
 const { body, param, query, validationResult } = require("express-validator");
 const createLogger = require("../utils/logger");
 const logger = createLogger("SECURITY_MIDDLEWARE");
 
 /**
- * Security middleware and validation helpers for administrative API routes.
+ * Rate limiter for administrative APIs.
  *
- * @module middleware/securityMiddleware
- */
-
-/**
- * Rate limiter for administrative API routes.
+ * Super admin requests can skip this limiter when `req.user` is already set.
  */
 const adminRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -22,13 +25,12 @@ const adminRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req, res) => {
-    // Allow authenticated super administrators to bypass this limiter.
     return req.user && req.user.role === "super_admin";
   },
 });
 
 /**
- * Rate limiter for create and update operations.
+ * Rate limiter for creation and mutation operations.
  */
 const strictRateLimit = rateLimit({
   windowMs: 5 * 60 * 1000,
@@ -40,11 +42,10 @@ const strictRateLimit = rateLimit({
 });
 
 /**
- * Sanitizes user-provided strings by removing common script injection vectors
- * and enforcing a maximum length.
+ * Removes high-risk HTML/JavaScript patterns from user-provided strings.
  *
- * @param {*} str - Value to sanitize.
- * @returns {*} Sanitized string, or the original value when it is not a string.
+ * @param {unknown} str - Value to sanitize.
+ * @returns {unknown} Sanitized string, or the original value when not a string.
  */
 const sanitizeString = (str) => {
   if (typeof str !== "string") return str;
@@ -59,17 +60,17 @@ const sanitizeString = (str) => {
 };
 
 /**
- * Builds express-validator rules for UUID route parameters.
+ * Builds UUID v4 route-parameter validation for a given field.
  *
  * @param {string} [field="id"] - Route parameter name to validate.
- * @returns {Array<object>} Validation chain array for the requested parameter.
+ * @returns {Array} Express-validator validation chain.
  */
 const uuidValidation = (field = "id") => [
   param(field).isUUID(4).withMessage(`${field} deve ser um UUID válido`),
 ];
 
 /**
- * Validation rules for paginated list endpoints.
+ * Reusable validation chain for paginated list endpoints.
  */
 const paginationValidation = [
   query("page")
@@ -90,11 +91,11 @@ const paginationValidation = [
 ];
 
 /**
- * Sends a 400 response when express-validator detects invalid request data.
+ * Sends a 400 response when express-validator collected validation errors.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
- * @param {Function} next - Express next middleware callback.
+ * @param {import("express").Request} req - Express request.
+ * @param {import("express").Response} res - Express response.
+ * @param {import("express").NextFunction} next - Express next callback.
  * @returns {void}
  */
 const handleValidationErrors = (req, res, next) => {
@@ -119,11 +120,11 @@ const handleValidationErrors = (req, res, next) => {
 };
 
 /**
- * Sanitizes string values in request body and query parameters in place.
+ * Sanitizes string values in request body and query parameters.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
- * @param {Function} next - Express next middleware callback.
+ * @param {import("express").Request} req - Express request.
+ * @param {import("express").Response} res - Express response.
+ * @param {import("express").NextFunction} next - Express next callback.
  * @returns {void}
  */
 const sanitizeRequest = (req, res, next) => {
@@ -147,11 +148,11 @@ const sanitizeRequest = (req, res, next) => {
 };
 
 /**
- * Logs administrative API operations after JSON responses are sent.
+ * Logs administrative operation metadata after JSON responses are sent.
  *
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
- * @param {Function} next - Express next middleware callback.
+ * @param {import("express").Request} req - Express request.
+ * @param {import("express").Response} res - Express response.
+ * @param {import("express").NextFunction} next - Express next callback.
  * @returns {void}
  */
 const adminAuditLog = (req, res, next) => {

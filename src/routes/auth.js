@@ -6,9 +6,11 @@ const authController = require("../controllers/authController");
 const { hasPermission } = require("../middleware/authMiddleware");
 
 /**
- * Authentication routes for login, refresh, logout, and profile lookup.
+ * Web authentication routes.
  *
- * @module routes/auth
+ * Login and refresh use dedicated rate limits to reduce brute-force and refresh
+ * abuse. Web logout is restricted to admin roles; councilors use the tablet
+ * backend authentication flow.
  */
 
 const loginRateLimit = rateLimit({
@@ -22,6 +24,9 @@ const loginRateLimit = rateLimit({
   },
 });
 
+/**
+ * Higher-volume limiter for token refresh requests.
+ */
 const refreshRateLimit = rateLimit({
   windowMs: 5 * 60 * 1000,
   max: 300,
@@ -47,7 +52,6 @@ router.post(
   authController.handleRefreshToken
 );
 
-// Web logout is limited to administrative application users.
 router.post(
   "/logout",
   hasPermission(["super_admin", "admin_camara"]),
