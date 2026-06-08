@@ -704,7 +704,7 @@
               ...(search && { search }),
             });
 
-            const response = await fetch(`/api/public/camaras/publicas?${params}`);
+            const response = await fetch(`/api/camaras/publicas?${params}`);
 
             if (!response.ok) {
               throw new Error(`Erro ao carregar câmaras: ${response.status}`);
