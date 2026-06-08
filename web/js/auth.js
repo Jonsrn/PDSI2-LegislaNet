@@ -1,12 +1,5 @@
 /**
- * Frontend authentication manager for token storage, session checks, and
- * authenticated requests.
- *
- * @module web/js/auth
- */
-
-/**
- * Manages browser-side authentication state and session expiry handling.
+ * Manages frontend authentication state, token validation, and authenticated requests.
  */
 class AuthManager {
     constructor() {
@@ -23,7 +16,6 @@ class AuthManager {
 
     /**
      * Initializes authentication checks and cross-tab logout handling.
-     *
      * @returns {void}
      */
     init() {
@@ -45,9 +37,8 @@ class AuthManager {
     }
 
     /**
-     * Checks whether the current browser session has valid authentication data.
-     *
-     * @returns {boolean} True when token and user data are available.
+     * Checks whether the current browser session has valid auth state.
+     * @returns {boolean} True when token and user data are present.
      */
     checkAuth() {
         const token = this.getToken();
@@ -66,9 +57,8 @@ class AuthManager {
     }
 
     /**
-     * Reads and validates the stored access token.
-     *
-     * @returns {string|null} Stored JWT, or null when missing or invalid.
+     * Gets the stored access token and clears auth state when it is malformed.
+     * @returns {string|null} Stored JWT, or null when unavailable or invalid.
      */
     getToken() {
         try {
@@ -90,8 +80,7 @@ class AuthManager {
     }
 
     /**
-     * Reads the stored user data.
-     *
+     * Gets the stored user data.
      * @returns {object|null} Parsed user data, or null when unavailable.
      */
     getUser() {
@@ -105,10 +94,9 @@ class AuthManager {
     }
 
     /**
-     * Stores authentication token and user data in localStorage.
-     *
-     * @param {string} token - JWT access token.
-     * @param {object} userData - Authenticated user data.
+     * Stores authentication data in localStorage.
+     * @param {string} token - Access token to store.
+     * @param {object} userData - User data returned by the API.
      * @returns {void}
      */
     setAuthData(token, userData) {
@@ -126,7 +114,6 @@ class AuthManager {
 
     /**
      * Clears stored authentication data.
-     *
      * @returns {void}
      */
     clearAuth() {
@@ -139,8 +126,7 @@ class AuthManager {
     }
 
     /**
-     * Logs out the current user and redirects to the login page.
-     *
+     * Logs the user out and redirects to the login page.
      * @param {boolean} [showMessage=true] - Whether to show a logout message.
      * @returns {void}
      */
@@ -155,8 +141,7 @@ class AuthManager {
     }
 
     /**
-     * Redirects the browser to the login page when needed.
-     *
+     * Redirects the browser to the login page unless it is already there.
      * @returns {void}
      */
     redirectToLogin() {
@@ -169,10 +154,9 @@ class AuthManager {
     }
 
     /**
-     * Checks whether a JWT has a decodable payload.
-     *
-     * @param {string} token - JWT access token.
-     * @returns {boolean} True when the token has a valid JWT-like structure.
+     * Checks whether a token has the basic JWT shape and a decodable payload.
+     * @param {string} token - Token candidate.
+     * @returns {boolean} True when the token has a valid JWT structure.
      */
     isValidTokenFormat(token) {
         if (!token || typeof token !== 'string') return false;
@@ -189,10 +173,9 @@ class AuthManager {
     }
 
     /**
-     * Extracts basic claims from a JWT payload.
-     *
-     * @param {string} token - JWT access token.
-     * @returns {object|null} Token claims, or null when parsing fails.
+     * Extracts common claims from a JWT payload.
+     * @param {string} token - JWT to decode.
+     * @returns {{exp: number, iat: number, sub: string, email: string, role: string}|null} Token claims, or null on decode failure.
      */
     getTokenInfo(token) {
         try {
@@ -212,9 +195,8 @@ class AuthManager {
     }
 
     /**
-     * Checks whether a token is near expiration.
-     *
-     * @param {string} token - JWT access token.
+     * Checks whether a token is close to expiration.
+     * @param {string} token - JWT to inspect.
      * @returns {boolean} True when the token expires within the warning threshold.
      */
     isTokenNearExpiration(token) {
@@ -228,8 +210,7 @@ class AuthManager {
     }
 
     /**
-     * Checks token expiry and logs out expired sessions.
-     *
+     * Checks token validity and handles expiration warnings.
      * @returns {void}
      */
     checkTokenValidity() {
@@ -256,8 +237,7 @@ class AuthManager {
     }
 
     /**
-     * Shows a warning when the current token is near expiration.
-     *
+     * Shows a warning when the current session is close to expiration.
      * @returns {void}
      */
     showTokenWarning() {
@@ -271,10 +251,9 @@ class AuthManager {
     }
 
     /**
-     * Performs a fetch request with the stored bearer token.
-     *
+     * Performs a fetch request with the current bearer token.
      * @param {string} url - Request URL.
-     * @param {object} [options={}] - Fetch options.
+     * @param {RequestInit} [options={}] - Fetch options.
      * @returns {Promise<Response>} Fetch response.
      */
     async authenticatedFetch(url, options = {}) {
@@ -327,9 +306,8 @@ class AuthManager {
     }
 
     /**
-     * Checks whether the stored user is a super admin.
-     *
-     * @returns {boolean} True when the stored user has the super_admin role.
+     * Checks whether the stored user has the super admin role.
+     * @returns {boolean} True for super admin users.
      */
     isSuperAdmin() {
         const user = this.getUser();
@@ -337,9 +315,8 @@ class AuthManager {
     }
 
     /**
-     * Checks whether the stored user is a camara admin.
-     *
-     * @returns {boolean} True when the stored user has the admin_camara role.
+     * Checks whether the stored user has the chamber admin role.
+     * @returns {boolean} True for chamber admin users.
      */
     isAdminCamara() {
         const user = this.getUser();
@@ -348,9 +325,8 @@ class AuthManager {
 
     /**
      * Shows a temporary authentication message.
-     *
      * @param {string} message - Message text.
-     * @param {string} [type='info'] - Message style type.
+     * @param {'info'|'warning'|'error'|'success'} [type='info'] - Message type.
      * @param {number} [duration=5000] - Display duration in milliseconds.
      * @returns {void}
      */

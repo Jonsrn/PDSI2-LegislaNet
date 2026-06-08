@@ -1,16 +1,19 @@
 /**
- * Global layout, navigation, animation, authentication guard, and sidebar helpers.
+ * Shared layout, navigation, animation, authentication guard, and sidebar helpers.
  *
  * @module web/js/global
  */
 
+// ===================================================================================
+// Layout Initialization
+// ===================================================================================
+
 /**
- * Initializes page layout components and global UI listeners.
- *
- * @param {object} pageConfig - Page configuration.
- * @param {string} pageConfig.title - Header title.
- * @param {string} pageConfig.icon - Font Awesome icon class for the header.
- * @param {string} pageConfig.navActive - Navigation item id to mark as active.
+ * Loads the layout components for the current module and wires global UI behavior.
+ * @param {object} pageConfig - Page layout configuration.
+ * @param {string} [pageConfig.title] - Header title.
+ * @param {string} [pageConfig.icon] - Font Awesome icon class used in the header.
+ * @param {string} [pageConfig.navActive] - Navigation item ID to mark as active.
  * @returns {Promise<void>}
  */
 async function initLayout(pageConfig) {
@@ -78,8 +81,8 @@ async function initLayout(pageConfig) {
 }
 
 /**
- * Adds mobile sidebar open/close controls and outside-click behavior.
- *
+ * Creates and binds mobile sidebar controls after the sidebar component is loaded.
+ * Keeps ARIA state, body classes, and outside-click behavior synchronized.
  * @returns {void}
  */
 function setupSidebarMobileToggle() {
@@ -169,6 +172,7 @@ function setupSidebarMobileToggle() {
     }
   }
 
+  // Reset mobile-only open state when returning to desktop layout.
   const handleViewportChange = () => {
     if (!isMobile.matches) {
       closeSidebar();
@@ -204,11 +208,14 @@ function setupSidebarMobileToggle() {
   handleViewportChange();
 }
 
+// ===================================================================================
+// Component Loading and Setup Helpers
+// ===================================================================================
+
 /**
- * Loads an HTML component file into a target placeholder.
- *
- * @param {string} componentPath - Component HTML file path.
- * @param {string} targetElementId - Target element id.
+ * Fetches an HTML component and injects it into a target placeholder.
+ * @param {string} componentPath - Relative path to the component HTML file.
+ * @param {string} targetElementId - Placeholder element ID.
  * @returns {Promise<void>}
  */
 async function loadComponent(componentPath, targetElementId) {
@@ -216,6 +223,7 @@ async function loadComponent(componentPath, targetElementId) {
   if (!targetElement) return;
 
   try {
+    // Cache-bust component requests during development.
     const urlWithCacheBuster = `${componentPath}?t=${new Date().getTime()}`;
     const response = await fetch(urlWithCacheBuster);
     if (!response.ok) {
@@ -229,9 +237,11 @@ async function loadComponent(componentPath, targetElementId) {
 }
 
 /**
- * Applies dynamic page content such as header text, icon, and active navigation.
- *
- * @param {object} pageConfig - Page configuration.
+ * Applies page-specific title, header icon, and active navigation state.
+ * @param {object} pageConfig - Page layout configuration.
+ * @param {string} [pageConfig.title] - Header title.
+ * @param {string} [pageConfig.icon] - Font Awesome icon class used in the header.
+ * @param {string} [pageConfig.navActive] - Navigation item ID to mark as active.
  * @returns {void}
  */
 function setupDynamicContent(pageConfig) {
@@ -255,8 +265,7 @@ function setupDynamicContent(pageConfig) {
 }
 
 /**
- * Configures global event listeners after layout components are loaded.
- *
+ * Binds global event handlers after dynamic components are available in the DOM.
  * @returns {void}
  */
 function setupEventListeners() {
@@ -281,6 +290,7 @@ function setupEventListeners() {
   navLinks.forEach((link) => {
     link.replaceWith(link.cloneNode(true));
   });
+
   document.querySelectorAll("a[data-page]").forEach((link) => {
     link.addEventListener("click", function (e) {
       e.preventDefault();
@@ -292,19 +302,21 @@ function setupEventListeners() {
   initializeFadeInObserver();
 }
 
+// ===================================================================================
+// Navigation
+// ===================================================================================
+
 /**
- * Checks whether the current page is inside the admin module.
- *
- * @returns {boolean} True when the current path is an admin path.
+ * Checks whether the current page belongs to the admin module.
+ * @returns {boolean} True when the current path is under `/admin/`.
  */
 function isAdminContext() {
   return window.location.pathname.includes("/admin/");
 }
 
 /**
- * Navigates to an application page by route key.
- *
- * @param {string} pageName - Page route key.
+ * Navigates to a mapped page, applying the main-content transition when available.
+ * @param {string} pageName - Logical page key from the navigation map.
  * @returns {void}
  */
 function navigateToPage(pageName) {
@@ -327,10 +339,9 @@ function navigateToPage(pageName) {
 }
 
 /**
- * Resolves the URL for a named application page.
- *
- * @param {string} pageName - Page route key.
- * @returns {string|undefined} Resolved page URL.
+ * Resolves a logical page name to its absolute route.
+ * @param {string} pageName - Logical page key.
+ * @returns {string|undefined} Absolute route for the page, or undefined when unmapped.
  */
 function getPageUrl(pageName) {
   const pageMap = {
@@ -359,9 +370,12 @@ function getPageUrl(pageName) {
   return pageMap[key];
 }
 
+// ===================================================================================
+// Animations
+// ===================================================================================
+
 /**
- * Initializes the basic fade-in observer for `.fade-in` elements.
- *
+ * Reveals `.fade-in` elements when they enter the viewport.
  * @returns {void}
  */
 function initializeFadeInObserver() {
@@ -384,8 +398,8 @@ function initializeFadeInObserver() {
 }
 
 /**
- * Initializes unified fade-in animations for load and scroll-triggered elements.
- *
+ * Initializes the unified animation system for load-time and scroll-triggered elements.
+ * Supports `.fade-in`, `.animate-on-load`, `.fade-in-section`, and `[data-animate]`.
  * @returns {void}
  */
 function initUnifiedAnimations() {
@@ -431,8 +445,7 @@ function initUnifiedAnimations() {
 }
 
 /**
- * Backward-compatible alias for unified fade-in animations.
- *
+ * Backward-compatible alias for the unified animation initializer.
  * @returns {void}
  */
 function initFadeInAnimations() {
@@ -446,9 +459,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+// ===================================================================================
+// UI Component Initializers
+// ===================================================================================
+
 /**
- * Initializes interactive status dropdowns on the current page.
- *
+ * Initializes interactive status dropdowns and updates their visible badge state.
  * @returns {void}
  */
 function initStatusDropdowns() {
@@ -500,8 +516,13 @@ function initStatusDropdowns() {
   });
 }
 
+// ===================================================================================
+// Authentication and Route Protection
+// ===================================================================================
+
 /**
- * Route access configuration by user role.
+ * Maps each user role to the module and path prefixes it may access.
+ * @type {Object.<string, {module: string, defaultPage: string, allowedPaths: string[]}>}
  */
 const ROLE_ROUTES = {
   super_admin: {
@@ -527,10 +548,9 @@ const ROLE_ROUTES = {
 };
 
 /**
- * Decodes a JWT payload without signature validation.
- *
- * @param {string} token - JWT access token.
- * @returns {object|null} Decoded payload, or null when parsing fails.
+ * Decodes a JWT payload without verifying the token signature.
+ * @param {string} token - JWT string.
+ * @returns {object|null} Decoded payload, or null when decoding fails.
  */
 function decodeJwtPayload(token) {
   try {
@@ -544,10 +564,9 @@ function decodeJwtPayload(token) {
 }
 
 /**
- * Checks whether a token should be refreshed soon.
- *
- * @param {object} tokenPayload - Decoded token payload.
- * @returns {boolean} True when the token should be refreshed.
+ * Determines whether a token should be refreshed before it expires.
+ * @param {{exp?: number}|null} tokenPayload - Decoded JWT payload.
+ * @returns {boolean} True when the token is missing, invalid, or within the refresh window.
  */
 function shouldRefreshToken(tokenPayload) {
   if (!tokenPayload || !tokenPayload.exp) return true;
@@ -556,13 +575,14 @@ function shouldRefreshToken(tokenPayload) {
   const timeUntilExpiry = tokenPayload.exp - now;
   const thirtyMinutes = 30 * 60;
 
+  // Tokens are refreshed when 30 minutes or less remain.
   return timeUntilExpiry <= thirtyMinutes;
 }
 
 /**
- * Attempts to refresh the current Supabase session token.
- *
- * @returns {Promise<boolean>} True when refresh succeeds.
+ * Validates or refreshes authentication tokens through the backend refresh endpoint.
+ * Updates localStorage and `window.currentUser` when fresh data is returned.
+ * @returns {Promise<boolean>} True when the refresh endpoint succeeds.
  */
 async function refreshAuthToken() {
   console.log("[AUTH_GUARD] 🔄 Tentando validar/renovar token...");
@@ -607,11 +627,10 @@ async function refreshAuthToken() {
 }
 
 /**
- * Checks whether a user role can access the current path.
- *
+ * Checks whether a user role can access a given path.
  * @param {string} userRole - User role.
  * @param {string} currentPath - Current page path.
- * @returns {boolean} True when the role can access the path.
+ * @returns {boolean} True when the role has access to the path.
  */
 function hasRoutePermission(userRole, currentPath) {
   const roleConfig = ROLE_ROUTES[userRole];
@@ -623,10 +642,9 @@ function hasRoutePermission(userRole, currentPath) {
 }
 
 /**
- * Redirects a user to the default module for their role.
- *
+ * Redirects the user to the default module page for their role when needed.
  * @param {string} userRole - User role.
- * @param {string} [currentPath=window.location.pathname] - Current page path.
+ * @param {string} [currentPath=window.location.pathname] - Path used for permission checks.
  * @returns {void}
  */
 function redirectToCorrectModule(
@@ -655,8 +673,7 @@ function redirectToCorrectModule(
 }
 
 /**
- * Clears stored authentication data and redirects to login.
- *
+ * Clears client-side authentication state and redirects to the login page.
  * @returns {void}
  */
 function clearAuthAndRedirectToLogin() {
@@ -673,13 +690,13 @@ function clearAuthAndRedirectToLogin() {
 }
 
 /**
- * Protects a page by validating authentication and role access.
- *
- * @param {object} [options={}] - Guard options.
- * @param {Array<string>} [options.allowedRoles] - Roles allowed for the page.
+ * Protects the current page with token validation, optional role checks, and module redirects.
+ * @param {object} [options={}] - Authentication guard options.
+ * @param {string[]|null} [options.allowedRoles=null] - Roles allowed to access the page.
  * @param {boolean} [options.requireAuth=true] - Whether authentication is required.
- * @param {boolean} [options.autoRedirect=true] - Whether to redirect by role automatically.
- * @returns {Promise<boolean>} True when access is allowed.
+ * @param {boolean} [options.autoRedirect=true] - Whether to redirect users to their module.
+ * @returns {Promise<boolean>} True when access is allowed; false when redirected or denied.
+ * @throws {Error} When authentication data is missing, invalid, expired, or access is denied.
  */
 async function protectPage(options = {}) {
   const {
@@ -784,8 +801,7 @@ async function protectPage(options = {}) {
 let _tokenRefreshInterval = null;
 
 /**
- * Starts the automatic token refresh loop.
- *
+ * Starts a single interval that refreshes tokens during long-lived sessions.
  * @returns {void}
  */
 function startAutoTokenRefresh() {
@@ -816,9 +832,12 @@ function startAutoTokenRefresh() {
   );
 }
 
+// ===================================================================================
+// Automatic Session Checks
+// ===================================================================================
+
 /**
- * Initializes automatic token checks and cross-tab logout handling.
- *
+ * Initializes global authentication monitoring for token refresh and multi-tab logout.
  * @returns {void}
  */
 function initializeAuthGuard() {
@@ -845,6 +864,7 @@ function initializeAuthGuard() {
     }
   }, TOKEN_CHECK_INTERVAL);
 
+  // Refresh immediately when a stored TV/session token may have gone stale.
   (async () => {
     const token = localStorage.getItem("authToken");
     const refreshToken = localStorage.getItem("refreshToken");
@@ -879,9 +899,9 @@ function initializeAuthGuard() {
 }
 
 /**
- * Initializes page authentication before loading layout components.
- *
- * @param {object} pageConfig - Page and authentication configuration.
+ * Applies page authentication and initializes layout when access is granted.
+ * @param {object} pageConfig - Combined authentication and layout configuration.
+ * @param {object} [pageConfig.auth] - Options passed to `protectPage`.
  * @returns {Promise<boolean>} True when initialization completes.
  */
 async function initPageWithAuth(pageConfig) {
@@ -908,8 +928,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /**
- * Logs out the current user, invalidating the backend token when possible.
- *
+ * Logs out the current user by notifying the backend and clearing local auth state.
  * @returns {Promise<void>}
  */
 async function logout() {
@@ -948,8 +967,7 @@ async function logout() {
 }
 
 /**
- * Wraps legacy page content sections in the expected layout containers when needed.
- *
+ * Wraps legacy page content in the layout containers expected by shared styles.
  * @returns {void}
  */
 function autoFixFormSectionLayout() {
@@ -990,6 +1008,7 @@ function autoFixFormSectionLayout() {
   const contentArea = document.createElement("div");
   contentArea.className = "content-area";
 
+  // Insert before the first matched container so the original content order is preserved.
   const firstContainer = containersToWrap[0];
   if (firstContainer && firstContainer.parentNode) {
     firstContainer.parentNode.insertBefore(pageContentWrapper, firstContainer);
@@ -1004,9 +1023,12 @@ function autoFixFormSectionLayout() {
   pageContentWrapper.appendChild(contentArea);
 }
 
+// ===================================================================================
+// Sidebar Badge Helpers
+// ===================================================================================
+
 /**
- * Updates the control panel sidebar badge with items requiring attention.
- *
+ * Updates the control-panel badge with the number of items needing attention.
  * @returns {Promise<void>}
  */
 async function updatePainelControleBadge() {
@@ -1068,8 +1090,7 @@ async function updatePainelControleBadge() {
 }
 
 /**
- * Configures static "coming soon" sidebar badges.
- *
+ * Placeholder hook for sidebar "coming soon" badge setup.
  * @returns {void}
  */
 function setupComingSoonBadges() {

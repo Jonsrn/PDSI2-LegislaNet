@@ -1,11 +1,5 @@
 /**
- * Browser-side form validation utilities.
- *
- * @module web/js/formValidator
- */
-
-/**
- * Validates form fields, renders field errors, and supports real-time validation.
+ * Provides reusable client-side form validation and error rendering.
  */
 class FormValidator {
   constructor() {
@@ -47,12 +41,11 @@ class FormValidator {
   }
 
   /**
-   * Defines validation rules for a field.
-   *
-   * @param {string} fieldName - Field name or id.
-   * @param {object} rules - Validation rules for the field.
-   * @param {object} [customMessages={}] - Custom messages for this field.
-   * @returns {FormValidator} Current validator instance.
+   * Registers validation rules and optional custom messages for a field.
+   * @param {string} fieldName - Field name or ID.
+   * @param {object} rules - Validation rules to apply.
+   * @param {object} [customMessages={}] - Message overrides for this field.
+   * @returns {FormValidator} Current validator instance for chaining.
    */
   setRules(fieldName, rules, customMessages = {}) {
     this.rules[fieldName] = rules;
@@ -61,13 +54,13 @@ class FormValidator {
   }
 
   /**
-   * Validates a single field value.
-   *
-   * @param {string} fieldName - Field name or id.
-   * @param {*} value - Field value to validate.
-   * @param {boolean|object} [showErrorOrOptions=true] - Whether to render errors or validation options.
-   * @param {object} [maybeOptions={}] - Validation options when the third argument is boolean.
-   * @returns {boolean} True when the value passes validation.
+   * Validates a single field value and optionally updates the field error UI.
+   * @param {string} fieldName - Field name or ID.
+   * @param {*} value - Value to validate.
+   * @param {boolean|object} [showErrorOrOptions=true] - Whether to show UI errors, or validation options.
+   * @param {object} [maybeOptions={}] - Validation options when the third argument is a boolean.
+   * @param {'submit'|'realtime'} [maybeOptions.mode='submit'] - Validation mode.
+   * @returns {boolean} True when the field is valid.
    */
   validateField(
     fieldName,
@@ -95,7 +88,7 @@ class FormValidator {
     }
 
     if (rules.required && this.isEmpty(value)) {
-      // Avoid showing required errors while a user is clearing a field in real time.
+      // Avoid showing required errors while the user is actively clearing a field.
       if (mode === "realtime") {
         delete this.errors[fieldName];
         this.clearFieldError(fieldName);
@@ -194,10 +187,9 @@ class FormValidator {
   }
 
   /**
-   * Validates all configured fields inside a form.
-   *
-   * @param {string} formSelector - CSS selector for the form element.
-   * @returns {boolean} True when every configured field is valid.
+   * Validates all registered fields within a form.
+   * @param {string} formSelector - Selector for the form to validate.
+   * @returns {boolean} True when all registered fields in the form are valid.
    */
   validateForm(formSelector) {
     const form = document.querySelector(formSelector);
@@ -230,10 +222,9 @@ class FormValidator {
   }
 
   /**
-   * Shows an error message for a field.
-   *
-   * @param {string} fieldName - Field name or id.
-   * @param {string} message - Error message to render.
+   * Displays an error message for a field.
+   * @param {string} fieldName - Field name or ID.
+   * @param {string} message - Error message to display.
    * @returns {void}
    */
   showFieldError(fieldName, message) {
@@ -265,9 +256,8 @@ class FormValidator {
   }
 
   /**
-   * Clears the error message for a field.
-   *
-   * @param {string} fieldName - Field name or id.
+   * Clears the displayed error for a field.
+   * @param {string} fieldName - Field name or ID.
    * @returns {void}
    */
   clearFieldError(fieldName) {
@@ -285,8 +275,7 @@ class FormValidator {
   }
 
   /**
-   * Clears all tracked and rendered validation errors.
-   *
+   * Clears all tracked errors and removes error UI from the page.
    * @returns {void}
    */
   clearAllErrors() {
@@ -302,9 +291,8 @@ class FormValidator {
   }
 
   /**
-   * Scrolls to a field and focuses it when it is outside the viewport.
-   *
-   * @param {HTMLElement} field - Field element to focus.
+   * Scrolls to a field and focuses it after a short delay.
+   * @param {HTMLElement} field - Field element to reveal.
    * @returns {void}
    */
   scrollToField(field) {
@@ -321,8 +309,7 @@ class FormValidator {
   }
 
   /**
-   * Checks whether a value should be treated as empty.
-   *
+   * Checks whether a value should be considered empty for validation.
    * @param {*} value - Value to inspect.
    * @returns {boolean} True when the value is empty.
    */
@@ -337,10 +324,9 @@ class FormValidator {
   }
 
   /**
-   * Sanitizes a string by removing common script injection vectors.
-   *
+   * Sanitizes a string by removing script, iframe, JavaScript URL, and event-handler content.
    * @param {*} value - Value to sanitize.
-   * @returns {*} Sanitized string, or the original value when it is not a string.
+   * @returns {*} Sanitized string, or the original value for non-string inputs.
    */
   sanitize(value) {
     if (typeof value !== "string") return value;
@@ -354,9 +340,8 @@ class FormValidator {
   }
 
   /**
-   * Returns the current validation errors.
-   *
-   * @returns {object} Current error map.
+   * Gets a shallow copy of the current validation errors.
+   * @returns {object} Current errors by field.
    */
   getErrors() {
     return { ...this.errors };
@@ -364,17 +349,15 @@ class FormValidator {
 
   /**
    * Checks whether any validation errors are currently tracked.
-   *
-   * @returns {boolean} True when errors are present.
+   * @returns {boolean} True when at least one field has errors.
    */
   hasErrors() {
     return Object.keys(this.errors).length > 0;
   }
 
   /**
-   * Renders a summary of current validation errors.
-   *
-   * @param {string} [container='.form-errors'] - Error summary container selector.
+   * Renders a summary of the current errors into a container.
+   * @param {string} [container='.form-errors'] - Selector for the error summary container.
    * @returns {void}
    */
   showErrorSummary(container = ".form-errors") {
