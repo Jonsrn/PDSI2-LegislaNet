@@ -1,10 +1,4 @@
 <!doctype html>
-<!--
-  File: espera.html
-  Purpose: TV standby screen that authenticates the display client, shows the
-  selected council identity, monitors connection status, and redirects when live
-  voting or speech mode begins.
--->
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
@@ -24,15 +18,12 @@
       href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23007acc'/></svg>"
     />
     <style>
-      /* Page-specific fullscreen TV standby layout. */
       body {
         background: var(--background-dark);
         color: var(--primary-text);
         font-family: Inter, system-ui, sans-serif;
         overflow: hidden; /* Evitar scrollbars na TV */
       }
-
-      /* Main wrapper centers all standby content for large-screen display. */
       .tv-wrap {
         display: flex;
         flex-direction: column;
@@ -43,8 +34,7 @@
         padding: 4vmin;
         box-sizing: border-box;
       }
-
-      /* Responsive sizing keeps the chamber name legible across TV resolutions. */
+      /* Responsive sizing for TV */
       .camara-name {
         font-size: 8vmin; /* Escala com o menor lado da tela */
         font-weight: 800;
@@ -53,8 +43,6 @@
         line-height: 1.1;
         max-width: 90%;
       }
-
-      /* Chamber crest scales proportionally for presentation screens. */
       .camara-logo {
         height: 35vmin; /* Logo ocupa 35% da altura/largura menor */
         width: auto;
@@ -63,8 +51,6 @@
         margin-bottom: 4vh;
         max-width: 80vw;
       }
-
-      /* Secondary status and message text. */
       .status {
         font-size: 3vmin;
         color: var(--secondary-text);
@@ -76,7 +62,7 @@
     </style>
   </head>
   <body>
-    <!-- Connection Status Badge -->
+    <!-- Connection badge (top-right) -->
     <div
       id="connectionBadge"
       style="
@@ -99,7 +85,6 @@
     </div>
 
     <style>
-      /* Subtle breathing animation highlights connection activity. */
       @keyframes breathe {
         0%,
         100% {
@@ -110,10 +95,7 @@
         }
       }
     </style>
-
-    <!-- TV Standby Content -->
     <div class="tv-wrap">
-      <!-- Chamber Crest -->
       <img
         id="brasao"
         class="camara-logo"
@@ -121,11 +103,7 @@
         alt="Brasão"
         style="display: none"
       />
-
-      <!-- Chamber Name -->
       <div id="nomeCamara" class="camara-name">Aguardando seleção...</div>
-
-      <!-- Manual Reconnect Action -->
       <button
         id="reconnectBtn"
         style="
@@ -143,13 +121,12 @@
       </button>
     </div>
 
-    <!-- Realtime and shared application scripts -->
+    <!-- Load Socket.IO client from CDN; if unavailable, dynamically load it before connecting -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script src="../js/mockMode.js?v=3"></script>
     <script src="../js/global.js"></script>
 
     <script>
-      // Cached UI references used throughout the TV standby flow.
+      // Basic logger usage
       const camaraNameEl = document.getElementById("nomeCamara");
       const brasaoEl = document.getElementById("brasao");
       const reconnectBtn = document.getElementById("reconnectBtn");
@@ -158,12 +135,12 @@
         "connectionBadgeText",
       );
 
-      // Stores the active Socket.IO instance for reconnect and lifecycle handling.
+      // Expor socket globalmente para permitir reconexão a partir do botão
       let tvSocket = null;
 
-      // Initializes authentication, chamber data loading, realtime connection, and TV event handling.
+      // Try to load camara info via API using token
       async function init() {
-        // Ensures only authenticated TV-role users can access this screen.
+        // === NOVA AUTENTICAÇÃO COM VALIDAÇÃO DE ROLE ===
         const isAuthenticated = await protectPage({
           allowedRoles: ["tv"],
           requireAuth: true,
@@ -193,7 +170,7 @@
           const camaraId =
             (me.profile && me.profile.camara_id) || (me.camara && me.camara.id);
 
-          // Normalizes the chamber display name to avoid duplicated prefixes.
+          // Corrigir nome da câmara - evitar duplicação
           if (me.camara && me.camara.nome_camara) {
             const nomeCamara = me.camara.nome_camara;
             // Se já contém "Câmara Municipal", usar apenas o nome
@@ -215,8 +192,7 @@
             brasaoEl.src = me.camara.brasao_url;
             brasaoEl.style.display = "block";
           }
-
-          // Ensures the realtime client is available before opening the socket.
+          // Ensure Socket.IO client is available. If not, try to load CDN dynamically.
           if (typeof io === "undefined") {
             console.log("📡 Carregando cliente de WebSocket...");
             await new Promise((resolve, reject) => {
@@ -229,7 +205,7 @@
             });
           }
 
-          // Polls the live-voting status as a fallback in case realtime events are missed.
+          // Função auxilar para polling
           async function checkActiveVoting(cId) {
             try {
               const statusResp = await fetch(
@@ -255,7 +231,7 @@
             }
           }
 
-          // Opens the realtime connection and joins the TV room for the chamber.
+          // Connect Socket.IO and join tv room for camara
           tvSocket = io(undefined, { auth: { token } });
 
           tvSocket.on("connect", async () => {
@@ -263,15 +239,14 @@
             connectionBadge.style.background = "#5cb85c";
             connectionBadgeText.textContent = "Conectado";
             reconnectBtn.style.display = "none";
-
-            // Joins the chamber room after a successful socket connection.
+            // Join room (server should handle)
             if (camaraId) {
               tvSocket.emit("tv:join-camara", { camaraId });
 
-              // Immediately checks for an active vote after connect or reconnect.
+              // 🛑 CRITICAL FIX: Check if there is an active vote on connect/reconnect
               checkActiveVoting(camaraId);
 
-              // Starts safety polling to catch missed vote-start events.
+              // Iniciar Polling de segurança (5s) to catch missed events
               if (!window.__tvEsperaPolling) {
                 window.__tvEsperaPolling = setInterval(
                   () => checkActiveVoting(camaraId),
@@ -295,7 +270,7 @@
             connectionBadgeText.textContent = "Desconectado";
             reconnectBtn.style.display = "inline-block";
 
-            // Stops the fallback polling loop while disconnected.
+            // Parar polling ao desconectar
             if (window.__tvEsperaPolling) {
               clearInterval(window.__tvEsperaPolling);
               window.__tvEsperaPolling = null;
@@ -326,7 +301,6 @@
             console.warn("tv:join-error", err);
           });
 
-          // Allows the operator to retry the realtime connection manually.
           reconnectBtn.addEventListener("click", () => {
             try {
               if (tvSocket) {
@@ -344,12 +318,12 @@
           });
 
           tvSocket.on("tv:iniciar-fala", () => {
-            // Opens the speech display template on the initial speech event.
+            // Primeiro clique no painel: abrir template da fala (pré-start)
             window.location.href = `/tv/fala_tv.html?t=${Date.now()}`;
           });
 
           tvSocket.on("tv:iniciar-fala-start", () => {
-            // Provides a fallback if the first speech event was missed.
+            // Fallback: se perdeu o evento 'preparada', ainda abre o template
             window.location.href = `/tv/fala_tv.html?t=${Date.now()}`;
           });
         } catch (err) {
@@ -357,10 +331,7 @@
           console.error("TV espera init error", err);
         }
       }
-
-      // Starts the TV standby initialization flow as soon as the page loads.
       init();
     </script>
   </body>
 </html>
-
