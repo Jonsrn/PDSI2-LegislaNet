@@ -1,9 +1,4 @@
 <!DOCTYPE html>
-<!--
-  Privacy Policy and LGPD Page
-  Presents Legisla Net's public privacy policy, data handling practices, user
-  rights, cookie notice, and DPO contact information for portal visitors.
--->
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -108,13 +103,10 @@
     </style>
   </head>
   <body>
-    <!-- Dynamic portal navigation loaded by the shared layout system. -->
     <!-- Navbar carregado dinamicamente -->
     <div id="navbar-placeholder"></div>
 
-    <!-- Main legal document container for privacy and LGPD content. -->
     <main class="legal-container">
-      <!-- Page title and summary of the privacy commitment. -->
       <header class="legal-header fade-in">
         <h1>Política de Privacidade</h1>
         <p>
@@ -123,7 +115,6 @@
         </p>
       </header>
 
-      <!-- Structured privacy policy content shown to public portal visitors. -->
       <article class="legal-content fade-in-section">
         <h2>1. Introdução</h2>
         <p>
@@ -194,21 +185,17 @@
       </article>
     </main>
 
-    <!-- Dynamic portal footer loaded by the shared layout system. -->
     <!-- Footer carregado dinamicamente -->
     <div id="footer-placeholder"></div>
 
-    <script src="../js/mockMode.js?v=4"></script>
     <script src="../js/global.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", async () => {
-        // Loads shared portal layout and configures legal-page navigation.
         // Setup minimal navbar for legal pages
         await initLayout({
           title: "Privacidade",
         });
 
-        // Adds a direct return action to the portal navbar.
         // Configurar botão voltar no navbar se necessário
         const navRight = document.getElementById("nav-right-content");
         if (navRight) {
@@ -219,7 +206,6 @@
                 `;
         }
 
-        // Enables shared entrance animations for legal content.
         // Iniciar animações
         initUnifiedAnimations();
       });
