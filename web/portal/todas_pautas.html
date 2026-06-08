@@ -1,9 +1,4 @@
 <!DOCTYPE html>
-<!--
-  File: todas_pautas.html
-  Purpose: Public portal page that lists all agenda items for a selected council,
-  with search, filter, loading, empty, error, and pagination states.
--->
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -21,14 +16,13 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
-    <script src="../js/mockMode.js?v=3"></script>
     <script src="../js/global.js"></script>
     <script src="../js/pagination.js"></script>
     <script src="../js/customSelect.js"></script>
   </head>
   <body>
     <div class="container">
-      <!-- Page Header: back navigation, page title, and portal context indicator -->
+      <!-- Header -->
       <header class="portal-header">
         <div class="header-content-left">
           <button id="btn-voltar" class="btn-back">
@@ -46,7 +40,7 @@
         </div>
       </header>
 
-      <!-- Filter Toolbar: text search and quick status/result filters -->
+      <!-- Filtros e Busca -->
       <div class="filters-section">
         <div class="filters-container">
           <div class="search-box">
@@ -103,13 +97,13 @@
         </div>
       </div>
 
-      <!-- Loading State: shown while agenda data is being requested -->
+      <!-- Loading -->
       <div id="loading-state" class="loading-container">
         <div class="loading-spinner"></div>
         <p>Carregando pautas...</p>
       </div>
 
-      <!-- Error State: displayed when the agenda request fails -->
+      <!-- Error State -->
       <div id="error-state" class="error-container" style="display: none">
         <div class="error-content">
           <i class="fas fa-exclamation-triangle"></i>
@@ -124,15 +118,15 @@
         </div>
       </div>
 
-      <!-- Main Content: agenda card grid and empty-result messaging -->
+      <!-- Content Section -->
       <div class="content-section">
         <div class="pautas-grid-wrapper">
-          <!-- Agenda Grid: cards are rendered dynamically -->
+          <!-- Pautas Grid -->
           <div id="pautas-grid" class="pautas-grid">
             <!-- Pautas will be rendered here -->
           </div>
 
-          <!-- Empty State: shown when no agenda items match the current view -->
+          <!-- Empty State -->
           <div id="empty-state" class="empty-state" style="display: none">
             <i class="fas fa-inbox"></i>
             <h3>Nenhuma Pauta Encontrada</h3>
@@ -144,7 +138,7 @@
         </div>
       </div>
 
-      <!-- Pagination: client-side navigation controls for paged results -->
+      <!-- Pagination -->
       <div class="pagination-container" style="display: none">
         <div class="pagination-controls" id="pagination-controls">
           <!-- Pagination will be rendered here -->
@@ -153,7 +147,7 @@
     </div>
 
     <script>
-      // Page state shared across filters, pagination, and navigation handlers.
+      // Variáveis globais
       let camaraId = null;
       let currentPage = 1;
       let totalPages = 1;
@@ -165,9 +159,9 @@
         resultado: "",
       };
 
-      // Initializes the page, resolves the selected council, and loads the first result set.
+      // Inicializar página
       document.addEventListener("DOMContentLoaded", async () => {
-        // Reads the selected council identifier from the query string.
+        // Obter camara_id da URL
         const urlParams = new URLSearchParams(window.location.search);
         camaraId = urlParams.get("camara_id");
 
@@ -176,23 +170,23 @@
           return;
         }
 
-        // Wires up filter interactions before loading data.
+        // Configurar filtros
         setupFilters();
 
-        // Registers the main page actions.
+        // Adicionar event listeners para botões
         document.getElementById('btn-voltar')?.addEventListener('click', voltarPortal);
         document.getElementById('btn-tentar-novamente')?.addEventListener('click', () => carregarPautas(1));
         document.getElementById('btn-limpar-filtros')?.addEventListener('click', limparFiltros);
 
-        // Requests the initial page of agenda items.
+        // Carregar primeira página
         await carregarPautas(1);
       });
 
-      // Configures search and custom select filters for the agenda listing.
+      // Configurar filtros
       function setupFilters() {
         const searchInput = document.getElementById("search-input");
 
-        // Debounces search input to avoid unnecessary requests while typing.
+        // Debounce para busca
         let searchTimeout;
         searchInput.addEventListener("input", (e) => {
           clearTimeout(searchTimeout);
@@ -202,7 +196,7 @@
           }, 500);
         });
 
-        // Initializes both custom filter dropdowns.
+        // Inicializar custom selects
         initCustomSelect("status-filter", (value) => {
           currentFilters.status = value;
           carregarPautas(1);
@@ -214,7 +208,7 @@
         });
       }
 
-      // Initializes a lightweight custom select interaction for a filter control.
+      // Função para inicializar custom select
       function initCustomSelect(id, callback) {
         const wrapper = document.getElementById(`${id}-wrapper`);
         const trigger = document.getElementById(`${id}-trigger`);
@@ -236,7 +230,7 @@
           }
         });
 
-        // Closes the dropdown when the user clicks outside the wrapper.
+        // Fechar ao clicar fora
         document.addEventListener("click", (e) => {
           if (!wrapper.contains(e.target)) {
             options.classList.remove("open");
@@ -244,13 +238,13 @@
         });
       }
 
-      // Loads agenda items for the selected council and updates the current UI state.
+      // Carregar pautas
       async function carregarPautas(page = 1) {
         try {
           mostrarLoading();
           currentPage = page;
 
-          // Builds the request query for the current pagination settings.
+          // Montar URL com parâmetros
           const params = new URLSearchParams({
             page: currentPage,
             limit: itemsPerPage,
@@ -266,10 +260,10 @@
 
           const data = await response.json();
 
-          // Council header details are intentionally not rendered here.
+          // Informações da câmara removidas do header
           // atualizarInfoCamara(data.camara);
 
-          // Applies client-side filters after the page response is received.
+          // Filtrar pautas localmente se necessário
           let pautasFiltradas = data.pautas;
           if (
             currentFilters.search ||
@@ -279,12 +273,12 @@
             pautasFiltradas = aplicarFiltros(data.pautas);
           }
 
-          // Renders the filtered result set.
+          // Renderizar pautas
           renderizarPautas(pautasFiltradas);
 
-          // Additional summary statistics are intentionally omitted.
+          // Estatísticas removidas
 
-          // Updates pagination state and controls.
+          // Configurar paginação
           totalPages = data.paginacao.total_pages;
           totalItems = data.paginacao.total_items;
           setupPagination();
@@ -296,7 +290,7 @@
         }
       }
 
-      // Duplicate custom select initializer kept in place for compatibility with the current page script.
+      // Função para inicializar custom select
       function initCustomSelect(id, callback) {
         const wrapper = document.getElementById(`${id}-wrapper`);
         const trigger = document.getElementById(`${id}-trigger`);
@@ -318,7 +312,7 @@
           }
         });
 
-        // Closes the dropdown when the user clicks outside the wrapper.
+        // Fechar ao clicar fora
         document.addEventListener("click", (e) => {
           if (!wrapper.contains(e.target)) {
             options.classList.remove("open");
@@ -326,7 +320,7 @@
         });
       }
 
-      // Applies search, status, and result filters to the current agenda set.
+      // Aplicar filtros localmente
       function aplicarFiltros(pautas) {
         return pautas.filter((pauta) => {
           const matchSearch =
@@ -348,13 +342,13 @@
         });
       }
 
-      // Updates the council label when that header area is available.
+      // Atualizar informações da câmara
       function atualizarInfoCamara(camara) {
         const camaraInfo = document.getElementById("camara-info");
         camaraInfo.textContent = `${camara.nome} - Visualização Pública`;
       }
 
-      // Renders agenda cards or the empty state depending on the available results.
+      // Renderizar pautas
       function renderizarPautas(pautas) {
         const grid = document.getElementById("pautas-grid");
         const emptyState = document.getElementById("empty-state");
@@ -373,7 +367,7 @@
           .join("");
         grid.innerHTML = pautasHtml;
 
-        // Makes each agenda card navigate to its public voting detail page.
+        // Adicionar event listeners para os cards
         const pautaCards = grid.querySelectorAll('.pauta-card[data-pauta-id]');
         pautaCards.forEach(card => {
           card.addEventListener('click', (e) => {
@@ -384,7 +378,7 @@
         });
       }
 
-      // Builds the HTML for a single agenda card.
+      // Criar card de pauta
       function criarCardPauta(pauta) {
         console.log('🔍 Criando card para pauta:', pauta.id, 'Nome:', pauta.nome);
 
@@ -403,7 +397,7 @@
           }
         );
 
-        // Vote summary metrics are intentionally not displayed in this card layout.
+        // Remover estatísticas de votos
 
         return `
                 <div class="pauta-card" data-pauta-id="${pauta.id}" style="cursor: pointer;">
@@ -428,13 +422,13 @@
             `;
       }
 
-      // Returns the status badge markup for an agenda item.
+      // Obter badge de status
       function getStatusBadge(status) {
         const statusClass = status.toLowerCase().replace(" ", "-");
         return `<span class="status-badge-new ${statusClass}">${status}</span>`;
       }
 
-      // Returns the voting result badge markup for a finalized agenda item.
+      // Obter badge de resultado
       function getResultadoBadge(resultado) {
         const resultadoClass = resultado
           .toLowerCase()
@@ -443,7 +437,7 @@
         return `<span class="situacao-badge ${resultadoClass}">${resultado}</span>`;
       }
 
-      // Renders pagination controls for the current result set.
+      // Configurar paginação
       function setupPagination() {
         createPaginationControls({
           containerId: "pagination-controls",
@@ -457,24 +451,24 @@
         });
       }
 
-      // Navigates to the public voting page for the selected agenda item.
+      // Abrir pauta específica
       function abrirPauta(pautaId) {
         console.log('🔗 Abrindo votação pública para pauta:', pautaId);
         console.log('🔍 Tipo do pautaId:', typeof pautaId);
         console.log('🔍 CamaraId atual:', camaraId);
 
-        // Reuses the same public portal navigation pattern used elsewhere.
+        // Usar o mesmo padrão do portal_publico.html
         const url = `votacao_publica.html?id=${pautaId}&camara=${camaraId}`;
         console.log('🔗 Navegando para votação:', url);
         window.location.href = url;
       }
 
-      // Returns the user to the selected council public portal.
+      // Voltar ao portal
       function voltarPortal() {
         window.location.href = `portal_publico.html?camara_id=${camaraId}`;
       }
 
-      // Shows the loading state and hides content-specific UI sections.
+      // Estados da UI
       function mostrarLoading() {
         document.getElementById("loading-state").style.display = "flex";
         document.getElementById("error-state").style.display = "none";
@@ -483,12 +477,10 @@
         document.querySelector(".pagination-container").style.display = "none";
       }
 
-      // Hides the loading state after the request finishes.
       function ocultarLoading() {
         document.getElementById("loading-state").style.display = "none";
       }
 
-      // Displays the error state with a contextual message.
       function mostrarErro(message) {
         document.getElementById("loading-state").style.display = "none";
         document.getElementById("error-state").style.display = "block";
@@ -497,22 +489,22 @@
         document.getElementById("empty-state").style.display = "none";
       }
 
-      // Resets search and dropdown filters to their default values.
+      // Limpar filtros
       function limparFiltros() {
-        // Clears the search field.
+        // Limpar campo de busca
         const searchInput = document.getElementById("search-input");
         if (searchInput) {
           searchInput.value = '';
         }
 
-        // Restores in-memory filter state.
+        // Resetar filtros
         currentFilters = {
           search: '',
           status: '',
           resultado: ''
         };
 
-        // Restores default labels in the custom select triggers.
+        // Resetar custom selects
         const statusTrigger = document.getElementById('status-filter-trigger');
         const resultadoTrigger = document.getElementById('resultado-filter-trigger');
 
@@ -523,17 +515,17 @@
           resultadoTrigger.querySelector('span').textContent = 'Todos os Resultados';
         }
 
-        // Hides the clear button after the reset.
+        // Ocultar botão limpar
         const clearBtn = document.getElementById('clear-search');
         if (clearBtn) {
           clearBtn.style.display = 'none';
         }
 
-        // Reloads the first page using default filters.
+        // Recarregar pautas
         carregarPautas(1);
       }
 
-      // Escapes text content before injecting it into HTML templates.
+      // Função para escapar HTML
       function escapeHtml(text) {
         const div = document.createElement("div");
         div.textContent = text;
@@ -542,7 +534,7 @@
     </script>
 
     <style>
-      /* Page-specific layout and component refinements for the agenda listing view. */
+      /* Estilos específicos da página */
       .header-content-left {
         display: flex;
         align-items: center;
@@ -794,7 +786,7 @@
       }
 
 
-      /* Standardized status badge presentation. */
+      /* Status badges padronizados */
       .status-badge-new {
         display: inline-block;
         padding: 2px 10px;
@@ -823,7 +815,7 @@
         border: 1px solid rgba(46, 160, 67, 0.4);
       }
 
-      /* Standardized voting result badge presentation. */
+      /* Situação badges */
       .situacao-badge {
         display: inline-block;
         padding: 2px 10px;
@@ -852,7 +844,7 @@
         border: 1px solid rgba(108, 117, 125, 0.4);
       }
 
-      /* Responsive adjustments for smaller screens. */
+      /* Responsive */
       @media (max-width: 768px) {
         .pautas-grid {
           grid-template-columns: 1fr;
@@ -878,4 +870,3 @@
     </style>
   </body>
 </html>
-

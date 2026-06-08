@@ -1,10 +1,4 @@
 <!doctype html>
-<!--
-  Public Transparency Portal Page
-  Displays the selected chamber's public portal with livestream status,
-  live voting information, upcoming sessions, recent votes, councilors,
-  and transparency resources for citizens.
--->
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -1354,11 +1348,9 @@
     </style>
   </head>
   <body>
-    <!-- Dynamic portal navigation loaded by the shared layout system. -->
     <!-- Navbar carregado dinamicamente -->
     <div id="navbar-placeholder"></div>
 
-    <!-- Chamber hero area populated with the selected chamber identity. -->
     <header class="hero hero-live-border">
       <div class="container hero-content">
         <div class="hero-camara-title" id="heroSubtitle"></div>
@@ -1371,7 +1363,6 @@
     </header>
 
     <main>
-      <!-- Livestream and active voting overview for the selected chamber. -->
       <section id="live-session" class="section fade-in">
         <div class="container">
           <div class="section-header fade-in">
@@ -1385,7 +1376,6 @@
           </div>
 
           <div class="live-grid-container fade-in">
-            <!-- Livestream player area with placeholder, YouTube player, and overlay metadata. -->
             <div class="video-placeholder" id="video-container">
               <!-- Placeholder inicial -->
               <div id="video-placeholder-content">
@@ -1415,7 +1405,6 @@
               </div>
             </div>
 
-            <!-- Session metadata and live vote counters. -->
             <div class="session-info">
               <div class="session-meta" id="session-meta-container">
                 <!-- Será preenchido dinamicamente -->
@@ -1429,7 +1418,6 @@
         </div>
       </section>
 
-      <!-- Upcoming sessions loaded from the public chamber API. -->
       <section id="proximas-sessoes" class="section fade-in">
         <div class="container">
           <div class="section-header fade-in">
@@ -1443,7 +1431,6 @@
         </div>
       </section>
 
-      <!-- Recent finalized votes with links to public voting details. -->
       <section id="votes" class="section fade-in">
         <div class="container">
           <div class="section-header fade-in">
@@ -1468,7 +1455,6 @@
         </div>
       </section>
 
-      <!-- Public councilor roster for the selected chamber. -->
       <section id="members" class="section fade-in">
         <div class="container">
           <div class="section-header fade-in">
@@ -1482,7 +1468,6 @@
         </div>
       </section>
 
-      <!-- Static transparency resources preview for future public documents. -->
       <section id="transparency" class="section fade-in">
         <div class="container">
           <div class="section-header fade-in">
@@ -1529,24 +1514,19 @@
       </section>
     </main>
 
-    <!-- Dynamic portal footer loaded by the shared layout system. -->
     <!-- Footer carregado dinamicamente -->
     <div id="footer-placeholder"></div>
 
-    <!-- External media and realtime clients used by the public portal. -->
     <!-- YouTube Player API -->
     <script src="https://www.youtube.com/iframe_api"></script>
     <!-- Socket.IO Client -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script src="../js/mockMode.js?v=4"></script>
     <script src="../js/global.js"></script>
     <script src="../js/carregamento.js"></script>
     <script>
-      // Global media player reference shared by livestream helpers.
       // Variáveis globais
       let youtubePlayer = null;
 
-      // Central livestream state used to avoid stale player and socket transitions.
       // ═══════════════════════════════════════════════════════════════════════════
       // ESTADO CENTRALIZADO DE LIVESTREAM (SPA)
       // Fonte única da verdade - NÃO usar closures para estado
@@ -1576,8 +1556,6 @@
       };
 
       /**
-       * Updates the centralized livestream state.
-       *
        * Atualiza o estado da livestream de forma centralizada
        * @param {Partial<typeof livestreamState>} newState - Novos valores
        */
@@ -1591,8 +1569,6 @@
       }
 
       /**
-       * Clears the pending livestream fallback timeout.
-       *
        * Cancela qualquer timeout de fallback pendente
        */
       function cancelFallbackTimeout() {
@@ -1604,8 +1580,6 @@
       }
 
       /**
-       * Schedules a fallback action when livestream transition events fail.
-       *
        * Agenda um timeout de fallback (apenas para casos de falha real)
        * @param {Function} callback - Função a executar se timeout estourar
        * @param {number} delay - Tempo em ms (padrão: 30000)
@@ -1634,13 +1608,11 @@
         transitionedToVOD: false,
       };
 
-      // YouTube API ready hook required by the iframe API.
       // Função chamada quando a API do YouTube estiver pronta (deve ser global)
       window.onYouTubeIframeAPIReady = function () {
         console.log("📺 YouTube API carregada e pronta");
       };
 
-      // Cancels a pending reload while SPA livestream transitions are active.
       // Função para cancelar reload pendente (SPA)
       function cancelPendingReload() {
         if (streamState.pendingReloadTimeout) {
@@ -1650,7 +1622,6 @@
         }
       }
 
-      // Switches the livestream UI from live playback to VOD playback.
       // Função para transição suave para VOD (SPA)
       function transitionToVODState(vodData) {
         cancelPendingReload();
@@ -1682,8 +1653,6 @@
       }
 
       /**
-       * Renders the livestream player and live/VOD status.
-       *
        * Exibe a livestream no portal público
        * REFATORADO: Usa estado centralizado e player persistente
        *
@@ -1862,8 +1831,6 @@
       }
 
       /**
-       * Creates the YouTube iframe player instance.
-       *
        * Cria uma nova instância do player YouTube
        * REFATORADO: Usa estado centralizado nos event handlers
        *
@@ -1972,8 +1939,6 @@
       }
 
       /**
-       * Handles the SPA transition from a live stream to its VOD state.
-       *
        * Executa transição suave de Live para VOD (SPA)
        * @param {Object} eventData - Dados do evento livestream-stopped
        */
@@ -2045,8 +2010,6 @@
       }
 
       /**
-       * Handles livestream end detection from the YouTube player.
-       *
        * Handler para quando o player detecta fim da live
        * REFATORADO: Não dá mais reload, apenas notifica backend
        */
@@ -2114,7 +2077,6 @@
         }, 30000);
       }
 
-      // Creates a plain iframe player when the YouTube API player is unavailable.
       // Função fallback para criar iframe tradicional (global)
       function createFallbackPlayer(livestreamData, isLive, container) {
         console.log("📺 Criando player fallback (iframe)");
@@ -2134,7 +2096,6 @@
         container.appendChild(iframe);
       }
 
-      // Initializes the main portal WebSocket for livestream and recent-vote events.
       // Inicializar WebSocket
       function initializeWebSocket() {
         if (!currentCamaraId) return;
@@ -2391,7 +2352,6 @@
         });
       }
 
-      // Synchronizes active public voting state via HTTP as a realtime fallback.
       // Fallback: sincronizar status de votação ao vivo via HTTP
       async function syncVotacaoAoVivoStatus() {
         try {
@@ -2434,7 +2394,6 @@
         }
       }
 
-      // Initializes the realtime channel that announces live voting status.
       // Inicializar WebSocket para Votação Ao Vivo (porta 3000)
       function initializeVotacaoAoVivoWebSocket() {
         if (typeof io === "undefined") {
@@ -2533,7 +2492,6 @@
         }
       }
 
-      // Renders the live voting panel in online or offline mode.
       // Atualizar UI de votação ao vivo
       function updateVotacaoAoVivoUI() {
         const votingDisplay = document.querySelector(".voting-display");
@@ -2627,7 +2585,6 @@
         updateSessionMeta(votacaoAoVivoAtiva);
       }
 
-      // Renders metadata for the current or next chamber session.
       // Atualizar meta informações da sessão
       async function updateSessionMeta(votacaoData) {
         const sessionMetaContainer = document.getElementById(
@@ -2890,7 +2847,6 @@
         }
       }
 
-      // Joins the vote room and subscribes to realtime vote counter updates.
       // Conectar ao WebSocket de votos para atualizar contadores em tempo real
       function connectToVotacaoWebSocket(pautaId) {
         if (!socket) {
@@ -2963,7 +2919,6 @@
         );
       }
 
-      // Fetches current public votes for the active pauta.
       // Buscar votos atuais da pauta
       async function fetchVotosAtuais(pautaId) {
         try {
@@ -2985,7 +2940,6 @@
         }
       }
 
-      // Updates the visible vote counter values.
       // Atualizar contadores de votos na UI
       function updateVoteCountersUI(favor, contra, abstencao) {
         const voteNumbers = document.querySelectorAll(
@@ -2998,7 +2952,6 @@
         }
       }
 
-      // Applies incremental vote notifications to the live counter UI.
       // Atualizar contadores quando voto é registrado
       function updateVoteCounters(notification) {
         console.log(
@@ -3046,7 +2999,6 @@
         }
       }
 
-      // Restores active voting state when the portal loads.
       // Verificar se há votação ativa ao carregar a página
       async function checkVotacaoAtivaAoCarregar(camaraId) {
         try {
@@ -3102,7 +3054,6 @@
         }
       }
 
-      // Configures page-specific controls inside the shared portal navbar.
       // Função para configurar elementos específicos do navbar para esta página
       function setupPortalPublicoNavbar() {
         // Adicionar botão voltar no lado esquerdo
@@ -3134,7 +3085,6 @@
       }
 
       document.addEventListener("DOMContentLoaded", async () => {
-        // Page bootstrap: load layout, resolve chamber context, and start data modules.
         // Carregar componentes modularizados (navbar e footer)
         await initLayout({});
 
@@ -3150,7 +3100,6 @@
         // Configurar botão "Ver Todas as Pautas"
         setupVerTodasPautasButton();
 
-        // Loads all public portal data for the selected chamber.
         // Função para inicializar o portal
         async function initializePortal() {
           try {
@@ -3210,7 +3159,6 @@
           }
         }
 
-        // Reads the selected chamber from the URL query string.
         // Função para obter câmara da URL
         function getCamaraFromUrl() {
           const urlParams = new URLSearchParams(window.location.search);
@@ -3223,7 +3171,6 @@
           return null;
         }
 
-        // Reads the selected chamber fallback from localStorage.
         // Função para obter câmara do localStorage
         function getCamaraFromStorage() {
           const camaraId = localStorage.getItem("selectedCamaraId");
@@ -3235,7 +3182,6 @@
           return null;
         }
 
-        // Loads chamber metadata and starts the main realtime channel.
         // Função para carregar informações da câmara
         async function loadCamaraInfo(camaraId, camaraNome) {
           try {
@@ -3267,7 +3213,6 @@
           }
         }
 
-        // Applies the chamber name to the document title and hero area.
         // Função para atualizar UI com nome da câmara
         function updateCamaraUI(camaraNome) {
           // Atualizar título da página
@@ -3285,7 +3230,6 @@
           console.log("✅ UI atualizada com:", camaraNome);
         }
 
-        // Applies detailed chamber data returned by the public API.
         // Função para atualizar com dados reais da API
         function updateCamaraData(data) {
           console.log("📊 Dados da câmara recebidos:", data);
@@ -3306,7 +3250,6 @@
           }
         }
 
-        // Applies fallback chamber text when the public API is unavailable.
         // Função para dados mockados (fallback)
         function updateCamaraDataMock(camaraNome) {
           console.log("🎭 Usando dados mockados para:", camaraNome);
@@ -3324,7 +3267,6 @@
           }
         }
 
-        // Loads upcoming sessions for the selected chamber.
         // Função para carregar próximas sessões
         async function loadProximasSessoes(camaraId) {
           console.log("📅 Carregando próximas sessões da câmara:", camaraId);
@@ -3365,7 +3307,6 @@
           }
         }
 
-        // Chooses the best session layout based on result count.
         // Função para renderizar próximas sessões
         function renderProximasSessoes(sessoes) {
           const container = document.getElementById("sessoes-container");
@@ -3390,7 +3331,6 @@
           }
         }
 
-        // Renders upcoming sessions in a static responsive grid.
         // Renderizar como grid estático
         function renderSessoesGrid(sessoes, container) {
           const html = `
@@ -3403,7 +3343,6 @@
           container.innerHTML = html;
         }
 
-        // Renders upcoming sessions in an infinite carousel.
         // Renderizar como carrossel infinito
         function renderSessoesCarousel(sessoes, container) {
           // Duplicar sessões para carrossel infinito
@@ -3441,7 +3380,6 @@
           initSessoesCarousel(sessoes.length);
         }
 
-        // Builds a single upcoming session card.
         // Criar HTML para card de sessão
         function createSessaoCard(sessao) {
           const dataDaSessao = new Date(sessao.data_sessao);
@@ -3473,7 +3411,6 @@
                 `;
         }
 
-        // Wires carousel navigation and autoplay for upcoming sessions.
         // Inicializar carrossel de sessões
         function initSessoesCarousel(totalSessoes) {
           const carousel = document.getElementById("sessoes-carousel");
@@ -3544,7 +3481,6 @@
           }, 5000);
         }
 
-        // Loads public councilor data for the selected chamber.
         // Função para carregar vereadores
         async function loadVereadores(camaraId) {
           console.log("👥 Carregando vereadores da câmara:", camaraId);
@@ -3597,7 +3533,6 @@
           }
         }
 
-        // Chooses grid or carousel layout for the councilor roster.
         // Função para renderizar vereadores
         function renderVereadores(vereadores) {
           const container = document.getElementById("vereadores-container");
@@ -3632,7 +3567,6 @@
           }
         }
 
-        // Renders councilors in a centered static grid.
         // Renderizar como grid estático para poucos vereadores
         function renderVereadoresGrid(vereadores, container) {
           const html = `
@@ -3652,7 +3586,6 @@
           container.innerHTML = html;
         }
 
-        // Renders councilors in a continuous carousel.
         // Renderizar carrossel infinito de vereadores
         function renderVereadoresCarousel(vereadores, container) {
           // Duplicar vereadores para carrossel infinito suave
@@ -3683,7 +3616,6 @@
           initVereadoresCarousel(vereadores.length);
         }
 
-        // Builds a councilor card for carousel rendering.
         // Criar HTML para card de vereador (carrossel)
         function createVereadorCard(vereador) {
           let cargoFormatado = vereador.cargo || "Vereador";
@@ -3730,7 +3662,6 @@
                 `;
         }
 
-        // Builds a councilor card for static grid rendering.
         // Criar HTML para card de vereador estático (sem margin-right)
         function createVereadorCardStatic(vereador) {
           let cargoFormatado = vereador.cargo || "Vereador";
@@ -3777,7 +3708,6 @@
                 `;
         }
 
-        // Wires carousel controls and autoplay for councilors.
         // Inicializar carrossel de vereadores
         function initVereadoresCarousel(totalVereadores) {
           const carousel = document.getElementById("vereadores-carousel");
@@ -3833,7 +3763,6 @@
           }, 7000);
         }
 
-        // Displays a portal-level load error in the hero area.
         // Função para mostrar erro
         function showError(message) {
           console.error("❌", message);
@@ -3841,8 +3770,6 @@
             "Erro ao Carregar Portal";
           document.getElementById("heroDescription").textContent = message;
         }
-
-        // Loads recent finalized votes for the selected chamber.
         // Função para carregar votações recentes
         async function loadVotacoesRecentes(camaraId) {
           console.log("🗳️ Carregando votações recentes da câmara:", camaraId);
@@ -3920,7 +3847,6 @@
           }
         }
 
-        // Renders recent vote cards with responsive limits.
         // Função para renderizar votações recentes
         function renderVotacoesRecentes(pautas) {
           const container = document.getElementById("votacoes-grid");
@@ -3953,7 +3879,6 @@
           addVotacaoClickListeners();
         }
 
-        // Wires click navigation for recent vote cards.
         // Adicionar event listeners para navegação das votações
         function addVotacaoClickListeners() {
           const clickableCards = document.querySelectorAll(".clickable-card");
@@ -3967,7 +3892,6 @@
           });
         }
 
-        // Inserts a newly finalized pauta into the recent votes list.
         // Função para adicionar nova pauta às votações recentes (via WebSocket)
         function addPautaToVotacoesRecentes(novaPauta) {
           console.log(
@@ -4034,7 +3958,6 @@
           );
         }
 
-        // Exposes selected local helpers for global socket handlers.
         // --- Expor funções críticas globalmente ---
         // O Socket.IO client e alguns handlers são definidos em escopo global
         // (fora do callback DOMContentLoaded). Para evitar ReferenceError quando
@@ -4055,7 +3978,6 @@
           );
         }
 
-        // Converts backend voting results to display labels.
         // Função auxiliar para formatar status para exibição
         function formatarStatusParaExibicao(resultadoVotacao) {
           switch (resultadoVotacao) {
@@ -4068,7 +3990,6 @@
           }
         }
 
-        // Maps voting results to card badge classes.
         // Função auxiliar para obter classe CSS do status
         function getStatusClass(resultadoVotacao) {
           switch (resultadoVotacao) {
@@ -4081,7 +4002,6 @@
           }
         }
 
-        // Builds a recent vote card.
         // Criar HTML para card de votação
         function createVotacaoCard(pauta) {
           // Limitar descrição a 100 caracteres para 2 linhas
@@ -4109,7 +4029,6 @@
                 `;
         }
 
-        // Navigates to the public voting details page.
         // Função para navegar para página de votação pública
         function navegarParaVotacao(pautaId) {
           // Obter câmara atual
@@ -4127,12 +4046,11 @@
           window.location.href = url;
         }
 
-        // Configures the disabled "all pautas" call-to-action.
         // Função para configurar o botão "Ver Todas as Pautas"
         function setupVerTodasPautasButton() {
           const verTodasBtn = document.getElementById("ver-todas-pautas");
           if (verTodasBtn) {
-            verTodasBtn.addEventListener("click", (e) => {
+            verTodasBtn.addEventListener("click", () => {
               // Obter ID da câmara do localStorage ou URL
               const camaraFromStorage = getCamaraFromStorage();
               const camaraFromUrl = getCamaraFromUrl();
@@ -4149,7 +4067,6 @@
 
         // === LIVESTREAM FUNCTIONALITY ===
 
-        // Loads the current livestream or latest VOD for the selected chamber.
         // Função para carregar livestream da câmara
         async function loadLivestream() {
           console.log("📺 Carregando livestream...");
@@ -4207,7 +4124,6 @@
           }
         }
 
-        // Resets the livestream area to its unavailable placeholder state.
         // Função para ocultar livestream e mostrar placeholder
         function hideLivestreamSection() {
           const sessionTitle = document.getElementById("session-status-title");
@@ -4237,7 +4153,6 @@
           livestreamInfo.style.display = "none";
         }
 
-        // Formats ISO 8601 YouTube durations for display.
         // Função para formatar duração em formato legível
         function formatDuration(duration) {
           // Duration vem no formato ISO 8601 (PT4M13S) do YouTube
@@ -4257,7 +4172,6 @@
           }
         }
 
-        // Starts periodic livestream refresh checks.
         // Função para verificar periodicamente se o status da live mudou
         function startLivestreamPolling() {
           // Verificar a cada 30 segundos se há mudanças no status da live
@@ -4269,7 +4183,6 @@
           }, 30000); // 30 segundos
         }
 
-        // Disconnects realtime resources when leaving the page.
         // Limpeza ao sair da página
         window.addEventListener("beforeunload", () => {
           // Desconectar WebSocket principal

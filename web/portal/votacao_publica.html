@@ -1,9 +1,4 @@
 <!DOCTYPE html>
-<!--
-  File: votacao_publica.html
-  Purpose: Public portal page that displays a single agenda item's voting details,
-  including metadata, live summary statistics, and the list of recorded votes.
--->
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -26,9 +21,9 @@
     <link rel="stylesheet" href="../css/btn-voltar.css">
 
     <style>
-        /* Page-specific layout and presentation for the public voting detail view. */
+        /* ESTILOS ESPECÍFICOS DA VOTAÇÃO PÚBLICA */
 
-        /* Base layout keeps the footer anchored below the main content. */
+        /* Layout geral para fixar footer */
         body {
             min-height: 100vh;
             display: flex;
@@ -40,7 +35,7 @@
             padding-top: 80px; /* Espaço para o header fixo */
         }
 
-        /* Main two-column layout for agenda details and voter results. */
+        /* Layout da Votação Pública */
         .votacao-publica-layout {
             display: grid;
             grid-template-columns: 1fr 2fr;
@@ -94,7 +89,7 @@
             text-decoration: underline;
         }
 
-        /* Voting statistics summary cards. */
+        /* Estatísticas de Votação */
         .stats-card {
             background: linear-gradient(135deg, var(--card-bg) 0%, var(--background-light) 100%);
             border: 1px solid var(--border-color);
@@ -229,7 +224,7 @@
             letter-spacing: 0.5px;
         }
 
-        /* Responsive voter grid and individual vote cards. */
+        /* Grid de Votantes */
         .votantes-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -356,7 +351,7 @@
             margin-top: 4px;
         }
 
-        /* Empty state shown when no votes are available. */
+        /* Estado vazio para votantes */
         .empty-votantes {
             grid-column: 1 / -1;
             text-align: center;
@@ -388,7 +383,7 @@
             margin-bottom: 0;
         }
 
-        /* Status and outcome badge styles. */
+        /* Badges de Status */
         .badge-aprovado {
             background-color: rgba(46, 160, 67, 0.2);
             color: #71e67f;
@@ -450,7 +445,7 @@
         }
 
 
-        /* Responsive adjustments for tablet and mobile layouts. */
+        /* Responsividade */
         @media (max-width: 1024px) {
             .votacao-publica-layout {
                 grid-template-columns: 1fr;
@@ -564,49 +559,45 @@
     </style>
 </head>
 <body>
-    <!-- Dynamic Navbar Placeholder -->
+    <!-- Navbar carregado dinamicamente -->
     <div id="navbar-placeholder"></div>
 
     <main>
-        <!-- Voting Content: agenda details and voter results -->
+
         <div class="votacao-publica-layout fade-in" id="votacao-layout">
-            <!-- Agenda Information Column -->
             <div class="info-column" id="info-column">
                 <!-- Informações da pauta serão carregadas aqui -->
             </div>
 
-            <!-- Vote Results Column -->
             <div class="votantes-column" id="votantes-column">
                 <!-- Grid de votantes será carregado aqui -->
             </div>
         </div>
     </main>
 
-    <!-- Dynamic Footer Placeholder -->
+    <!-- Footer carregado dinamicamente -->
     <div id="footer-placeholder"></div>
 
-    <script src="../js/mockMode.js?v=3"></script>
     <script src="../js/global.js"></script>
     <script src="../js/carregamento.js"></script>
     <script>
-        // Initializes shared layout, navbar context, animations, and page data loading.
         document.addEventListener('DOMContentLoaded', async () => {
-            // Loads shared layout components.
+            // Carregar componentes de layout
             await initLayout({});
 
-            // Configures page-specific navbar content.
+            // Configurar botão voltar e info da câmara no navbar
             setupVotacaoPublicaNavbar();
 
-            // Enables entrance animations for the page.
+            // Inicializar animações
             initUnifiedAnimations();
 
-            // Starts loading voting details and results.
+            // Carregar dados da votação
             await initializeVotacao();
         });
 
-        // Configures the navbar content used specifically by this page.
+        // Função para configurar elementos específicos do navbar para esta página
         function setupVotacaoPublicaNavbar() {
-            // Injects the back button into the navbar's left area.
+            // Adicionar botão voltar no lado esquerdo
             const backButtonContainer = document.getElementById('nav-back-button');
             if (backButtonContainer) {
                 backButtonContainer.innerHTML = `
@@ -617,19 +608,19 @@
                 `;
             }
 
-            // The right navbar area remains intentionally empty on this page.
+            // Lado direito permanece vazio nesta página
         }
 
-        // Shared page state.
+        // Variáveis globais
         let pautaId = null;
 
-        // Extracts the agenda item identifier from the current URL.
+        // Função para extrair ID da pauta da URL
         function getPautaIdFromUrl() {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get('id');
         }
 
-        // Loads and renders all data required for the public voting view.
+        // Função para inicializar votação pública
         async function initializeVotacao() {
             pautaId = getPautaIdFromUrl();
 
@@ -643,12 +634,12 @@
             const infoColumn = document.getElementById('info-column');
             const votantesColumn = document.getElementById('votantes-column');
 
-            // Shows loading placeholders in both content columns.
+            // Mostrar loading usando carregamento.js
             renderLoadingState(infoColumn, 'Carregando informações da votação...');
             renderLoadingState(votantesColumn, 'Carregando votos...');
 
             try {
-                // Requests agenda metadata and vote data in parallel.
+                // Carregar dados da pauta e votos em paralelo
                 const [pautaData, votosData] = await Promise.all([
                     fetchPautaData(pautaId),
                     fetchVotosData(pautaId)
@@ -665,7 +656,7 @@
             }
         }
 
-        // Fetches public metadata for the selected agenda item.
+        // Buscar dados da pauta (usando endpoint público)
         async function fetchPautaData(id) {
             const response = await fetch(`/api/pautas/${id}/publica`);
 
@@ -676,7 +667,7 @@
             return await response.json();
         }
 
-        // Fetches the public vote list and summary statistics for the agenda item.
+        // Buscar dados de votos (usando endpoint público)
         async function fetchVotosData(id) {
             const response = await fetch(`/api/votos/pauta/${id}/publico`);
 
@@ -687,11 +678,11 @@
             return await response.json();
         }
 
-        // Renders the left-column agenda metadata and status information.
+        // Renderizar informações da pauta
         function renderPautaInfo(pauta) {
             const infoColumn = document.getElementById('info-column');
 
-            // Builds the status badge for the current agenda state.
+            // Determinar badges de status e resultado
             const getStatusBadge = (status) => {
                 if (status === 'Finalizada') {
                     return '<span class="badge-finalizada">Finalizada</span>';
@@ -702,9 +693,8 @@
                 }
             };
 
-            // Builds the outcome badge when the vote has been finalized.
             const getResultadoBadge = (status, resultado) => {
-                // Outcome is shown only after finalization.
+                // Só mostrar resultado se status for "Finalizada"
                 if (status !== 'Finalizada') {
                     return '';
                 }
@@ -721,10 +711,10 @@
                 }
             };
 
-            // Generates a display timestamp for the last refresh.
+            // Data de atualização
             const dataAtualizacao = new Date().toLocaleString('pt-BR');
 
-            // Updates the document title to reflect the loaded agenda item.
+            // Atualizar título da página
             document.getElementById('pageTitle').textContent = `${pauta.nome} - Votação Pública`;
 
             infoColumn.innerHTML = `
@@ -751,21 +741,21 @@
             `;
         }
 
-        // Renders the vote summary and the voter grid in the right column.
+        // Renderizar dados de votos
         function renderVotosData(votosData) {
             const { votos, estatisticas } = votosData;
             const votantesColumn = document.getElementById('votantes-column');
 
-            // Builds the voting statistics section.
+            // Renderizar estatísticas
             const statsHtml = renderEstatisticas(estatisticas);
 
-            // Builds the voter card grid.
+            // Renderizar grid de votantes
             const votantesHtml = renderVotantesGrid(votos);
 
             votantesColumn.innerHTML = statsHtml + votantesHtml;
         }
 
-        // Renders the aggregated vote statistics block.
+        // Renderizar estatísticas
         function renderEstatisticas(estatisticas) {
             if (!estatisticas) {
                 return `
@@ -810,7 +800,7 @@
             `;
         }
 
-        // Renders the grid of recorded votes and voter identities.
+        // Renderizar grid de votantes
         function renderVotantesGrid(votos) {
             if (!votos || votos.length === 0) {
                 return `
@@ -830,10 +820,10 @@
                 const votoIcon = getVotoIcon(voto.voto);
                 const presidenteTag = voto.era_presidente_no_voto ? '<span class="tag tag-presidente">Presidente</span>' : '';
 
-                // Uses the stored avatar when available, with a generated fallback.
+                // Usar foto real do vereador ou fallback
                 const avatarUrl = vereador.foto_url || `https://i.pravatar.cc/50?u=${vereador.id}`;
 
-                // Renders party branding when party data is available.
+                // Informações do partido
                 const partidoInfo = partido ? `
                     <div class="partido-info">
                         ${partido.logo_url ? `<img src="${partido.logo_url}" alt="${partido.sigla}" class="partido-logo" onerror="this.style.display='none'">` : ''}
@@ -862,7 +852,8 @@
             return `<div class="votantes-grid">${votosHtml}</div>`;
         }
 
-        // Helper utilities for vote rendering and safe HTML output.
+
+        // Funções auxiliares
         function getVotoClass(voto) {
             switch (voto) {
                 case 'SIM': return 'voto-sim';
