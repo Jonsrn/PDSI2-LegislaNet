@@ -1,9 +1,4 @@
 <!doctype html>
-<!--
-  TV Speech Display Page
-  Shows the active speaker, live countdown, speech status, and Socket.IO
-  connection state for chamber TV screens during the order-of-speech flow.
--->
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
@@ -278,14 +273,11 @@
     </style>
   </head>
   <body>
-    <!-- Live connection status for the TV socket session. -->
     <div class="connection-badge" id="connectionBadge">
       <div id="connectionBadgeText">Conectado</div>
     </div>
 
-    <!-- Full-screen TV layout with speaker identity and countdown timer. -->
     <div class="tv-layout">
-      <!-- Speaker photo and display name area. -->
       <div class="orador-area">
         <img id="oradorFoto" class="orador-foto" src="" alt="Foto do orador" />
         <div class="orador-nome-bottom" id="oradorNomeBottom">
@@ -293,7 +285,6 @@
         </div>
       </div>
 
-      <!-- Speech timer, progress bar, and time-up banner. -->
       <div>
         <div class="timer" id="timerContainer" aria-live="polite">
           <div class="timer-value" id="timerValue">--:--</div>
@@ -307,11 +298,9 @@
     </div>
 
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script src="../js/mockMode.js?v=4"></script>
     <script src="../js/global.js"></script>
 
     <script>
-      // Cached DOM references for live TV rendering.
       const connectionBadge = document.getElementById("connectionBadge");
       const connectionBadgeText = document.getElementById(
         "connectionBadgeText",
@@ -334,11 +323,8 @@
       let timerAnchorRemaining = null;
       let timeUpReportedToServer = false;
 
-      // Avoids unnecessary image reloads when repeated socket updates arrive.
       // Cache de URLs de imagens já carregadas (evita re-download)
       const imageCache = new Map();
-
-      // Returns a cached image URL reference for speaker photos.
       function getCachedImageUrl(url) {
         if (!url) return null;
         if (imageCache.has(url)) return imageCache.get(url);
@@ -346,13 +332,11 @@
         return url;
       }
 
-      // Updates the visible socket connection badge.
       function setConnectionBadge(ok, label) {
         connectionBadge.style.background = ok ? "#5cb85c" : "#d9534f";
         connectionBadgeText.textContent = label;
       }
 
-      // Formats a second count as a two-digit MM:SS timer.
       function formatMMSS(totalSeconds) {
         const s = Math.max(0, Math.floor(totalSeconds));
         const mm = String(Math.floor(s / 60)).padStart(2, "0");
@@ -360,7 +344,6 @@
         return `${mm}:${ss}`;
       }
 
-      // Plays a short bell sound when the speech timer reaches zero.
       function playTimeUpBeep(count = 1) {
         // Campainha de Mesa (Table Bell)
         try {
@@ -408,7 +391,6 @@
         }
       }
 
-      // Renders the current speech state into the TV display.
       function renderBase() {
         if (!falaState) {
           oradorNomeBottom.textContent = "Aguardando...";
@@ -507,7 +489,6 @@
         }
       }
 
-      // Stops the local timer loop when speech is closed or redirected.
       function stopTimer() {
         if (timerInterval) {
           clearInterval(timerInterval);
@@ -515,7 +496,6 @@
         }
       }
 
-      // Starts the local timer loop and handles time-up side effects.
       function startTimerLoop() {
         stopTimer();
         timeUpAlreadyBeeped = false;
@@ -579,7 +559,6 @@
         }, 250);
       }
 
-      // Applies a socket or polling payload and synchronizes local timer anchors.
       function applyFalaUpdate(payload) {
         if (!payload) return;
 
@@ -681,7 +660,6 @@
         }
       }
 
-      // Polls the backend for the current speech state as a socket fallback.
       async function syncFalaStatus() {
         if (!camaraId) return;
 
@@ -708,7 +686,6 @@
         }
       }
 
-      // Authenticates the TV screen, loads chamber context, and wires socket events.
       async function init() {
         const isAuthenticated = await protectPage({
           allowedRoles: ["tv"],
@@ -790,7 +767,6 @@
         });
       }
 
-      // Start the TV speech display lifecycle.
       init();
     </script>
   </body>

@@ -1,9 +1,4 @@
 <!doctype html>
-<!--
-  TV Voting Display Page
-  Shows live voting information on chamber TV screens, including pauta details,
-  real-time vote totals, registered voters, and Socket.IO connection state.
--->
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
@@ -511,7 +506,6 @@
     </style>
   </head>
   <body>
-    <!-- Live Socket.IO connection status and manual reconnect action. -->
     <!-- Status de Conexão -->
     <div class="connection-status" id="connectionStatus">
       <span id="statusText">Conectado</span>
@@ -520,12 +514,9 @@
       </button>
     </div>
 
-    <!-- Full-screen TV voting layout with pauta information and voter cards. -->
     <div class="tv-layout">
-      <!-- Pauta metadata and live vote summary column. -->
       <!-- Coluna de Informações -->
       <div class="info-column">
-        <!-- Current pauta title and symbolic-voting badge. -->
         <!-- Informações da Pauta -->
         <div class="info-card" style="position: relative">
           <div
@@ -539,14 +530,12 @@
           <div class="pauta-title" id="pautaTitle">Carregando pauta...</div>
         </div>
 
-        <!-- Current pauta description for the TV audience. -->
         <!-- Descrição da Pauta -->
         <div class="info-card">
           <h3>Descrição da Pauta</h3>
           <p id="pautaDescricao">Carregando descrição...</p>
         </div>
 
-        <!-- Live vote counters grouped by voting option. -->
         <!-- Estatísticas de Votação -->
         <div class="stats-card">
           <div class="stats-header">
@@ -585,7 +574,6 @@
         </div>
       </div>
 
-      <!-- Registered voters grid updated by initial fetches and socket events. -->
       <!-- Coluna de Votantes -->
       <div class="votantes-column">
         <h3
@@ -607,14 +595,12 @@
     </div>
 
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script src="../js/mockMode.js?v=4"></script>
     <script src="../js/global.js"></script>
 
     <script>
       let tvSocket = null;
       let camaraId = null;
 
-      // Ensures the Socket.IO client is available before creating the TV socket.
       // Função para garantir carregamento do Socket.IO
       async function ensureSocketClient() {
         if (typeof io === "undefined") {
@@ -628,7 +614,6 @@
         }
       }
 
-      // Request context and cached DOM references for the live voting UI.
       // Parâmetros e elementos DOM
       const token = localStorage.getItem("authToken");
       const params = new URLSearchParams(window.location.search);
@@ -648,11 +633,8 @@
       const totalVotesEl = document.getElementById("totalVotes");
       const votantesEl = document.getElementById("votantes");
 
-      // Avoids unnecessary image reloads when repeated vote updates arrive.
       // Cache de URLs de imagens já carregadas (evita re-download)
       const imageCache = new Map();
-
-      // Returns a cached image URL reference for councilor photos.
       function getCachedImageUrl(url) {
         if (!url) return null;
         if (imageCache.has(url)) return imageCache.get(url);
@@ -660,7 +642,6 @@
         return url;
       }
 
-      // Builds a voter card for the live voting grid.
       function renderVotante(v) {
         const card = document.createElement("div");
         card.className = "votante-card";
@@ -720,7 +701,6 @@
         return card;
       }
 
-      // Maps vote labels to display classes.
       // 📺 FUNÇÃO PARA MOSTRAR NOTIFICAÇÃO DE VOTO NA TV
       function getVotoClass(voto) {
         switch (voto) {
@@ -735,7 +715,6 @@
         }
       }
 
-      // Maps vote labels to Font Awesome icons.
       function getVotoIcon(voto) {
         switch (voto) {
           case "SIM":
@@ -749,7 +728,6 @@
         }
       }
 
-      // Escapes dynamic text before inserting it into HTML strings.
       function escapeHtml(text = "") {
         return text
           .replace(/&/g, "&amp;")
@@ -758,12 +736,9 @@
           .replace(/"/g, "&quot;")
           .replace(/'/g, "&#039;");
       }
-
-      // Deduplicates short-lived vote notifications received from sockets.
       // Cache para deduplicação de notificações (evita toasts duplicados)
       const recentNotifications = new Set();
 
-      // Displays a temporary TV overlay when a vote is created or changed.
       function showVoteNotification(vereadorNome, voto, isUpdate) {
         // ID único da notificação
         const notificationId = `${vereadorNome}-${voto}-${isUpdate}-${Date.now()}`;
@@ -893,7 +868,6 @@
         }, 4000);
       }
 
-      // Loads the pauta, current totals, and existing votes from the backend.
       // Função para carregar dados iniciais e atualizar interface
       async function fetchInitial() {
         try {
@@ -939,7 +913,6 @@
         }
       }
 
-      // Updates the live vote counters.
       // Função para atualizar estatísticas
       function updateStats(stats) {
         const sim = stats?.sim || 0;
@@ -953,7 +926,6 @@
         totalVotesEl.textContent = total;
       }
 
-      // Verifies that the current pauta is still the active live voting session.
       // Fallback leve: sincronizar status de votação ao vivo via HTTP
       async function syncVotacaoAoVivoStatus() {
         try {
@@ -1021,7 +993,6 @@
         }
       }
 
-      // Initializes data loading, socket subscriptions, and reconnect behavior.
       (async () => {
         try {
           // Primeiro carregar dados para obter camaraId

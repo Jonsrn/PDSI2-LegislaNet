@@ -1,16 +1,11 @@
 /**
- * Pagination control helpers.
+ * Renders carousel-style pagination controls with page numbers and ellipsis.
+ * Hides the nearest `.pagination-container` when only one page exists.
  *
- * @module web/js/pagination
- */
-
-/**
- * Renders carousel-style pagination controls.
- *
- * @param {object} config - Pagination configuration.
- * @param {string} config.containerId - Container id where controls are rendered.
- * @param {number} config.currentPage - Current page, starting at 1.
- * @param {number} config.totalItems - Total item count.
+ * @param {Object} config - Pagination configuration.
+ * @param {string} config.containerId - ID of the container that will receive controls.
+ * @param {number} config.currentPage - Current page (1-based).
+ * @param {number} config.totalItems - Total number of items.
  * @param {number} config.itemsPerPage - Items per page.
  * @param {Function} config.onPageChange - Callback invoked when the page changes.
  * @returns {void}
@@ -99,11 +94,11 @@ function createPaginationControls({
 }
 
 /**
- * Calculates which page numbers and ellipses should be shown.
+ * Computes the page numbers to display, inserting ellipsis when gaps exist.
  *
- * @param {number} currentPage - Current page, starting at 1.
- * @param {number} totalPages - Total page count.
- * @returns {Array<number|string>} Page numbers and ellipsis markers to render.
+ * @param {number} currentPage - Current page (1-based).
+ * @param {number} totalPages - Total number of pages.
+ * @returns {(number|string)[]} Array of page numbers and "..." placeholders.
  */
 function calculatePagesToShow(currentPage, totalPages) {
     const pages = [];
