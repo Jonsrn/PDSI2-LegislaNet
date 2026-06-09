@@ -4,16 +4,15 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'auth_service.dart';
 
-/// Handles APK update checks and download URL launching.
+/// Checks for tablet app updates and opens update download links.
 class UpdateService {
-  /// Checks whether the server has a newer APK version available.
-  ///
-  /// Returns the remote version metadata when an update is available, otherwise
-  /// returns `null`.
+  /// Fetches remote version metadata and returns it only when it is newer.
   static Future<Map<String, dynamic>?> checkForUpdate() async {
     try {
       final baseUrl = AuthService.baseUrl;
-      print('🔄 [UpdateService] Verificando atualizações em: $baseUrl/api/system/version');
+      print(
+        '🔄 [UpdateService] Verificando atualizações em: $baseUrl/api/system/version',
+      );
 
       final response = await http.get(
         Uri.parse('$baseUrl/api/system/version'),
@@ -27,7 +26,9 @@ class UpdateService {
         final packageInfo = await PackageInfo.fromPlatform();
         final currentVersion = packageInfo.version;
 
-        print('📦 Versão atual: $currentVersion | Versão remota: $remoteVersion');
+        print(
+          '📦 Versão Atual: $currentVersion | Versão Remota: $remoteVersion',
+        );
 
         if (_isNewer(remoteVersion, currentVersion)) {
           return remoteData;
@@ -39,12 +40,10 @@ class UpdateService {
     return null;
   }
 
-  /// Returns whether [remote] is newer than [current].
-  ///
-  /// Compares semantic version strings using the `major.minor.patch` segments
-  /// and ignores build metadata or pre-release suffixes.
+  /// Compares semantic version cores and ignores build or prerelease suffixes.
   static bool _isNewer(String remote, String current) {
     try {
+      // Compare only the major.minor.patch core.
       final r = remote.split('+')[0].split('-')[0].split('.');
       final c = current.split('+')[0].split('-')[0].split('.');
 
@@ -60,7 +59,7 @@ class UpdateService {
     }
   }
 
-  /// Opens the APK download [url] in an external application.
+  /// Opens the update download URL in an external application.
   static Future<void> launchDownloadUrl(String url) async {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
