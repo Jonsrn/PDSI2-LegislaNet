@@ -1,23 +1,20 @@
 const { supabaseAdmin } = require('../config/supabase');
 const createLogger = require('../config/logger');
-const logger = createLogger('VEREADOR_CONTROLLER');
+const logger = createLogger('TABLET_VEREADOR_CONTROLLER');
 
 /**
- * Returns the authenticated council member profile.
- *
- * The lookup is scoped to the authenticated user's chamber and includes party
- * metadata used by the tablet app.
+ * Returns the authenticated vereador profile scoped to the user's chamber.
  *
  * @param {import('express').Request} req - Request containing authenticated user and profile.
- * @param {import('express').Response} res - HTTP response object.
- * @returns {Promise<import('express').Response>} Council member profile response.
+ * @param {import('express').Response} res - Express response.
+ * @returns {Promise<import('express').Response|void>} Vereador profile response.
  */
 const getVereadorProfile = async (req, res) => {
     const { user, profile } = req;
-    logger.info(`Buscando perfil do vereador ${user.id}`);
+    logger.info(`Buscando dados do vereador ${user.id} da câmara ${profile.camara_id}`);
 
     try {
-        const { data, error } = await supabaseAdmin
+        const { data: vereadorData, error } = await supabaseAdmin
             .from('vereadores')
             .select(`
                 id,
@@ -37,35 +34,42 @@ const getVereadorProfile = async (req, res) => {
             .eq('camara_id', profile.camara_id)
             .single();
 
-        if (error || !data) {
-            logger.warn('Dados do vereador não encontrados.', { userId: user.id });
+        if (error) {
+            logger.error('Erro ao buscar dados do vereador:', { error: error.message });
+            return res.status(500).json({ error: 'Erro ao buscar dados do vereador.' });
+        }
+
+        if (!vereadorData) {
+            logger.warn('Dados de vereador não encontrados:', { userId: user.id });
             return res.status(404).json({ error: 'Dados de vereador não encontrados.' });
         }
 
-        logger.info(`✅ Perfil encontrado: ${data.nome_parlamentar}`);
-        return res.status(200).json(data);
+        logger.info('✅ Dados do vereador encontrados:', { vereadorId: vereadorData.id });
+        res.status(200).json(vereadorData);
 
     } catch (error) {
-        logger.error('Erro ao buscar perfil do vereador.', { error: error.message });
-        return res.status(500).json({ error: 'Erro interno ao buscar dados do vereador.' });
+        logger.error('Erro crítico ao buscar dados do vereador:', {
+            error: error.message,
+            stack: error.stack,
+            userId: user.id
+        });
+        res.status(500).json({ error: 'Erro interno ao buscar dados do vereador.' });
     }
 };
 
 /**
- * Lists active council members from the authenticated user's chamber.
- *
- * Results are ordered by parliamentary name and include party metadata.
+ * Lists active vereadores from the authenticated user's chamber.
  *
  * @param {import('express').Request} req - Request containing authenticated profile.
- * @param {import('express').Response} res - HTTP response object.
- * @returns {Promise<import('express').Response>} Active council member list response.
+ * @param {import('express').Response} res - Express response.
+ * @returns {Promise<import('express').Response|void>} Active vereador list response.
  */
 const getVereadoresDaCamara = async (req, res) => {
     const { profile } = req;
-    logger.info(`Listando vereadores ativos da câmara ${profile.camara_id}`);
+    logger.info(`Buscando vereadores ativos da câmara ${profile.camara_id}`);
 
     try {
-        const { data, error } = await supabaseAdmin
+        const { data: vereadores, error } = await supabaseAdmin
             .from('vereadores')
             .select(`
                 id,
@@ -85,35 +89,33 @@ const getVereadoresDaCamara = async (req, res) => {
             .order('nome_parlamentar', { ascending: true });
 
         if (error) {
-            logger.error('Erro ao listar vereadores.', { error: error.message });
+            logger.error('Erro ao buscar vereadores da câmara:', { error: error.message });
             return res.status(500).json({ error: 'Erro ao buscar vereadores da câmara.' });
         }
 
-        logger.info(`✅ ${data.length} vereadores encontrados.`);
-        return res.status(200).json({ data });
+        logger.info(`✅ Encontrados ${vereadores.length} vereadores ativos da câmara.`);
+        res.status(200).json({ data: vereadores });
 
     } catch (error) {
-        logger.error('Erro crítico ao listar vereadores.', { error: error.message });
-        return res.status(500).json({ error: 'Erro interno ao buscar vereadores da câmara.' });
+        logger.error('Erro crítico ao buscar vereadores da câmara:', {
+            error: error.message,
+            stack: error.stack,
+            camaraId: profile.camara_id
+        });
+        res.status(500).json({ error: 'Erro interno ao buscar vereadores da câmara.' });
     }
 };
 
 /**
- * Updates the authenticated council member profile photo URL.
+ * Updates the authenticated vereador profile photo URL.
  *
- * Requires `foto_url` in the request body.
- *
- * @param {import('express').Request} req - Request containing authenticated user and photo URL.
- * @param {import('express').Response} res - HTTP response object.
- * @returns {Promise<import('express').Response>} Photo update result response.
+ * @param {import('express').Request} req - Request containing authenticated user and foto_url.
+ * @param {import('express').Response} res - Express response.
+ * @returns {Promise<import('express').Response|void>} Photo update response.
  */
 const updateVereadorFoto = async (req, res) => {
     const { user } = req;
     const { foto_url } = req.body;
-
-    if (!foto_url) {
-        return res.status(400).json({ error: 'URL da foto é obrigatória.' });
-    }
 
     logger.info(`Atualizando foto do vereador ${user.id}`);
 
@@ -126,17 +128,25 @@ const updateVereadorFoto = async (req, res) => {
             .single();
 
         if (error) {
-            logger.error('Erro ao atualizar foto.', { error: error.message });
+            logger.error('Erro ao atualizar foto do vereador:', { error: error.message });
             return res.status(500).json({ error: 'Erro ao atualizar foto do vereador.' });
         }
 
-        logger.info('✅ Foto atualizada com sucesso.');
-        return res.status(200).json({ message: 'Foto atualizada com sucesso.', data });
+        logger.info('✅ Foto do vereador atualizada com sucesso:', { vereadorId: data.id });
+        res.status(200).json({ message: 'Foto atualizada com sucesso.', data });
 
     } catch (error) {
-        logger.error('Erro crítico ao atualizar foto.', { error: error.message });
-        return res.status(500).json({ error: 'Erro interno ao atualizar foto do vereador.' });
+        logger.error('Erro crítico ao atualizar foto do vereador:', {
+            error: error.message,
+            stack: error.stack,
+            userId: user.id
+        });
+        res.status(500).json({ error: 'Erro interno ao atualizar foto do vereador.' });
     }
 };
 
-module.exports = { getVereadorProfile, getVereadoresDaCamara, updateVereadorFoto };
+module.exports = {
+    getVereadorProfile,
+    getVereadoresDaCamara,
+    updateVereadorFoto
+};
