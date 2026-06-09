@@ -3,57 +3,37 @@ import 'dart:async';
 import 'services/auth_service.dart';
 import 'services/websocket_service.dart';
 
-/// Available vote choices for a voting agenda item.
+/// Vote options available to the council member during a live agenda vote.
 enum VotoOpcao { sim, nao, abstencao, nenhum }
 
-/// Screen that lets a council member vote on an active agenda item.
+/// Screen where a council member reviews an agenda and submits a vote.
 class VotacaoPautaScreen extends StatefulWidget {
-  /// Agenda metadata used to display details and identify the voting room.
+  /// Agenda data used to render the voting screen and submit the vote.
   final Map<String, dynamic> pauta;
 
-  /// Creates the voting screen for the provided [pauta].
+  /// Creates the agenda voting screen.
   const VotacaoPautaScreen({super.key, required this.pauta});
 
   @override
   State<VotacaoPautaScreen> createState() => _VotacaoPautaScreenState();
 }
 
-/// Manages vote selection, submission, statistics, and real-time updates.
+/// Manages vote selection, submission, live statistics, and WebSocket updates.
 class _VotacaoPautaScreenState extends State<VotacaoPautaScreen> {
-  /// Currently selected vote option.
   VotoOpcao _votoSelecionado = VotoOpcao.nenhum;
-
-  /// Current WebSocket connection state used by the connection indicator.
   String _connectionStatus = 'connected';
-
-  /// Tracks whether a vote submission is currently in progress.
   bool _isVoting = false;
-
-  /// Indicates whether this screen has successfully registered a vote.
   bool _votoFoiRegistrado = false;
 
-  /// Latest vote statistics for the current agenda item.
   Map<String, dynamic>? _estatisticas;
-
-  /// Tracks whether vote statistics are currently being loaded.
   bool _isLoadingStats = false;
 
-  /// Shared WebSocket service used for live voting updates.
   final WebSocketService _webSocketService = WebSocketService.instance;
-
-  /// Subscription for vote notification events.
   StreamSubscription<Map<String, dynamic>>? _votoNotificationSubscription;
-
-  /// Subscription for live statistics update events.
   StreamSubscription<Map<String, dynamic>>? _statsUpdateSubscription;
-
-  /// Subscription for events that close the current voting session.
   StreamSubscription<Map<String, dynamic>>? _encerrarVotacaoSubscription;
-
-  /// Subscription for WebSocket connection status changes.
   StreamSubscription<String>? _connectionSubscription;
 
-  /// Loads initial data and starts real-time synchronization.
   @override
   void initState() {
     super.initState();
@@ -64,7 +44,6 @@ class _VotacaoPautaScreenState extends State<VotacaoPautaScreen> {
     _startRealTimeUpdates();
   }
 
-  /// Cancels active subscriptions and leaves the agenda WebSocket room.
   @override
   void dispose() {
     _votoNotificationSubscription?.cancel();
@@ -75,7 +54,7 @@ class _VotacaoPautaScreenState extends State<VotacaoPautaScreen> {
     super.dispose();
   }
 
-  /// Fetches council member details required by the authenticated session.
+  /// Loads the current council member data required by the voting API context.
   Future<void> _loadVereadorData() async {
     try {
       await AuthService.getVereadorDetails();
@@ -84,7 +63,7 @@ class _VotacaoPautaScreenState extends State<VotacaoPautaScreen> {
     }
   }
 
-  /// Restores a previously registered vote for this agenda item when present.
+  /// Checks whether the current council member already voted on this agenda.
   Future<void> _checkExistingVote() async {
     try {
       print(
@@ -140,7 +119,7 @@ class _VotacaoPautaScreenState extends State<VotacaoPautaScreen> {
     }
   }
 
-  /// Converts a [VotoOpcao] value into the label shown to the user.
+  /// Returns the backend-compatible display label for a vote option.
   String _getVotoDisplayName(VotoOpcao voto) {
     switch (voto) {
       case VotoOpcao.sim:
@@ -154,7 +133,7 @@ class _VotacaoPautaScreenState extends State<VotacaoPautaScreen> {
     }
   }
 
-  /// Loads the current vote totals for the agenda item.
+  /// Loads live vote statistics for the current agenda.
   Future<void> _loadEstatisticas() async {
     setState(() {
       _isLoadingStats = true;
@@ -188,7 +167,7 @@ class _VotacaoPautaScreenState extends State<VotacaoPautaScreen> {
     }
   }
 
-  /// Initializes WebSocket listeners for live vote and statistics updates.
+  /// Initializes WebSocket subscriptions for vote notifications and live statistics.
   Future<void> _initializeWebSocket() async {
     try {
       _webSocketService.setContext(context);
@@ -200,6 +179,7 @@ class _VotacaoPautaScreenState extends State<VotacaoPautaScreen> {
       _votoNotificationSubscription = _webSocketService.votoNotifications
           .listen((data) {
             print('🔔 Notificação de voto recebida: $data');
+            // Toasts are handled by WebSocketService; this screen refreshes local stats.
             if (data['pautaId'] != null &&
                 data['pautaId'].toString() == widget.pauta['id'].toString()) {
               _loadEstatisticas();
@@ -221,6 +201,7 @@ class _VotacaoPautaScreenState extends State<VotacaoPautaScreen> {
             final pautaIdEncerrada = data['pautaId']?.toString();
             if (pautaIdEncerrada == widget.pauta['id'].toString()) {
               if (mounted) {
+                // Return vote data so the dashboard can update optimistically.
                 if (_votoFoiRegistrado) {
                   String votoString;
                   switch (_votoSelecionado) {
@@ -272,7 +253,7 @@ class _VotacaoPautaScreenState extends State<VotacaoPautaScreen> {
     }
   }
 
-  /// Starts polling for statistics when WebSocket updates are unavailable.
+  /// Starts polling statistics only when the WebSocket connection is unavailable.
   void _startRealTimeUpdates() {
     if (_webSocketService.isConnected) {
       print(
@@ -302,7 +283,7 @@ class _VotacaoPautaScreenState extends State<VotacaoPautaScreen> {
     });
   }
 
-  /// Validates and submits the selected vote to the backend.
+  /// Submits the selected vote and refreshes statistics after a successful response.
   Future<void> _submitVote() async {
     if (_votoSelecionado == VotoOpcao.nenhum) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -379,7 +360,6 @@ class _VotacaoPautaScreenState extends State<VotacaoPautaScreen> {
     }
   }
 
-  /// Builds the voting screen layout and connection indicator.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -475,7 +455,7 @@ class _VotacaoPautaScreenState extends State<VotacaoPautaScreen> {
     );
   }
 
-  /// Builds the agenda summary card shown above the voting controls.
+  /// Builds the agenda information card shown above the vote options.
   Widget _buildPautaInfo() {
     return Card(
       color: const Color(0xFF21262d),
@@ -546,7 +526,7 @@ class _VotacaoPautaScreenState extends State<VotacaoPautaScreen> {
     );
   }
 
-  /// Builds the group of selectable vote options.
+  /// Builds the card containing all available vote options.
   Widget _buildVotingOptions() {
     return Card(
       color: const Color(0xFF21262d),
@@ -600,7 +580,7 @@ class _VotacaoPautaScreenState extends State<VotacaoPautaScreen> {
     );
   }
 
-  /// Builds a selectable vote option with visual selected state.
+  /// Builds a selectable vote option row with selected-state styling.
   Widget _buildEnhancedVoteOption(
     VotoOpcao opcao,
     String titulo,
@@ -690,7 +670,7 @@ class _VotacaoPautaScreenState extends State<VotacaoPautaScreen> {
     );
   }
 
-  /// Builds the vote submission button and disabled/loading states.
+  /// Builds the vote submission button and loading state.
   Widget _buildVoteButton() {
     final isDisabled = _votoSelecionado == VotoOpcao.nenhum || _isVoting;
 
@@ -756,7 +736,7 @@ class _VotacaoPautaScreenState extends State<VotacaoPautaScreen> {
     );
   }
 
-  /// Builds the live statistics card for the current agenda item.
+  /// Builds the live vote statistics card.
   Widget _buildEstatisticasCard() {
     return Card(
       color: const Color(0xFF21262d),
@@ -853,7 +833,7 @@ class _VotacaoPautaScreenState extends State<VotacaoPautaScreen> {
     );
   }
 
-  /// Builds a single statistics tile for one vote category.
+  /// Builds one vote count item for the statistics card.
   Widget _buildStatItem(
     String label,
     String count,
@@ -897,7 +877,7 @@ class _VotacaoPautaScreenState extends State<VotacaoPautaScreen> {
     );
   }
 
-  /// Returns the connection indicator color for the current status.
+  /// Returns the connection badge color for the current WebSocket state.
   Color _getConnectionColor() {
     switch (_connectionStatus) {
       case 'connected':
@@ -910,7 +890,7 @@ class _VotacaoPautaScreenState extends State<VotacaoPautaScreen> {
     }
   }
 
-  /// Returns the connection indicator icon for the current status.
+  /// Returns the connection badge icon for the current WebSocket state.
   IconData _getConnectionIcon() {
     switch (_connectionStatus) {
       case 'connected':
@@ -923,7 +903,7 @@ class _VotacaoPautaScreenState extends State<VotacaoPautaScreen> {
     }
   }
 
-  /// Returns the connection indicator text for the current status.
+  /// Returns the localized connection badge label for the current WebSocket state.
   String _getConnectionText() {
     switch (_connectionStatus) {
       case 'connected':

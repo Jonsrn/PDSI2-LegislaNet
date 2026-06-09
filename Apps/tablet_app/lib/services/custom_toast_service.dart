@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 
-/// Displays custom toast notifications as animated top-screen overlays.
+/// Displays app-level overlay toasts for voting, connection, error, and info events.
 class CustomToastService {
-  /// Current overlay entry used to display the active toast.
   static OverlayEntry? _overlayEntry;
-
-  /// Whether a toast is currently visible.
   static bool _isShowing = false;
 
-  /// Shows a vote toast styled according to the selected [voto].
-  static void showVoteToast(BuildContext context, String message, String voto) {
-    if (_isShowing) _hideToast();
+  /// Shows a vote toast using the color and icon associated with [voto].
+  static void showVoteToast(
+    BuildContext context,
+    String message,
+    String voto,
+  ) {
+    if (_isShowing) {
+      _hideToast();
+    }
 
     Color backgroundColor;
     IconData icon;
+    Color iconColor = Colors.white;
 
     switch (voto) {
       case 'SIM':
@@ -33,44 +37,73 @@ class CustomToastService {
         icon = Icons.info_outline_rounded;
     }
 
-    _showCustomToast(context, message, backgroundColor, icon, Colors.white);
+    _showCustomToast(
+      context,
+      message,
+      backgroundColor,
+      icon,
+      iconColor,
+    );
   }
 
-  /// Shows a connection status toast.
-  ///
-  /// The [isPositive] value controls whether the toast is styled as connected
-  /// or disconnected.
+  /// Shows a connection-status toast.
   static void showConnectionToast(
     BuildContext context,
     String message, {
     required bool isPositive,
   }) {
-    if (_isShowing) _hideToast();
+    if (_isShowing) {
+      _hideToast();
+    }
 
     _showCustomToast(
       context,
       message,
-      isPositive ? const Color(0xFF2EA043) : const Color(0xFF6b7280),
+      isPositive
+        ? const Color(0xFF2EA043)
+        : const Color(0xFF6b7280),
       isPositive ? Icons.wifi_rounded : Icons.wifi_off_rounded,
       Colors.white,
     );
   }
 
   /// Shows an error toast.
-  static void showErrorToast(BuildContext context, String message) {
-    if (_isShowing) _hideToast();
-    _showCustomToast(context, message, const Color(0xFFDA3633),
-        Icons.error_outline_rounded, Colors.white);
+  static void showErrorToast(
+    BuildContext context,
+    String message,
+  ) {
+    if (_isShowing) {
+      _hideToast();
+    }
+
+    _showCustomToast(
+      context,
+      message,
+      const Color(0xFFDA3633),
+      Icons.error_outline_rounded,
+      Colors.white,
+    );
   }
 
   /// Shows an informational toast.
-  static void showInfoToast(BuildContext context, String message) {
-    if (_isShowing) _hideToast();
-    _showCustomToast(context, message, const Color(0xFF58a6ff),
-        Icons.info_outline_rounded, Colors.white);
+  static void showInfoToast(
+    BuildContext context,
+    String message,
+  ) {
+    if (_isShowing) {
+      _hideToast();
+    }
+
+    _showCustomToast(
+      context,
+      message,
+      const Color(0xFF58a6ff),
+      Icons.info_outline_rounded,
+      Colors.white,
+    );
   }
 
-  /// Inserts the toast overlay and schedules it to be dismissed automatically.
+  /// Inserts the toast overlay and schedules automatic dismissal.
   static void _showCustomToast(
     BuildContext context,
     String message,
@@ -93,7 +126,10 @@ class CustomToastService {
             tween: Tween(begin: 0.0, end: 1.0),
             builder: (context, value, child) => Transform.translate(
               offset: Offset(100 * (1 - value), 0),
-              child: Opacity(opacity: value, child: child),
+              child: Opacity(
+                opacity: value,
+                child: child,
+              ),
             ),
             child: Container(
               constraints: const BoxConstraints(maxWidth: 400),
@@ -119,7 +155,11 @@ class CustomToastService {
                       color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(icon, color: iconColor, size: 16),
+                    child: Icon(
+                      icon,
+                      color: iconColor,
+                      size: 16,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -144,10 +184,12 @@ class CustomToastService {
 
     overlay.insert(_overlayEntry!);
 
-    Future.delayed(const Duration(milliseconds: 2500), _hideToast);
+    Future.delayed(const Duration(milliseconds: 2500), () {
+      _hideToast();
+    });
   }
 
-  /// Removes the active toast overlay, if one is visible.
+  /// Removes the current toast overlay if one is visible.
   static void _hideToast() {
     if (_overlayEntry != null && _isShowing) {
       _overlayEntry!.remove();
@@ -156,9 +198,11 @@ class CustomToastService {
     }
   }
 
-  /// Whether a custom toast is currently visible.
+  /// Whether a toast overlay is currently visible.
   static bool get isShowing => _isShowing;
 
-  /// Dismisses the active toast, if any.
-  static void clear() => _hideToast();
+  /// Clears any active toast overlay.
+  static void clear() {
+    _hideToast();
+  }
 }

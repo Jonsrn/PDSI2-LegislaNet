@@ -1,60 +1,36 @@
 import 'package:flutter/material.dart';
 import 'services/auth_service.dart';
 
-/// Centralized color palette used by the login screen.
+/// Color tokens shared by the tablet login screen.
 class AppColors {
-  /// Primary dark background for the login page.
   static const Color backgroundDark = Color(0xFF0D1117);
-
-  /// Secondary dark surface color.
   static const Color backgroundLight = Color(0xFF161B22);
-
-  /// Card background color for elevated login content.
   static const Color cardBg = Color(0xFF161B22);
-
-  /// Interactive field background color.
   static const Color hoverBg = Color(0xFF21262D);
-
-  /// Default border color for inputs and cards.
   static const Color borderColor = Color(0xFF30363D);
-
-  /// Primary foreground color for high-emphasis text.
   static const Color primaryText = Color(0xFFE6EDF3);
-
-  /// Secondary foreground color for hints, icons, and supporting text.
   static const Color secondaryText = Color(0xFF8B949E);
-
-  /// Accent color used for focus states and inline actions.
   static const Color accentBlue = Color(0xFF58A6FF);
-
-  /// Accent color used for the primary login action.
   static const Color accentGreen = Color(0xFF2EA043);
 }
 
-/// Login page that authenticates a user and routes them to the dashboard.
+/// Authentication screen for the tablet application.
 class LoginScreen extends StatefulWidget {
-  /// Creates the login screen.
+  /// Creates the tablet login screen.
   const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-/// Manages login form state, validation, and authentication requests.
+/// Manages login form state, validation, and authentication navigation.
 class _LoginScreenState extends State<LoginScreen> {
-  /// Tracks whether the password field should display plain text.
   bool _isPasswordVisible = false;
-
-  /// Prevents duplicate login submissions while authentication is in progress.
   bool _isLoading = false;
-
-  /// Stores and reads the email value entered by the user.
   final _emailController = TextEditingController();
-
-  /// Stores and reads the password value entered by the user.
   final _passwordController = TextEditingController();
 
-  /// Validates the form, calls [AuthService.login], and redirects on success.
+  /// Validates credentials, calls the authentication service, and opens the dashboard on success.
   Future<void> _handleLogin() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
@@ -64,23 +40,29 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
       final result = await AuthService.login(email, password);
 
-      if (result['success'] == true) {
+      if (result['success']) {
         if (!mounted) return;
         Navigator.of(context).pushReplacementNamed('/dashboard');
       } else {
         _showError(result['error'] ?? 'Erro desconhecido');
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  /// Shows a floating error message using the login screen color palette.
+  /// Shows a floating error message for validation or authentication failures.
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -91,7 +73,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  /// Releases text editing controllers owned by this state object.
   @override
   void dispose() {
     _emailController.dispose();
@@ -99,7 +80,6 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  /// Builds the responsive login page with decorative background effects.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -129,6 +109,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 height: 400,
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
+                    center: Alignment.center,
+                    radius: 0.6,
                     colors: [
                       const Color.fromRGBO(46, 160, 67, 0.05),
                       Colors.transparent,
@@ -146,6 +128,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 height: 400,
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
+                    center: Alignment.center,
+                    radius: 0.6,
                     colors: [
                       const Color.fromRGBO(138, 58, 185, 0.04),
                       Colors.transparent,
@@ -159,34 +143,31 @@ class _LoginScreenState extends State<LoginScreen> {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 400),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildLogo(),
-                      const SizedBox(height: 40),
-                      _buildLoginCard(),
-                    ],
-                  ),
-                ),
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildLogo(),
+                  const SizedBox(height: 40),
+
+                  _buildLoginCard(),
+                ],
               ),
             ),
+          ),
+        ),
           ],
         ),
       ),
     );
   }
 
-  /// Builds the application logo and product name shown above the form.
+  /// Builds the application logo and product name.
   Widget _buildLogo() {
     return Column(
       children: [
-        SizedBox(
-          width: 44,
-          height: 40,
-          child: CustomPaint(painter: LogoPainter()),
-        ),
+        _buildCustomLogo(),
         const SizedBox(height: 12),
         const Text(
           'Legisla Net',
@@ -201,7 +182,18 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  /// Builds the card that contains the login form controls.
+  /// Builds the custom painted Legisla Net logo.
+  Widget _buildCustomLogo() {
+    return SizedBox(
+      width: 44,
+      height: 40,
+      child: CustomPaint(
+        painter: LogoPainter(),
+      ),
+    );
+  }
+
+  /// Builds the login form card with credentials, recovery link, and submit button.
   Widget _buildLoginCard() {
     return Container(
       padding: const EdgeInsets.all(32.0),
@@ -236,7 +228,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  /// Builds the email input field backed by [_emailController].
+  /// Builds the email input field used by [_handleLogin].
   Widget _buildEmailField() {
     return TextFormField(
       controller: _emailController,
@@ -244,11 +236,21 @@ class _LoginScreenState extends State<LoginScreen> {
       style: const TextStyle(color: AppColors.primaryText, fontFamily: 'Inter'),
       decoration: InputDecoration(
         hintText: 'Digite seu email',
-        prefixIcon: const Icon(Icons.email_outlined, color: AppColors.secondaryText, size: 20),
+        prefixIcon: const Icon(
+          Icons.email_outlined,
+          color: AppColors.secondaryText,
+          size: 20,
+        ),
         filled: true,
         fillColor: AppColors.hoverBg,
-        hintStyle: const TextStyle(color: AppColors.secondaryText, fontFamily: 'Inter'),
-        contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        hintStyle: const TextStyle(
+          color: AppColors.secondaryText,
+          fontFamily: 'Inter',
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 14,
+          horizontal: 12,
+        ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(6.0),
           borderSide: const BorderSide(color: AppColors.borderColor),
@@ -269,19 +271,35 @@ class _LoginScreenState extends State<LoginScreen> {
       style: const TextStyle(color: AppColors.primaryText, fontFamily: 'Inter'),
       decoration: InputDecoration(
         hintText: 'Digite sua senha',
-        prefixIcon: const Icon(Icons.lock_outline, color: AppColors.secondaryText, size: 20),
+        prefixIcon: const Icon(
+          Icons.lock_outline,
+          color: AppColors.secondaryText,
+          size: 20,
+        ),
         suffixIcon: IconButton(
           icon: Icon(
-            _isPasswordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+            _isPasswordVisible
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
             color: AppColors.secondaryText,
             size: 20,
           ),
-          onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+          onPressed: () {
+            setState(() {
+              _isPasswordVisible = !_isPasswordVisible;
+            });
+          },
         ),
         filled: true,
         fillColor: AppColors.hoverBg,
-        hintStyle: const TextStyle(color: AppColors.secondaryText, fontFamily: 'Inter'),
-        contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        hintStyle: const TextStyle(
+          color: AppColors.secondaryText,
+          fontFamily: 'Inter',
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 14,
+          horizontal: 12,
+        ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(6.0),
           borderSide: const BorderSide(color: AppColors.borderColor),
@@ -294,21 +312,26 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  /// Builds the placeholder forgot-password action.
+  /// Builds the password recovery action placeholder.
   Widget _buildForgotPasswordLink() {
     return Align(
       alignment: Alignment.centerRight,
       child: TextButton(
-        onPressed: () {},
+        onPressed: () {
+        },
         child: const Text(
           'Esqueceu sua senha?',
-          style: TextStyle(color: AppColors.accentBlue, fontSize: 14, fontFamily: 'Inter'),
+          style: TextStyle(
+            color: AppColors.accentBlue,
+            fontSize: 14,
+            fontFamily: 'Inter',
+          ),
         ),
       ),
     );
   }
 
-  /// Builds the submit button and displays a loading indicator during login.
+  /// Builds the submit button and loading indicator for the authentication request.
   Widget _buildLoginButton() {
     return ElevatedButton(
       onPressed: _isLoading ? null : _handleLogin,
@@ -321,34 +344,67 @@ class _LoginScreenState extends State<LoginScreen> {
           ? const SizedBox(
               width: 20,
               height: 20,
-              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2,
+              ),
             )
           : const Text(
               'Entrar',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Inter'),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                fontFamily: 'Inter',
+              ),
             ),
     );
   }
 }
 
-/// Paints the compact legislative building logo used on the login screen.
+/// Paints the Legisla Net logo with the native Flutter gradient.
 class LogoPainter extends CustomPainter {
-  /// Draws the logo columns and base using the app accent gradient.
   @override
   void paint(Canvas canvas, Size size) {
-    final gradient = const LinearGradient(
+    final gradient = LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [AppColors.accentBlue, AppColors.accentGreen],
+      colors: [
+        AppColors.accentBlue,
+        AppColors.accentGreen,
+      ],
     );
 
     final paint = Paint()
       ..shader = gradient.createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
-    final column1 = Path()..moveTo(8, 5)..lineTo(8, 35)..lineTo(14, 35)..lineTo(14, 5)..close();
-    final column2 = Path()..moveTo(19, 5)..lineTo(19, 35)..lineTo(25, 35)..lineTo(25, 5)..close();
-    final column3 = Path()..moveTo(30, 5)..lineTo(30, 35)..lineTo(36, 35)..lineTo(36, 5)..close();
-    final base = Path()..moveTo(5, 35)..lineTo(39, 35)..lineTo(39, 40)..lineTo(5, 40)..close();
+    final column1 = Path()
+      ..moveTo(8, 5)
+      ..lineTo(8, 35)
+      ..lineTo(14, 35)
+      ..lineTo(14, 5)
+      ..close();
+
+    final column2 = Path()
+      ..moveTo(19, 5)
+      ..lineTo(19, 35)
+      ..lineTo(25, 35)
+      ..lineTo(25, 5)
+      ..close();
+
+    final column3 = Path()
+      ..moveTo(30, 5)
+      ..lineTo(30, 35)
+      ..lineTo(36, 35)
+      ..lineTo(36, 5)
+      ..close();
+
+    final base = Path()
+      ..moveTo(5, 35)
+      ..lineTo(39, 35)
+      ..lineTo(39, 40)
+      ..lineTo(5, 40)
+      ..close();
 
     canvas.drawPath(column1, paint);
     canvas.drawPath(column2, paint);
@@ -356,7 +412,6 @@ class LogoPainter extends CustomPainter {
     canvas.drawPath(base, paint);
   }
 
-  /// Indicates that the static logo does not need to repaint.
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

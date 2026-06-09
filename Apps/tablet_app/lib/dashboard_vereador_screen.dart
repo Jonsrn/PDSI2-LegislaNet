@@ -6,15 +6,15 @@ import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
-/// Vote states shown in agenda cards for the current council member.
+/// Vote options shown for the council member on agenda cards.
 enum VotoTipo { sim, nao, abstencao, naoVotado }
 
-/// Dashboard tabs used to group agenda items by voting status.
+/// Dashboard tabs grouped by agenda voting state.
 enum TabState { pendente, emVotacao, finalizada }
 
-/// Dashboard screen for council members to review agendas and enter voting.
+/// Dashboard used by council members to follow agendas and join live votes.
 class DashboardVereadorScreen extends StatefulWidget {
-  /// Creates the council member dashboard.
+  /// Creates the council member dashboard screen.
   const DashboardVereadorScreen({super.key});
 
   @override
@@ -24,65 +24,27 @@ class DashboardVereadorScreen extends StatefulWidget {
 
 /// Manages agenda loading, live voting events, and dashboard presentation.
 class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
-  /// Currently selected dashboard tab.
   TabState _currentTab = TabState.pendente;
-
-  /// Current WebSocket connection state used by the connection indicator.
   String _connectionStatus = 'connected';
-
-  /// Authenticated council member data displayed in the header.
   Map<String, dynamic>? _vereadorData;
-
-  /// Tracks whether council member data is currently loading.
   bool _isLoadingVereador = true;
-
-  /// Cached agenda items grouped as pending.
   List<Map<String, dynamic>> _pautasPendentes = [];
-
-  /// Cached agenda items currently open for voting.
   List<Map<String, dynamic>> _pautasEmVotacao = [];
-
-  /// Cached agenda items with completed voting.
   List<Map<String, dynamic>> _pautasFinalizadas = [];
-
-  /// Tracks whether the first agenda page is loading.
   bool _isLoadingPautas = true;
-
-  /// Tracks whether another agenda page is loading through pagination.
   bool _isLoadingMorePautas = false;
-
-  /// Current agenda page loaded from the backend.
   int _pautasPage = 1;
-
-  /// Total agenda pages reported by the backend.
   int _pautasTotalPages = 1;
-
-  /// Agenda cache keyed by agenda ID to merge paginated and real-time updates.
   final Map<String, Map<String, dynamic>> _pautasById = {};
+  final Map<String, Map<String, dynamic>> _votosVereador = {};
 
-  /// Vote cache keyed by agenda ID for the current council member.
-  final Map<String, Map<String, dynamic>> _votosVereador =
-      {};
-
-  /// Shared WebSocket service used for dashboard live updates.
   final WebSocketService _webSocketService = WebSocketService.instance;
-
-  /// Subscription for agenda status update events.
   StreamSubscription<Map<String, dynamic>>? _pautaStatusSubscription;
-
-  /// Subscription for events that start voting on an agenda.
   StreamSubscription<Map<String, dynamic>>? _iniciarVotacaoSubscription;
-
-  /// Subscription for events that finish voting on an agenda.
   StreamSubscription<Map<String, dynamic>>? _encerrarVotacaoSubscription;
-
-  /// Subscription for newly created agenda events.
   StreamSubscription<Map<String, dynamic>>? _novaPautaSubscription;
-
-  /// Subscription for WebSocket connection status changes.
   StreamSubscription<String>? _connectionSubscription;
 
-  /// Keeps the screen awake and starts loading dashboard data.
   @override
   void initState() {
     super.initState();
@@ -93,7 +55,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     _setupWebSocketListeners();
   }
 
-  /// Connects to the WebSocket service used for real-time notifications.
+  /// Connects to the shared WebSocket service used for live dashboard updates.
   Future<void> _connectWebSocket() async {
     try {
       await _webSocketService.connect();
@@ -103,7 +65,6 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     }
   }
 
-  /// Cancels active subscriptions owned by this dashboard state.
   @override
   void dispose() {
     _pautaStatusSubscription?.cancel();
@@ -114,7 +75,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     super.dispose();
   }
 
-  /// Registers WebSocket listeners for agenda and connection events.
+  /// Subscribes to WebSocket events that keep agenda lists and connection state current.
   void _setupWebSocketListeners() {
     _pautaStatusSubscription = _webSocketService.pautaStatusUpdates.listen((
       data,
@@ -158,7 +119,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
         : 'disconnected';
   }
 
-  /// Applies a received agenda status change to the local cache.
+  /// Handles a status-change notification and updates the local agenda cache.
   Future<void> _handlePautaStatusChange(Map<String, dynamic> data) async {
     final pautaId = data['pautaId']?.toString();
     final newStatus = data['newStatus']?.toString();
@@ -173,7 +134,10 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     await _applyStatusUpdateToCache(pautaId, newStatus, data);
   }
 
-  /// Updates the cached agenda status and refreshes derived tab lists.
+  /// Applies a live status change to the agenda cache and refreshes derived lists.
+  ///
+  /// If the agenda is not already cached, it is fetched by ID so WebSocket events
+  /// still work when the agenda is outside the currently loaded page.
   Future<void> _applyStatusUpdateToCache(
     String pautaId,
     String newStatus,
@@ -215,7 +179,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     }
   }
 
-  /// Normalizes backend status values into the labels used by the dashboard.
+  /// Normalizes backend and WebSocket status labels into dashboard display values.
   String _normalizeStatus(String status) {
     final s = status.trim().toLowerCase();
     if (s == 'em votacao' || s == 'em votação') return 'Em Votação';
@@ -224,7 +188,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     return status;
   }
 
-  /// Handles a real-time event that marks an agenda vote as finished.
+  /// Handles a vote-closing event and marks the agenda as finalized locally.
   Future<void> _handleEncerrarVotacao(Map<String, dynamic> data) async {
     final pautaId = data['pautaId']?.toString() ?? data['id']?.toString();
     if (pautaId == null || pautaId.isEmpty) {
@@ -234,7 +198,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     await _applyStatusUpdateToCache(pautaId, 'Finalizada', data);
   }
 
-  /// Handles a newly created agenda event and inserts it into the cache.
+  /// Handles a newly created agenda event and inserts it into the pending tab.
   Future<void> _handleNovaPauta(Map<String, dynamic> data) async {
     final pautaId = data['pautaId']?.toString() ?? data['id']?.toString();
     if (pautaId == null || pautaId.isEmpty) {
@@ -242,6 +206,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
       return;
     }
 
+    // Fetch by ID because the event payload may omit fields used by agenda cards.
     final pautaById = await AuthService.getPautaById(pautaId);
     if (pautaById != null && pautaById.isNotEmpty) {
       final pauta = Map<String, dynamic>.from(pautaById);
@@ -267,7 +232,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     }
   }
 
-  /// Opens the voting screen when a real-time voting-start event arrives.
+  /// Handles a live-vote start event and opens the voting screen when possible.
   Future<void> _handleIniciarVotacao(Map<String, dynamic> data) async {
     final pautaId = data['pautaId']?.toString();
     final pautaNome = data['pautaNome']?.toString() ?? 'Pauta';
@@ -281,6 +246,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
       '🗳️ Processando solicitação de iniciar votação: $pautaNome (ID: $pautaId)',
     );
 
+    // Fetch directly by ID to avoid depending on the currently loaded page.
     final pautaById = await AuthService.getPautaById(pautaId);
     if (pautaById == null || pautaById.isEmpty) {
       print('❌ Pauta $pautaId não encontrada via API por ID');
@@ -298,6 +264,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
 
     final pauta = Map<String, dynamic>.from(pautaById);
 
+    // Keep the live agenda visible even if automatic navigation cannot open.
     _upsertPautaFromIniciarVotacao(pautaId, pauta);
 
     if (!mounted) return;
@@ -316,6 +283,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
       print('❌ Falha ao abrir tela de votação automaticamente: $e');
     }
 
+    // Provide a manual fallback if automatic navigation fails.
     if (mounted && !opened) {
       setState(() {
         _currentTab = TabState.emVotacao;
@@ -343,6 +311,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     }
 
     if (opened) {
+      // Refresh votes after returning, including manual backs where result is null.
       await _loadVotosVereador();
       if (result == true) {
         await _loadPautas();
@@ -353,7 +322,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     print('✅ Navegado para tela de votação da pauta: $pautaNome');
   }
 
-  /// Inserts a just-started agenda into the live voting cache.
+  /// Inserts or updates an agenda from a vote-start event before rebuilding tab lists.
   void _upsertPautaFromIniciarVotacao(
     String pautaId,
     Map<String, dynamic> pauta,
@@ -364,6 +333,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     if ((pauta['status']?.toString().isEmpty ?? true)) {
       pauta['status'] = 'Em Votação';
     }
+    // Missing `ao_vivo` should not hide an agenda that just entered voting.
     if (!pauta.containsKey('ao_vivo')) {
       pauta['ao_vivo'] = true;
     }
@@ -372,7 +342,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     _recomputePautasFromCache();
   }
 
-  /// Rebuilds agenda tab lists from the shared agenda cache.
+  /// Rebuilds tab-specific agenda lists from the normalized in-memory cache.
   void _recomputePautasFromCache() {
     if (!mounted) return;
 
@@ -392,6 +362,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
         final isEmVotacao = pauta['status']?.toLowerCase() == 'em votação';
         if (!isEmVotacao) return false;
 
+        // Only show live agendas explicitly confirmed by the `ao_vivo` flag.
         if (!pauta.containsKey('ao_vivo')) return false;
         return pauta['ao_vivo'] == true;
       }).toList();
@@ -402,7 +373,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     });
   }
 
-  /// Loads vote statistics and the council member vote for one agenda item.
+  /// Loads the council member vote and final statistics for one finalized agenda.
   Future<void> _loadVotosVereadorForPauta(String pautaId) async {
     try {
       print('🗳️ Carregando estatísticas da pauta finalizada: $pautaId');
@@ -431,7 +402,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     }
   }
 
-  /// Loads the authenticated council member data displayed in the header.
+  /// Loads the current council member profile data displayed in the header.
   Future<void> _loadVereadorData() async {
     try {
       final vereadorData = await AuthService.getVereadorDetails();
@@ -450,7 +421,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     }
   }
 
-  /// Loads the first agenda page and synchronizes live voting state.
+  /// Loads the first agenda page and synchronizes live-voting state with the backend.
   Future<void> _loadPautas() async {
     try {
       setState(() {
@@ -481,6 +452,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
 
       _ingestPautasResponse(response);
 
+      // Treat live-voting status as the source of truth for stale `ao_vivo` flags.
       if (_vereadorData != null && _vereadorData!['camara_id'] != null) {
         final camaraId = _vereadorData!['camara_id'].toString();
         final liveStatus = await AuthService.getLiveVotingStatus(camaraId);
@@ -542,7 +514,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     }
   }
 
-  /// Adds one backend agenda response page to the local agenda cache.
+  /// Merges a paginated agenda response into the cache and rebuilds tab lists.
   void _ingestPautasResponse(Map<String, dynamic> response) {
     final pautasData = response['data'];
     if (pautasData == null) return;
@@ -573,7 +545,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     _recomputePautasFromCache();
   }
 
-  /// Loads the next agenda page when pagination has more data.
+  /// Loads the next agenda page when available and appends it to the cache.
   Future<void> _loadMorePautas() async {
     if (_isLoadingPautas || _isLoadingMorePautas) return;
     if (_pautasPage >= _pautasTotalPages) return;
@@ -612,7 +584,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     }
   }
 
-  /// Triggers pagination when the current list is scrolled near the end.
+  /// Triggers lazy pagination when the current list is close to the bottom.
   bool _onScrollNotification(ScrollNotification notification) {
     if (notification.metrics.extentAfter < 300) {
       _loadMorePautas();
@@ -620,7 +592,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     return false;
   }
 
-  /// Loads the current council member votes and finished-agenda statistics.
+  /// Loads the current council member's votes and statistics for visible agendas.
   Future<void> _loadVotosVereador() async {
     try {
       print('🗳️ Carregando votos do vereador via backend tablet...');
@@ -679,7 +651,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     }
   }
 
-  /// Opens an agenda PDF in an external application when an attachment exists.
+  /// Opens an agenda PDF in an external application when an attachment URL exists.
   Future<void> _openPautaPDF(String? anexoUrl) async {
     if (anexoUrl == null || anexoUrl.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -697,6 +669,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
         if (anexoUrl.startsWith('/')) {
           finalUrl = anexoUrl.substring(1);
         }
+        // Uploaded files are served from the main site root, not the tablet API path.
         finalUrl = 'https://legislanet.com.br/$finalUrl';
       }
 
@@ -718,7 +691,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     }
   }
 
-  /// Handles agenda selection based on the agenda status.
+  /// Handles agenda card taps according to the agenda status.
   void _handlePautaTap(Map<String, dynamic> pauta, String status) async {
     if (status.toLowerCase() == 'pendente') {
       _openPautaPDF(pauta['anexo_url']);
@@ -729,6 +702,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
         ),
       );
 
+      // Apply confirmed vote data immediately before the follow-up refresh completes.
       if (result is Map &&
           result['votoRegistrado'] == true &&
           result['voto'] != null) {
@@ -752,7 +726,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     }
   }
 
-  /// Returns the current council member vote state for an agenda item.
+  /// Resolves the cached vote data for an agenda into a display enum value.
   VotoTipo _getVotoFromData(String? pautaId) {
     if (pautaId == null) return VotoTipo.naoVotado;
 
@@ -771,7 +745,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     }
   }
 
-  /// Returns the display status for a finished agenda result.
+  /// Returns the final agenda status label derived from voting results.
   String _getStatusFromResult(Map<String, dynamic> pauta) {
     final resultado = pauta['resultado_votacao'];
     if (resultado == null) return 'Finalizada';
@@ -786,7 +760,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     }
   }
 
-  /// Returns the color associated with a finished agenda result.
+  /// Returns the visual status color for finalized agenda results.
   Color _getStatusColor(Map<String, dynamic> pauta) {
     final resultado = pauta['resultado_votacao'];
 
@@ -803,7 +777,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     }
   }
 
-  /// Returns the connection indicator color for the current status.
+  /// Returns the connection badge color for the current WebSocket state.
   Color _getConnectionColor() {
     switch (_connectionStatus) {
       case 'connected':
@@ -816,7 +790,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     }
   }
 
-  /// Returns the connection indicator icon for the current status.
+  /// Returns the connection badge icon for the current WebSocket state.
   IconData _getConnectionIcon() {
     switch (_connectionStatus) {
       case 'connected':
@@ -829,7 +803,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     }
   }
 
-  /// Returns the connection indicator text for the current status.
+  /// Returns the localized connection badge label for the current WebSocket state.
   String _getConnectionText() {
     switch (_connectionStatus) {
       case 'connected':
@@ -842,7 +816,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     }
   }
 
-  /// Logs out the current user and returns to the initial route.
+  /// Logs out and returns the app to the initial route.
   Future<void> _handleLogout() async {
     await AuthService.logout();
     if (mounted) {
@@ -850,7 +824,6 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     }
   }
 
-  /// Builds the dashboard shell with header, tabs, and the selected agenda view.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -927,7 +900,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     );
   }
 
-  /// Builds the dashboard header with profile, connection status, and logout.
+  /// Builds the profile header with council member data and connection status.
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -1024,7 +997,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     );
   }
 
-  /// Builds the tab selector for pending, live, and finished agendas.
+  /// Builds the segmented tab control for agenda status filters.
   Widget _buildTabButtons() {
     return Container(
       decoration: BoxDecoration(
@@ -1043,7 +1016,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     );
   }
 
-  /// Builds one selectable tab button.
+  /// Builds a single dashboard tab button.
   Widget _buildTabButton(String text, TabState tabState) {
     final isSelected = _currentTab == tabState;
     return GestureDetector(
@@ -1071,7 +1044,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     );
   }
 
-  /// Builds the agenda list that matches the currently selected tab.
+  /// Builds the current tab view based on [_currentTab].
   Widget _buildCurrentView() {
     switch (_currentTab) {
       case TabState.pendente:
@@ -1083,7 +1056,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     }
   }
 
-  /// Builds the pending agenda view, including pagination loading state.
+  /// Builds the pending-agenda list and its empty/loading states.
   Widget _buildPendenteView() {
     if (_isLoadingPautas) {
       return const Center(
@@ -1152,7 +1125,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     );
   }
 
-  /// Builds the live voting agenda view.
+  /// Builds the live-voting agenda list and its empty/loading states.
   Widget _buildEmVotacaoView() {
     if (_isLoadingPautas) {
       return const Center(
@@ -1221,7 +1194,7 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
     );
   }
 
-  /// Builds the finished agenda view with results and vote statistics.
+  /// Builds the finalized-agenda list with vote results and statistics.
   Widget _buildFinalizadasView() {
     if (_isLoadingPautas) {
       return const Center(
@@ -1310,33 +1283,33 @@ class _DashboardVereadorScreenState extends State<DashboardVereadorScreen> {
   }
 }
 
-/// Card that displays agenda metadata, status, vote, and optional statistics.
+/// Agenda card used by the council member dashboard lists.
 class _VotacaoCard extends StatelessWidget {
-  /// Agenda title.
+  /// Agenda title shown as the main card label.
   final String tema;
 
-  /// Current council member vote for this agenda.
+  /// Vote registered by the current council member.
   final VotoTipo meuVoto;
 
-  /// Display status for this agenda.
+  /// Agenda status or final result label.
   final String status;
 
-  /// Color used by the primary status badge.
+  /// Primary color used by the status badge.
   final Color statusColor;
 
-  /// Optional agenda description.
+  /// Optional agenda summary.
   final String? description;
 
   /// Optional agenda author name.
   final String? autor;
 
-  /// Whether the current council member vote should be shown.
+  /// Whether the current council member vote should be displayed.
   final bool showVoto;
 
-  /// Optional final vote statistics shown for completed agendas.
+  /// Optional final vote counters for approved or rejected agendas.
   final Map<String, dynamic>? estatisticas;
 
-  /// Creates an agenda card.
+  /// Creates an agenda voting card.
   const _VotacaoCard({
     required this.tema,
     required this.meuVoto,
@@ -1348,7 +1321,7 @@ class _VotacaoCard extends StatelessWidget {
     this.estatisticas,
   });
 
-  /// Returns the text and color used to display [meuVoto].
+  /// Returns the display label and color for [meuVoto].
   Map<String, dynamic> _getVotoStyle() {
     switch (meuVoto) {
       case VotoTipo.sim:
@@ -1362,7 +1335,6 @@ class _VotacaoCard extends StatelessWidget {
     }
   }
 
-  /// Builds the agenda card UI.
   @override
   Widget build(BuildContext context) {
     final votoStyle = _getVotoStyle();
@@ -1385,6 +1357,7 @@ class _VotacaoCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                // Finalized agendas show both lifecycle status and vote result.
                 if (status.toLowerCase() == 'aprovada' ||
                     status.toLowerCase() == 'reprovada') ...[
                   _buildBasicStatusBadge('FINALIZADA'),
@@ -1479,7 +1452,7 @@ class _VotacaoCard extends StatelessWidget {
     );
   }
 
-  /// Builds a compact vote count item for completed agenda statistics.
+  /// Builds a compact vote counter for finalized-agenda statistics.
   Widget _buildVoteCount(String label, int count, Color color) {
     return Column(
       children: [
@@ -1499,7 +1472,7 @@ class _VotacaoCard extends StatelessWidget {
     );
   }
 
-  /// Builds a neutral status badge used alongside final result badges.
+  /// Builds the lifecycle badge shown before approved/rejected result badges.
   Widget _buildBasicStatusBadge(String badgeStatus) {
     Color backgroundColor;
     Color textColor;
@@ -1535,7 +1508,7 @@ class _VotacaoCard extends StatelessWidget {
     );
   }
 
-  /// Builds the agenda status badge with status-specific colors.
+  /// Builds the status or result badge for the agenda card.
   Widget _buildStatusBadge() {
     if (status.toLowerCase() == 'aprovada' ||
         status.toLowerCase() == 'reprovada') {
