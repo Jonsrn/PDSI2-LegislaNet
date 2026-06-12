@@ -13,6 +13,11 @@ const http = require("http");
 const createLogger = require("./src/config/logger");
 const websocketService = require("./src/services/websocketService");
 
+// Dependências de Documentação
+const swaggerUi = require("swagger-ui-express");
+const basicAuth = require("express-basic-auth");
+const swaggerDocs = require("./src/config/swagger");
+
 const logger = createLogger("TABLET_SERVER");
 
 const app = express();
@@ -133,6 +138,17 @@ try {
   app.use("/api/votos", votoRoutes);
   app.use("/api/system", systemRoutes);
 
+  // Rota do Swagger protegida
+  app.use(
+    "/api-docs",
+    basicAuth({
+      users: { admin: "123" },
+      challenge: true,
+    }),
+    swaggerUi.serve,
+    swaggerUi.setup(swaggerDocs)
+  );
+
   // Serve downloadable APK assets and version metadata from /downloads.
   const path = require("path");
   app.use(
@@ -148,6 +164,28 @@ try {
   });
 }
 
+/**
+ * @swagger
+ * /health:
+ *   get:
+ *     summary: Verifica o status de saúde do servidor
+ *     description: Retorna o status operacional da API do Tablet Backend
+ *     tags: [Sistema]
+ *     responses:
+ *       200:
+ *         description: Servidor está saudável e respondendo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: healthy
+ *                 service:
+ *                   type: string
+ *                   example: tablet-backend
+ */
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "healthy",
@@ -472,18 +510,20 @@ process.on("unhandledRejection", (reason, promise) => {
 logger.info("🔌 Inicializando WebSocket...");
 websocketService.initialize(server);
 
-server.listen(PORT, "0.0.0.0", () => {
-  logger.info("🎯 === SERVIDOR TABLET INICIADO COM SUCESSO ===");
-  logger.info(`🌐 Servidor escutando em todas as interfaces:`, {
-    url: `http://localhost:${PORT}`,
-    ip: `http://0.0.0.0:${PORT}`,
-    env: process.env.NODE_ENV || "development",
-    pid: process.pid,
-    corsOrigins,
+if (process.env.NODE_ENV !== "test") {
+  server.listen(PORT, "0.0.0.0", () => {
+    logger.info("🎯 === SERVIDOR TABLET INICIADO COM SUCESSO ===");
+    logger.info(`🌐 Servidor escutando em todas as interfaces:`, {
+      url: `http://localhost:${PORT}`,
+      ip: `http://0.0.0.0:${PORT}`,
+      env: process.env.NODE_ENV || "development",
+      pid: process.pid,
+      corsOrigins,
+    });
+    logger.info("📱 Pronto para receber requisições do aplicativo tablet!");
+    logger.info("🔌 WebSocket ativo para notificações em tempo real!");
+    logger.info("🔍 Testando conectividade: curl http://localhost:3001/health");
   });
-  logger.info("📱 Pronto para receber requisições do aplicativo tablet!");
-  logger.info("🔌 WebSocket ativo para notificações em tempo real!");
-  logger.info("🔍 Testando conectividade: curl http://localhost:3001/health");
-});
+}
 
 module.exports = app;
