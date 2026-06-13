@@ -38,17 +38,18 @@ async function getAppAuth() {
     return { token: tokensCache.app, profile: profilesCache.app };
 }
 
-async function getTvToken() {
+async function getTvAuth() {
     if (!tokensCache.tv) {
         const body = await login(CREDS.tv);
         tokensCache.tv = body.token;
+        profilesCache.tv = body.user;
     }
-    return tokensCache.tv;
+    return { token: tokensCache.tv, profile: profilesCache.tv };
 }
 
 module.exports = {
     getSuperAdminToken,
     getAppAuth,
-    getTvToken,
+    getTvAuth,
     CREDS
 };
