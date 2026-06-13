@@ -6,7 +6,6 @@ module.exports = {
   ],
   testPathIgnorePatterns: [
     '/node_modules/',
-    '/helpers/',
-    '/Apps/'
+    '/helpers/'
   ]
 };
