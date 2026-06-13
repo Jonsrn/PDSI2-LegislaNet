@@ -13,16 +13,48 @@ const { uploadImage } = require('../middleware/imageUploadMiddleware');
 router.use(isSuperAdmin);
 
 /**
- * @route   GET /api/camaras/:id
- * @desc    Get details for a specific camara.
- * @access  Private (Super Admin)
+ * @swagger
+ * /api/camaras/{id}:
+ *   get:
+ *     summary: Retorna detalhes de uma câmara específica
+ *     tags: [Super Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Detalhes da câmara
  */
 router.get('/:id', camaraController.getCamaraById);
 
 /**
- * @route   PUT /api/camaras/:id
- * @desc    Update camara information.
- * @access  Private (Super Admin)
+ * @swagger
+ * /api/camaras/{id}:
+ *   put:
+ *     summary: Edita dados e brasão de uma câmara
+ *     tags: [Super Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Câmara atualizada com sucesso
  */
 router.put('/:id', uploadImage('camara', 'brasao'), camaraController.updateCamara);
 

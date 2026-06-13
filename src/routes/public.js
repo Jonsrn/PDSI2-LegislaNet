@@ -10,37 +10,86 @@ const authController = require("../controllers/authController");
  */
 
 /**
- * @route   GET /api/camaras/publicas
- * @desc    List active camaras for public selection.
- * @access  Public
+ * @swagger
+ * /api/camaras/publicas:
+ *   get:
+ *     summary: Lista todas as câmaras ativas
+ *     tags: [Portal Público]
+ *     responses:
+ *       200:
+ *         description: Lista de câmaras
  */
 router.get("/camaras/publicas", publicController.getCamarasPublicas);
 
 /**
- * @route   GET /api/camaras/:id/info
- * @desc    Get public information for a specific camara.
- * @access  Public
+ * @swagger
+ * /api/camaras/{id}/info:
+ *   get:
+ *     summary: Informações públicas de uma câmara
+ *     tags: [Portal Público]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Detalhes da câmara
  */
 router.get("/camaras/:id/info", publicController.getCamaraPublicInfo);
 
 /**
- * @route   GET /api/camaras/:id/sessoes-futuras
- * @desc    List upcoming sessions for a specific camara.
- * @access  Public
+ * @swagger
+ * /api/camaras/{id}/sessoes-futuras:
+ *   get:
+ *     summary: Lista sessões agendadas da câmara
+ *     tags: [Portal Público]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Sessões futuras
  */
 router.get("/camaras/:id/sessoes-futuras", publicController.getSessoesFuturas);
 
 /**
- * @route   GET /api/camaras/:id/vereadores
- * @desc    List active vereadores for a specific camara with party data.
- * @access  Public
+ * @swagger
+ * /api/camaras/{id}/vereadores:
+ *   get:
+ *     summary: Lista vereadores ativos e seus partidos
+ *     tags: [Portal Público]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Lista de vereadores
  */
 router.get("/camaras/:id/vereadores", publicController.getVereadores);
 
 /**
- * @route   GET /api/camaras/:id/votacoes-recentes
- * @desc    List recent finalized votes for a specific camara.
- * @access  Public
+ * @swagger
+ * /api/camaras/{id}/votacoes-recentes:
+ *   get:
+ *     summary: Lista as últimas votações finalizadas
+ *     tags: [Portal Público]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Histórico de votações
  */
 router.get(
   "/camaras/:id/votacoes-recentes",
@@ -48,30 +97,72 @@ router.get(
 );
 
 /**
- * @route   GET /api/pautas/:id/publica
- * @desc    Get public information for a specific pauta.
- * @access  Public
+ * @swagger
+ * /api/pautas/{id}/publica:
+ *   get:
+ *     summary: Informações públicas de uma pauta específica
+ *     tags: [Portal Público]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Detalhes da pauta
  */
 router.get("/pautas/:id/publica", publicController.getPautaPublica);
 
 /**
- * @route   GET /api/votos/pauta/:id/publico
- * @desc    List public votes for a specific pauta.
- * @access  Public
+ * @swagger
+ * /api/votos/pauta/{id}/publico:
+ *   get:
+ *     summary: Votos abertos de uma pauta (para o portal da transparência)
+ *     tags: [Portal Público]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Lista de votos
  */
 router.get("/votos/pauta/:id/publico", publicController.getVotosPublicos);
 
 /**
- * @route   GET /api/camaras/:id/todas-pautas
- * @desc    List all public pautas for a specific camara with pagination.
- * @access  Public
+ * @swagger
+ * /api/camaras/{id}/todas-pautas:
+ *   get:
+ *     summary: Histórico geral de pautas da câmara com paginação
+ *     tags: [Portal Público]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Pautas paginadas
  */
 router.get("/camaras/:id/todas-pautas", publicController.getAllPautasPublicas);
 
 /**
- * @route   GET /api/me
- * @desc    Get authenticated user, profile, and camara information.
- * @access  Protected via bearer token handled inside the controller.
+ * @swagger
+ * /api/me:
+ *   get:
+ *     summary: Retorna dados combinados do usuário autenticado (User, Profile, Câmara)
+ *     tags: [Autenticação]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Dados do usuário
+ *       401:
+ *         description: Não autorizado
  */
 router.get("/me", authController.getMe);
 
