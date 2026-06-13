@@ -1,6 +1,6 @@
 const request = require('supertest');
 const app = require('../server');
-const { CREDS, getSuperAdminToken, getAppAuth, getTvToken } = require('./helpers/authHelper');
+const { CREDS, getSuperAdminToken, getAppAuth, getTvAuth } = require('./helpers/authHelper');
 
 describe('API Web Backend - Auth Routes', () => {
 
@@ -44,7 +44,8 @@ describe('API Web Backend - Auth Routes', () => {
         beforeAll(async () => {
             const auth = await getAppAuth();
             appToken = auth.token;
-            tvToken = await getTvToken();
+            const tvAuth = await getTvAuth();
+            tvToken = tvAuth.token;
         });
 
         it('Deve bloquear logout sem token (401)', async () => {

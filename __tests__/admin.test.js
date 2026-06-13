@@ -1,6 +1,6 @@
 const request = require('supertest');
 const app = require('../server');
-const { getSuperAdminToken, getAppAuth, getTvToken } = require('./helpers/authHelper');
+const { getSuperAdminToken, getAppAuth, getTvAuth } = require('./helpers/authHelper');
 
 describe('API Web Backend - Admin Routes (Super Admin Role)', () => {
     let superAdminToken;
@@ -12,7 +12,8 @@ describe('API Web Backend - Admin Routes (Super Admin Role)', () => {
         superAdminToken = await getSuperAdminToken();
         const authData = await getAppAuth();
         appToken = authData.token;
-        tvToken = await getTvToken();
+        const tvAuth = await getTvAuth();
+        tvToken = tvAuth.token;
     });
 
     afterAll(async () => {
@@ -80,14 +81,14 @@ describe('API Web Backend - Admin Routes (Super Admin Role)', () => {
             expect(res.body).toHaveProperty('nome', 'Partido Teste Atualizado');
         });
 
-        it('Deve deletar o partido e confirmar exclusão (Status 200)', async () => {
+        it('Deve deletar o partido e confirmar exclusão (Status 204)', async () => {
             expect(partidoCriadoId).toBeDefined();
 
             const res = await request(app)
                 .delete(`/api/admin/partidos/${partidoCriadoId}`)
                 .set('Authorization', `Bearer ${superAdminToken}`);
 
-            expect(res.status).toBe(200);
+            expect(res.status).toBe(204);
 
             // Anula o ID pra não disparar o fallback no afterAll
             partidoCriadoId = null;
