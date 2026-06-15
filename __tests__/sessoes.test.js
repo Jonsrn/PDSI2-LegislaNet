@@ -45,6 +45,70 @@ describe('API Web Backend - Core: Sessões (Mesa Diretora)', () => {
             const res = await request(app).get('/api/sessoes');
             expect(res.status).toBe(401);
         });
+
+        it('Deve rejeitar token JWT falso/malformado (401)', async () => {
+            const res = await request(app)
+                .get('/api/sessoes')
+                .set('Authorization', 'Bearer token.invalido.fake123');
+            expect(res.status).toBe(401);
+        });
+
+        it('Deve bloquear TV na listagem de sessões (403)', async () => {
+            const res = await request(app)
+                .get('/api/sessoes')
+                .set('Authorization', `Bearer ${tvToken}`);
+            expect(res.status).toBe(403);
+        });
+    });
+
+    describe('Validação de Payload (Express-Validator)', () => {
+        it('Deve rejeitar sessão com data no passado (400)', async () => {
+            const res = await request(app)
+                .post('/api/sessoes')
+                .set('Authorization', `Bearer ${appToken}`)
+                .send({
+                    numero: 1,
+                    tipo: 'Ordinária',
+                    data_sessao: new Date('2020-01-01T10:00:00Z').toISOString()
+                });
+            expect(res.status).toBe(400);
+        });
+
+        it('Deve rejeitar sessão com número > 999 (400)', async () => {
+            const res = await request(app)
+                .post('/api/sessoes')
+                .set('Authorization', `Bearer ${appToken}`)
+                .send({
+                    numero: 1000,
+                    tipo: 'Ordinária',
+                    data_sessao: new Date('2037-06-01T10:00:00Z').toISOString()
+                });
+            expect(res.status).toBe(400);
+        });
+
+        it('Deve rejeitar sessão com tipo inválido (400)', async () => {
+            const res = await request(app)
+                .post('/api/sessoes')
+                .set('Authorization', `Bearer ${appToken}`)
+                .send({
+                    numero: 1,
+                    tipo: 'Secreta',
+                    data_sessao: new Date('2037-06-01T10:00:00Z').toISOString()
+                });
+            expect(res.status).toBe(400);
+        });
+
+        it('Deve rejeitar sessão com data em formato não-ISO (400)', async () => {
+            const res = await request(app)
+                .post('/api/sessoes')
+                .set('Authorization', `Bearer ${appToken}`)
+                .send({
+                    numero: 1,
+                    tipo: 'Ordinária',
+                    data_sessao: '31/12/2037 10:00'
+                });
+            expect(res.status).toBe(400);
+        });
     });
 
     describe('Gestão do Ciclo de Vida da Sessão (Caminho Feliz)', () => {
@@ -155,6 +219,45 @@ describe('API Web Backend - Core: Sessões (Mesa Diretora)', () => {
                 .get(`/api/sessoes/${fakeId}`)
                 .set('Authorization', `Bearer ${appToken}`);
 
+            expect(res.status).toBe(404);
+        });
+    });
+
+    describe('Rotas Auxiliares de Sessão', () => {
+        it('Deve listar opções resumidas de sessões para selects (Status 200)', async () => {
+            const res = await request(app)
+                .get('/api/sessoes/opcoes')
+                .set('Authorization', `Bearer ${appToken}`);
+            expect(res.status).toBe(200);
+        });
+
+        it('Deve listar vereadores ativos da câmara (Status 200)', async () => {
+            const res = await request(app)
+                .get('/api/sessoes/vereadores-ativos')
+                .set('Authorization', `Bearer ${appToken}`);
+            expect(res.status).toBe(200);
+        });
+    });
+
+    describe('Entidade Inexistente (404)', () => {
+        it('Deve retornar 404 ao tentar editar sessão inexistente', async () => {
+            const fakeId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+            const res = await request(app)
+                .put(`/api/sessoes/${fakeId}`)
+                .set('Authorization', `Bearer ${appToken}`)
+                .send({
+                    numero: 1,
+                    tipo: 'Ordinária',
+                    data_sessao: new Date('2037-06-01T10:00:00Z').toISOString()
+                });
+            expect(res.status).toBe(404);
+        });
+
+        it('Deve retornar 404 ao tentar deletar sessão inexistente', async () => {
+            const fakeId = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+            const res = await request(app)
+                .delete(`/api/sessoes/${fakeId}`)
+                .set('Authorization', `Bearer ${appToken}`);
             expect(res.status).toBe(404);
         });
     });

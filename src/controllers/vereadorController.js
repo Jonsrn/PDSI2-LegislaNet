@@ -65,9 +65,10 @@ const createVereador = async (req, res) => {
     email,
     senha,
     partido_id,
-    is_presidente,
-    is_vice_presidente,
   } = req.body;
+
+  const is_presidente = req.body.is_presidente === 'true' || req.body.is_presidente === true;
+  const is_vice_presidente = req.body.is_vice_presidente === 'true' || req.body.is_vice_presidente === true;
 
   const foto_url = req.file ? req.file.url : null;
 
@@ -206,12 +207,20 @@ const updateVereador = async (req, res) => {
   const {
     nome_parlamentar,
     partido_id,
-    is_presidente,
-    is_vice_presidente,
     is_active,
     email,
     senha,
   } = req.body;
+
+  let is_presidente = undefined;
+  if (req.body.is_presidente !== undefined) {
+      is_presidente = req.body.is_presidente === 'true' || req.body.is_presidente === true;
+  }
+
+  let is_vice_presidente = undefined;
+  if (req.body.is_vice_presidente !== undefined) {
+      is_vice_presidente = req.body.is_vice_presidente === 'true' || req.body.is_vice_presidente === true;
+  }
 
   const foto_url = req.file ? req.file.url : undefined;
 
@@ -569,9 +578,10 @@ const createVereadorNaPropriaCamara = async (req, res) => {
     email,
     senha,
     partido_id,
-    is_presidente,
-    is_vice_presidente,
   } = req.body;
+
+  const is_presidente = req.body.is_presidente === 'true' || req.body.is_presidente === true;
+  const is_vice_presidente = req.body.is_vice_presidente === 'true' || req.body.is_vice_presidente === true;
 
   if (!nome_parlamentar || !email || !senha || !partido_id) {
     logger.error("Campos obrigatórios faltando na requisição");
@@ -589,6 +599,44 @@ const createVereadorNaPropriaCamara = async (req, res) => {
   let createdAuthUserId = null;
 
   try {
+    const cargosParaValidar = [];
+    if (is_presidente === true) cargosParaValidar.push("presidente");
+    if (is_vice_presidente === true) cargosParaValidar.push("vice_presidente");
+
+    if (cargosParaValidar.length > 0) {
+      logger.log(`🔍 VALIDANDO CONFLITOS DE CARGO NA CRIAÇÃO (APP ROLE) para: ${cargosParaValidar.join(", ")}`);
+
+      const { data: conflitos, error: conflitosError } = await supabaseAdmin
+        .from("vereadores")
+        .select("id, nome_parlamentar, is_presidente, is_vice_presidente")
+        .eq("camara_id", profile.camara_id)
+        .eq("is_active", true);
+
+      if (conflitosError) {
+        logger.error("Erro ao verificar conflitos de cargo:", conflitosError);
+        return res.status(500).json({ error: "Erro interno do servidor ao validar cargos" });
+      }
+
+      if (is_presidente === true) {
+        const conflitoPres = conflitos.find((v) => v.is_presidente);
+        if (conflitoPres) {
+          logger.error(`❌ CONFLITO DETECTADO: ${conflitoPres.nome_parlamentar} já é Presidente`);
+          return res.status(400).json({
+            error: `Conflito de cargo: O vereador "${conflitoPres.nome_parlamentar}" já ocupa o cargo de Presidente.`,
+          });
+        }
+      }
+
+      if (is_vice_presidente === true) {
+        const conflitoVice = conflitos.find((v) => v.is_vice_presidente);
+        if (conflitoVice) {
+          logger.error(`❌ CONFLITO DETECTADO: ${conflitoVice.nome_parlamentar} já é Vice-Presidente`);
+          return res.status(400).json({
+            error: `Conflito de cargo: O vereador "${conflitoVice.nome_parlamentar}" já ocupa o cargo de Vice-Presidente.`,
+          });
+        }
+      }
+    }
     const { data: authData, error: authError } =
       await supabaseAdmin.auth.admin.createUser({
         email,
@@ -668,12 +716,20 @@ const updateVereadorDaPropriaCamara = async (req, res) => {
   const {
     nome_parlamentar,
     partido_id,
-    is_presidente,
-    is_vice_presidente,
     is_active,
     email,
     senha,
   } = req.body;
+
+  let is_presidente = undefined;
+  if (req.body.is_presidente !== undefined) {
+      is_presidente = req.body.is_presidente === 'true' || req.body.is_presidente === true;
+  }
+
+  let is_vice_presidente = undefined;
+  if (req.body.is_vice_presidente !== undefined) {
+      is_vice_presidente = req.body.is_vice_presidente === 'true' || req.body.is_vice_presidente === true;
+  }
 
   const foto_url = req.file ? req.file.url : undefined;
 

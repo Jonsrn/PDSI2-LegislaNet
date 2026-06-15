@@ -36,6 +36,54 @@ describe('API Web Backend - Gestão de Vereadores (Fase 5)', () => {
             
             expect(res.status).toBe(403);
         });
+
+        it('Deve bloquear acesso sem token na listagem de vereadores (401)', async () => {
+            const res = await request(app).get('/api/app/vereadores');
+            expect(res.status).toBe(401);
+        });
+
+        it('Deve rejeitar token JWT malformado (401)', async () => {
+            const res = await request(app)
+                .get('/api/app/vereadores')
+                .set('Authorization', 'Bearer token.invalido.abc');
+            expect(res.status).toBe(401);
+        });
+    });
+
+    describe('Validação de Dados e Restrições de Negócio', () => {
+        it('Deve retornar 400 ao tentar criar vereador sem partido', async () => {
+            const res = await request(app)
+                .post('/api/app/vereadores')
+                .set('Authorization', `Bearer ${appToken}`)
+                .field('nome_parlamentar', 'Vereador Incompleto')
+                .field('email', 'inc@teste.com')
+                .field('senha', 'Teste123@');
+            
+            expect(res.status).toBe(400);
+            expect(res.body.error || res.body.errors).toBeDefined();
+        });
+
+        it('Deve retornar 400 ao tentar criar vereador sem email', async () => {
+            const res = await request(app)
+                .post('/api/app/vereadores')
+                .set('Authorization', `Bearer ${appToken}`)
+                .field('nome_parlamentar', 'Vereador Sem Email')
+                .field('senha', 'Teste123@')
+                .field('partido_id', partidoId);
+            
+            expect(res.status).toBe(400);
+        });
+
+        it('Deve retornar 400 ao tentar criar vereador sem senha', async () => {
+            const res = await request(app)
+                .post('/api/app/vereadores')
+                .set('Authorization', `Bearer ${appToken}`)
+                .field('nome_parlamentar', 'Vereador Sem Senha')
+                .field('email', `sem_senha_${Date.now()}@teste.com`)
+                .field('partido_id', partidoId);
+            
+            expect(res.status).toBe(400);
+        });
     });
 
     describe('Fluxo do Admin da Câmara (App Role)', () => {
@@ -75,6 +123,23 @@ describe('API Web Backend - Gestão de Vereadores (Fase 5)', () => {
 
             expect(res.status).toBe(200);
             expect(res.body).toHaveProperty('nome_parlamentar', 'Vereador de Teste Modificado');
+        });
+
+        it('Deve garantir a regra de negócio da Mesa (Bloquear 2º Presidente ativo)', async () => {
+            // A Câmara de teste já possui um presidente (criado pelo helper de autenticação)
+            // Tenta criar um NOVO vereador TAMBÉM como Presidente
+            const resNew = await request(app)
+                .post('/api/app/vereadores')
+                .set('Authorization', `Bearer ${appToken}`)
+                .field('nome_parlamentar', 'Vereador Opositor')
+                .field('email', `opositor_${Date.now()}@teste.com`)
+                .field('senha', 'Teste123@')
+                .field('partido_id', partidoId)
+                .field('is_presidente', 'true');
+            
+            // Deve falhar com 400 da regra de negócio (Conflito de cargo)
+            expect(resNew.status).toBe(400);
+            expect(resNew.body.error).toMatch(/Conflito de cargo/i);
         });
     });
 

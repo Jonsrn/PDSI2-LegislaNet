@@ -1507,6 +1507,20 @@ const deletePauta = async (req, res) => {
         .json({ error: "Você só pode remover pautas da sua câmara" });
     }
 
+    if (
+      pauta.status === "Finalizada" ||
+      pauta.status === "Em Votação" ||
+      pauta.resultado_votacao
+    ) {
+      logger.error(
+        `❌ Remoção bloqueada: Pauta em andamento ou finalizada (Status: ${pauta.status}, Resultado: ${pauta.resultado_votacao || "N/A"})`,
+      );
+      return res.status(403).json({
+        error: "Não é possível excluir pautas em votação ou que já foram votadas",
+        details: `O status atual da pauta impede a remoção.`,
+      });
+    }
+
     if (pauta.votos && pauta.votos.length > 0) {
       logger.error(
         `❌ Remoção bloqueada: Pauta possui ${pauta.votos.length} voto(s) registrado(s)`,

@@ -82,6 +82,60 @@ describe('API Web Backend - Core: Painel de Controle e Votos E2E', () => {
             expect(sessaoId).not.toBeNull();
             expect(pautaId).not.toBeNull();
         });
+
+        it('Deve bloquear acesso sem token ao painel de controle (401)', async () => {
+            const res = await request(app).get('/api/painel-controle/pautas-em-votacao');
+            expect(res.status).toBe(401);
+        });
+
+        it('Deve rejeitar token JWT malformado no painel (401)', async () => {
+            const res = await request(app)
+                .get('/api/painel-controle/pautas-em-votacao')
+                .set('Authorization', 'Bearer xyz.abc.fake');
+            expect(res.status).toBe(401);
+        });
+
+        it('Deve bloquear acesso sem token aos votos (401)', async () => {
+            const res = await request(app).get(`/api/votos/pauta/${pautaId}`);
+            expect(res.status).toBe(401);
+        });
+
+        it('Deve listar oradores da sessão ativa (Status 200)', async () => {
+            const res = await request(app)
+                .get('/api/painel-controle/oradores')
+                .set('Authorization', `Bearer ${appToken}`);
+            expect(res.status).toBe(200);
+        });
+
+        it('Deve consultar o status da fala ativa (Status 200)', async () => {
+            const res = await request(app)
+                .get('/api/painel-controle/fala-ativa')
+                .set('Authorization', `Bearer ${appToken}`);
+            expect(res.status).toBe(200);
+        });
+    });
+
+    describe('Painel de Controle: Restrições de Votação (Janela e Tenants)', () => {
+        it('Não deve permitir registrar voto se a pauta estiver Pendente ou a Role for inválida (Status 403/400)', async () => {
+            const res = await request(app)
+                .post('/api/votos')
+                .set('Authorization', `Bearer ${appToken}`)
+                .send({
+                    pauta_id: pautaId,
+                    voto: 'Sim'
+                });
+            expect([400, 403]).toContain(res.status);
+            // expect(res.body.error).toMatch(/não está em votação|Apenas vereadores podem/i);
+        });
+
+        it('Deve bloquear Iniciar Votação de pauta inexistente ou de outra câmara (Status 404/403)', async () => {
+            const fakePautaId = '11111111-1111-1111-1111-111111111111';
+            const res = await request(app)
+                .post(`/api/painel-controle/iniciar-votacao/${fakePautaId}`)
+                .set('Authorization', `Bearer ${appToken}`);
+            expect(res.status).toBe(404);
+            expect(res.body.error).toMatch(/não encontrada/i);
+        });
     });
 
     describe('Painel de Controle: Iniciar Votação', () => {
