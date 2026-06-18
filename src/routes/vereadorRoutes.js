@@ -13,16 +13,42 @@ const { uploadImage } = require('../middleware/imageUploadMiddleware');
 router.use(isSuperAdmin);
 
 /**
- * @route   GET /api/camaras/:camaraId/vereadores
- * @desc    List all vereadores for a specific camara.
- * @access  Private (Super Admin)
+ * @swagger
+ * /api/camaras/{camaraId}/vereadores:
+ *   get:
+ *     summary: Lista todos os vereadores de uma câmara específica
+ *     tags: [Super Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: camaraId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Lista de vereadores
  */
 router.get('/', vereadorController.getVereadoresByCamara);
 
 /**
- * @route   POST /api/camaras/:camaraId/vereadores
- * @desc    Create a vereador for the camara.
- * @access  Private (Super Admin)
+ * @swagger
+ * /api/camaras/{camaraId}/vereadores:
+ *   post:
+ *     summary: Cria um vereador para uma câmara específica
+ *     tags: [Super Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: camaraId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       201:
+ *         description: Vereador criado
  */
 router.post('/', uploadImage('vereador', 'foto_url_vereador'), vereadorController.createVereador);
 
@@ -30,16 +56,42 @@ router.post('/', uploadImage('vereador', 'foto_url_vereador'), vereadorControlle
 const singleVereadorRouter = express.Router();
 
 /**
- * @route   PUT /api/vereadores/:id
- * @desc    Update a specific vereador.
- * @access  Private (Super Admin)
+ * @swagger
+ * /api/vereadores/{id}:
+ *   put:
+ *     summary: Atualiza dados de um vereador
+ *     tags: [Super Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Vereador atualizado
  */
 singleVereadorRouter.put('/:id', uploadImage('vereador', 'foto_url_vereador'), isSuperAdmin, vereadorController.updateVereador);
 
 /**
- * @route   DELETE /api/vereadores/:id
- * @desc    Remove a specific vereador.
- * @access  Private (Super Admin)
+ * @swagger
+ * /api/vereadores/{id}:
+ *   delete:
+ *     summary: Remove um vereador
+ *     tags: [Super Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Vereador removido
  */
 singleVereadorRouter.delete('/:id', isSuperAdmin, vereadorController.deleteVereador);
 
@@ -49,23 +101,50 @@ const appVereadorRouter = express.Router();
 const isUsuarioCamara = hasPermission(['admin_camara', 'vereador']);
 
 /**
- * @route   GET /api/app/vereadores
- * @desc    List vereadores for the authenticated user's camara.
- * @access  Private (Camara users)
+ * @swagger
+ * /api/app/vereadores:
+ *   get:
+ *     summary: Lista vereadores da câmara do usuário logado
+ *     tags: [Gestão da Câmara]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de vereadores da câmara
  */
 appVereadorRouter.get('/', isUsuarioCamara, vereadorController.getVereadoresDaPropriaCamara);
 
 /**
- * @route   POST /api/app/vereadores
- * @desc    Create a vereador in the authenticated user's camara.
- * @access  Private (Camara users)
+ * @swagger
+ * /api/app/vereadores:
+ *   post:
+ *     summary: Cria um vereador na câmara do usuário logado
+ *     tags: [Gestão da Câmara]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       201:
+ *         description: Vereador criado
  */
 appVereadorRouter.post('/', uploadImage('vereador', 'foto'), isUsuarioCamara, vereadorController.createVereadorNaPropriaCamara);
 
 /**
- * @route   PUT /api/app/vereadores/:id
- * @desc    Update a vereador in the authenticated user's camara.
- * @access  Private (Camara users)
+ * @swagger
+ * /api/app/vereadores/{id}:
+ *   put:
+ *     summary: Atualiza um vereador da câmara do usuário logado
+ *     tags: [Gestão da Câmara]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Vereador atualizado
  */
 appVereadorRouter.put('/:id', uploadImage('vereador', 'foto'), isUsuarioCamara, vereadorController.updateVereadorDaPropriaCamara);
 

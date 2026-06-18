@@ -29,10 +29,12 @@ const livestreamService = require("./src/services/livestreamService");
  */
 const createLogger = (context) => {
   return {
-    log: (...args) =>
-      console.log(`[${context}]`, new Date().toISOString(), ...args),
-    error: (...args) =>
-      console.error(`[${context} ERROR]`, new Date().toISOString(), ...args),
+    log: (...args) => {
+      if (process.env.NODE_ENV !== 'test') console.log(`[${context}]`, new Date().toISOString(), ...args);
+    },
+    error: (...args) => {
+      if (process.env.NODE_ENV !== 'test') console.error(`[${context} ERROR]`, new Date().toISOString(), ...args);
+    },
   };
 };
 
@@ -208,6 +210,10 @@ serverLogger.log("🚀 === INICIANDO SERVIDOR DE DEBUG ===");
 // Register request diagnostics before other middleware.
 serverLogger.log("1️⃣ Registrando interceptador de requisições...");
 app.use(createRequestInterceptor());
+
+serverLogger.log("1.5️⃣ Registrando Swagger Documentation...");
+const setupSwagger = require('./src/config/swagger');
+setupSwagger(app);
 
 // Security middleware.
 serverLogger.log("2️⃣ Registrando Helmet...");
@@ -721,6 +727,8 @@ try {
 
   // Delay startup checks until the HTTP and WebSocket servers are ready.
   setTimeout(() => {
+    if (process.env.NODE_ENV === 'test') return;
+
     livestreamService.startAutoCheck();
     serverLogger.log("📺 Serviço de verificação de livestreams iniciado");
 
@@ -762,32 +770,36 @@ try {
   );
 }
 
-const server = httpServer.listen(PORT, () => {
-  serverLogger.log("🎯 === SERVIDOR INICIADO COM SUCESSO ===");
-  serverLogger.log(`🌐 URL: http://localhost:${PORT}`, {
-    env: process.env.NODE_ENV || "development",
-    pid: process.pid,
+if (process.env.NODE_ENV !== 'test') {
+  const server = httpServer.listen(PORT, () => {
+    serverLogger.log("🎯 === SERVIDOR INICIADO COM SUCESSO ===");
+    serverLogger.log(`🌐 URL: http://localhost:${PORT}`, {
+      env: process.env.NODE_ENV || "development",
+      pid: process.pid,
+    });
+    serverLogger.log(
+      "🔍 Logs detalhados de requisições e rotas serão exibidos aqui.",
+    );
+    serverLogger.log(
+      "📺 Verificação de livestreams será iniciada em 5 segundos...",
+    );
+
+    // Daily session status update at 00:01.
+    try {
+      startSessaoStatusScheduler();
+      serverLogger.log("🕒 Scheduler de status de sessões iniciado");
+    } catch (err) {
+      serverLogger.error("❌ Falha ao iniciar scheduler de sessões:", err);
+    }
+
+    // Daily statistics materialized view refresh at 23:59.
+    try {
+      startStatsRefreshScheduler();
+      serverLogger.log("📊 Scheduler de refresh de estatísticas iniciado");
+    } catch (err) {
+      serverLogger.error("❌ Falha ao iniciar scheduler de estatísticas:", err);
+    }
   });
-  serverLogger.log(
-    "🔍 Logs detalhados de requisições e rotas serão exibidos aqui.",
-  );
-  serverLogger.log(
-    "📺 Verificação de livestreams será iniciada em 5 segundos...",
-  );
+}
 
-  // Daily session status update at 00:01.
-  try {
-    startSessaoStatusScheduler();
-    serverLogger.log("🕒 Scheduler de status de sessões iniciado");
-  } catch (err) {
-    serverLogger.error("❌ Falha ao iniciar scheduler de sessões:", err);
-  }
-
-  // Daily statistics materialized view refresh at 23:59.
-  try {
-    startStatsRefreshScheduler();
-    serverLogger.log("📊 Scheduler de refresh de estatísticas iniciado");
-  } catch (err) {
-    serverLogger.error("❌ Falha ao iniciar scheduler de estatísticas:", err);
-  }
-});
+module.exports = app;

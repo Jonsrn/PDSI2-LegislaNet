@@ -11,17 +11,67 @@ const { authenticateVereador } = require('../middleware/authMiddleware');
 router.use(authenticateVereador);
 
 /**
- * Returns the authenticated council member profile.
+ * @swagger
+ * /api/vereador/profile:
+ *   get:
+ *     summary: Obter Perfil
+ *     description: Retorna os dados completos do vereador autenticado
+ *     tags: [Vereadores]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Perfil retornado com sucesso
+ *       401:
+ *         description: Não autorizado (Requer Token JWT)
  */
 router.get('/profile', vereadorController.getVereadorProfile);
 
 /**
- * Lists active council members in the same chamber.
+ * @swagger
+ * /api/vereador/camara:
+ *   get:
+ *     summary: Listar Vereadores da Câmara
+ *     description: Retorna todos os vereadores ativos associados à mesma câmara do usuário logado
+ *     tags: [Vereadores]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de vereadores retornada com sucesso
+ *       401:
+ *         description: Não autorizado
  */
 router.get('/camara', vereadorController.getVereadoresDaCamara);
 
 /**
- * Updates the authenticated council member profile photo URL.
+ * @swagger
+ * /api/vereador/foto:
+ *   put:
+ *     summary: Atualizar Foto de Perfil
+ *     description: Permite ao vereador alterar sua foto de perfil através de uma nova URL
+ *     tags: [Vereadores]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - fotoUrl
+ *             properties:
+ *               fotoUrl:
+ *                 type: string
+ *                 example: "https://minha-nova-foto.jpg"
+ *     responses:
+ *       200:
+ *         description: Foto atualizada com sucesso
+ *       400:
+ *         description: Payload mal formatado
+ *       401:
+ *         description: Não autorizado
  */
 router.put('/foto', vereadorController.updateVereadorFoto);
 
