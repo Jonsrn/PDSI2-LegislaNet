@@ -7,7 +7,7 @@
 
     <link
       rel="icon"
-      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>"
+      href="/favicon.svg"
     />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -1305,6 +1305,45 @@
         .nav-menu {
           display: none !important;
         }
+
+        /* Responsividade dos cards de vereadores no mobile */
+        .vereador-card {
+          width: 220px;
+          padding: 16px;
+          margin-right: 16px;
+        }
+
+        .vereador-avatar {
+          width: 64px;
+          height: 64px;
+        }
+
+        .vereador-name {
+          font-size: 1rem;
+        }
+
+        .vereador-party {
+          font-size: 0.85rem;
+          margin-bottom: 12px;
+        }
+
+        .vereador-stats .number {
+          font-size: 1rem;
+        }
+
+        .vereador-stats .label {
+          font-size: 0.7rem;
+        }
+
+        .vereadores-grid-static {
+          gap: 16px;
+          padding: 0 12px;
+        }
+
+        .partido-logo {
+          width: 24px;
+          height: 24px;
+        }
       }
 
       @media (max-width: 480px) {
@@ -1444,11 +1483,8 @@
             </div>
 
             <div class="votes-footer">
-              <button id="ver-todas-pautas" class="btn btn-outline" disabled>
+              <button id="ver-todas-pautas" class="btn btn-outline">
                 Ver Todas as Pautas
-                <span class="coming-soon-flag"
-                  ><i class="fas fa-clock"></i>Em breve</span
-                >
               </button>
             </div>
           </div>
@@ -1485,14 +1521,14 @@
               <i class="fas fa-file-alt doc-icon"></i>
               <div class="doc-info">
                 <h4>Ata da Sessão Ordinária</h4>
-                <p class="date">15 de Agosto, 2025</p>
+                <p class="date">15 de Agosto, 2026</p>
               </div>
             </div>
             <div class="doc-card">
               <i class="fas fa-chart-bar doc-icon"></i>
               <div class="doc-info">
                 <h4>Relatório Financeiro</h4>
-                <p class="date">Julho 2025</p>
+                <p class="date">Julho 2026</p>
               </div>
             </div>
             <div class="doc-card">
@@ -1506,7 +1542,7 @@
               <i class="fas fa-users doc-icon"></i>
               <div class="doc-info">
                 <h4>Registro de Presenças</h4>
-                <p class="date">Agosto 2025</p>
+                <p class="date">Agosto 2026</p>
               </div>
             </div>
           </div>
@@ -3716,7 +3752,7 @@
 
           let currentIndex = 0;
           let isMoving = false;
-          const cardWidth = 304; // 280px + 24px margin
+          const cardWidth = window.innerWidth <= 768 ? 236 : 304; // mobile: 220px + 16px margin | desktop: 280px + 24px margin
 
           function moveCarousel(direction) {
             if (isMoving) return;
@@ -3809,7 +3845,7 @@
             const mockPautas = [
               {
                 id: "demo-1",
-                nome: "Projeto de Lei Demo 001/2025",
+                nome: "Projeto de Lei Demo 001/2026",
                 descricao:
                   "Institui o programa municipal de sustentabilidade e preservação ambiental",
                 autor: "Vereador Demo",
@@ -3819,7 +3855,7 @@
               },
               {
                 id: "demo-2",
-                nome: "Projeto de Lei Demo 002/2025",
+                nome: "Projeto de Lei Demo 002/2026",
                 descricao:
                   "Regulamenta o funcionamento do comércio ambulante no centro da cidade",
                 autor: "Vereadora Demo",
@@ -3829,7 +3865,7 @@
               },
               {
                 id: "demo-3",
-                nome: "Projeto de Lei Demo 003/2025",
+                nome: "Projeto de Lei Demo 003/2026",
                 descricao:
                   "Criação do parque municipal e área de lazer para a comunidade local",
                 autor: "Vereador Demo 2",
@@ -4051,16 +4087,37 @@
           const verTodasBtn = document.getElementById("ver-todas-pautas");
           if (verTodasBtn) {
             verTodasBtn.addEventListener("click", () => {
-              // Obter ID da câmara do localStorage ou URL
               const camaraFromStorage = getCamaraFromStorage();
               const camaraFromUrl = getCamaraFromUrl();
               const camaraAtual = camaraFromUrl || camaraFromStorage;
 
-              console.log(
-                '💡 Funcionalidade "Ver Todas as Pautas" em desenvolvimento',
-              );
-              // Redirecionamento desabilitado - funcionalidade em breve
-              e.preventDefault();
+              let finalId = null;
+              if (camaraAtual && typeof camaraAtual === 'object' && camaraAtual.id) {
+                 finalId = camaraAtual.id;
+              } else if (typeof camaraAtual === 'string') {
+                 finalId = camaraAtual;
+              }
+
+              // Prevenir que strings "object Object" quebrem a requisição
+              if (finalId === "[object Object]") {
+                 console.error("Detectado ID corrompido no cache do navegador.");
+                 // Tentar pegar do localStorage diretamente
+                 finalId = localStorage.getItem("selectedCamaraId");
+                 if (finalId === "[object Object]" || !finalId) {
+                     alert("Seu navegador salvou dados corrompidos. Você será redirecionado para selecionar a câmara novamente.");
+                     window.location.href = "selecionar_camara.html";
+                     return;
+                 }
+              }
+
+              if (finalId) {
+                // Adicionando um timestamp para forçar a página de pautas a não usar cache se necessário, 
+                // embora os parâmetros já sejam suficientes.
+                window.location.href = `todas_pautas.html?camara_id=${finalId}&t=${Date.now()}`;
+              } else {
+                console.error("ID da câmara não encontrado para redirecionamento.");
+                window.location.href = "selecionar_camara.html";
+              }
             });
           }
         }
